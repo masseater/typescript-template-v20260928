@@ -1,5 +1,4 @@
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
-import { errorMessage } from "@repo/auth-ui";
 import { apiData } from "@repo/runtime/client";
 import { localState, requestAtom, type RequestResult } from "@repo/ui";
 import { AsyncResult } from "effect/unstable/reactivity";
@@ -23,7 +22,7 @@ function useFlagList(): Readonly<{
   flags: readonly FlagEntry[] | undefined;
   listing: RequestResult<readonly FlagEntry[]>;
   reload: () => void;
-  toggle: (key: FlagEntry["key"], enabled: boolean) => Promise<string | undefined>;
+  toggle: (key: FlagEntry["key"], enabled: boolean) => Promise<void>;
 }> {
   const listing = useAtomValue(flagsAtom);
   const reloadRemote = useAtomRefresh(flagsAtom);
@@ -34,15 +33,13 @@ function useFlagList(): Readonly<{
     reloadRemote();
   };
 
-  const toggle = (key: FlagEntry["key"], enabled: boolean): Promise<string | undefined> =>
+  const toggle = (key: FlagEntry["key"], enabled: boolean): Promise<void> =>
     Promise.resolve(wikiClient())
       .then(({ api }) => api.flags.patch({ enabled, key }))
       .then((response) => {
         const updated = apiData(FlagToggled, response);
         setOverrides((current) => ({ ...current, [updated.key]: updated }));
-        return undefined;
-      })
-      .catch((error: unknown) => errorMessage(error));
+      });
 
   const flags = AsyncResult.isSuccess(listing)
     ? listing.value.map((entry) => overrides[entry.key] ?? entry)

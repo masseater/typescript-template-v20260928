@@ -14,7 +14,7 @@ function FlagsView({
   failure: string | undefined;
   flags: readonly FlagEntry[] | undefined;
   onReload: () => void;
-  onToggle: (key: FlagEntry["key"], enabled: boolean) => Promise<string | undefined>;
+  onToggle: (key: FlagEntry["key"], enabled: boolean) => Promise<void>;
 }>): ReactElement {
   return (
     <Page title="機能フラグ">
