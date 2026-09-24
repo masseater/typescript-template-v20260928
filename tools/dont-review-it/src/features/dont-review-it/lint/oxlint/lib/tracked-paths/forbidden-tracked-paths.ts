@@ -1,4 +1,4 @@
-import { namedFieldsOf } from "../named-fields.ts";
+import { isPlainObject } from "es-toolkit";
 
 import type { Options, RuleMeta } from "@oxlint/plugins";
 
@@ -76,19 +76,21 @@ const DEFAULT_FORBIDDEN_TRACKED_PATHS: readonly ForbiddenTrackedPath[] = [
 ];
 
 const listedUnder = (ruleOptions: Readonly<Options>, fieldName: string): readonly unknown[] => {
-  const fields = namedFieldsOf(ruleOptions[0]);
-  const held = fields === null ? null : fields[fieldName];
+  const [first]: readonly unknown[] = ruleOptions;
+  const held: unknown = isPlainObject(first) ? first[fieldName] : null;
   return Array.isArray(held) ? held : [];
 };
 
 const groundedPatternOf = (held: unknown): GroundedPattern | null => {
-  const fields = namedFieldsOf(held);
-  const pattern = typeof fields?.pattern === "string" ? fields.pattern.trim() : "";
+  if (!isPlainObject(held)) return null;
+  const declaredPattern: unknown = held.pattern;
+  const declaredReason: unknown = held.reason;
+  const pattern = typeof declaredPattern === "string" ? declaredPattern.trim() : "";
   if (pattern === "") return null;
 
   return {
     pattern,
-    reason: typeof fields?.reason === "string" ? fields.reason.trim() : "",
+    reason: typeof declaredReason === "string" ? declaredReason.trim() : "",
   };
 };
 
@@ -97,13 +99,12 @@ const groundedPatternsIn = (held: unknown): readonly GroundedPattern[] =>
 
 const registrationOf = (held: unknown): ForbiddenTrackedPath | null => {
   const grounded = groundedPatternOf(held);
-  if (grounded === null) return null;
+  if (grounded === null || !isPlainObject(held)) return null;
 
-  const fields = namedFieldsOf(held);
   return {
     ...grounded,
-    ignoreListing: fields?.ignoreListing !== false,
-    exceptions: groundedPatternsIn(fields?.exceptions),
+    ignoreListing: held.ignoreListing !== false,
+    exceptions: groundedPatternsIn(held.exceptions),
   };
 };
 

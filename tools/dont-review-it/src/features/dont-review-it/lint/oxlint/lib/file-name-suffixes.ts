@@ -1,4 +1,4 @@
-import { maxBy } from "es-toolkit";
+import { isPlainObject, maxBy } from "es-toolkit";
 
 import type { Options } from "@oxlint/plugins";
 
@@ -23,8 +23,8 @@ export const configuredSuffixesFrom = (
   ruleOptions: Readonly<Options>,
   { optionName, carried }: { readonly optionName: string; readonly carried: readonly string[] },
 ): readonly string[] => {
-  const [first] = ruleOptions;
-  if (typeof first !== "object" || first === null || Array.isArray(first)) return carried;
+  const [first]: readonly unknown[] = ruleOptions;
+  if (!isPlainObject(first)) return carried;
 
   const configured = first[optionName];
   if (!Array.isArray(configured)) return carried;

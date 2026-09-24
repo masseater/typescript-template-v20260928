@@ -1,4 +1,4 @@
-import { range } from "es-toolkit";
+import { isPlainObject, range } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { isSpecFile, specFileSuffixesFrom } from "../../lib/spec-syntax/spec-files.ts";
@@ -10,8 +10,8 @@ const DEFAULT_MAX_LINES = 500;
 const DEFAULT_MAX_SPEC_LINES = 1500;
 
 const optionObjectFrom = (ruleOptions: Readonly<Options>): Readonly<Record<string, unknown>> => {
-  const [first] = ruleOptions;
-  if (typeof first !== "object" || first === null || Array.isArray(first)) return {};
+  const [first]: readonly unknown[] = ruleOptions;
+  if (!isPlainObject(first)) return {};
   return first;
 };
 

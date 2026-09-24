@@ -1,4 +1,4 @@
-import { isNamedFields } from "../named-fields.ts";
+import { isPlainObject } from "es-toolkit";
 
 const ALIAS_PROTOCOL = "npm:";
 
@@ -41,7 +41,7 @@ export type DeclaredDependency = {
 };
 
 const sectionDependencies = (section: unknown): readonly DeclaredDependency[] => {
-  if (!isNamedFields(section)) return [];
+  if (!isPlainObject(section)) return [];
 
   return Object.entries(section).flatMap(([declaredName, declaredValue]) => {
     if (typeof declaredValue !== "string") return [];
@@ -57,6 +57,6 @@ const DEPENDENCY_SECTIONS: readonly string[] = [
 ];
 
 export const declaredDependenciesIn = (manifest: unknown): readonly DeclaredDependency[] =>
-  isNamedFields(manifest)
+  isPlainObject(manifest)
     ? DEPENDENCY_SECTIONS.flatMap((section) => sectionDependencies(manifest[section]))
     : [];

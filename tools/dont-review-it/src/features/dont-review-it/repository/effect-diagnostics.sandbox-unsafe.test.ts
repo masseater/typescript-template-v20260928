@@ -8,6 +8,7 @@ import {
   effectTsgoNoEmit,
 } from "@repo/vite-config";
 import { Effect, FileSystem } from "effect";
+import { isPlainObject } from "es-toolkit";
 import { describe, expect, it } from "vite-plus/test";
 
 import { filePathOf, path } from "../platform/path.ts";
@@ -92,7 +93,7 @@ const diagnosticsTask = (config: unknown): unknown => field(configTasks(config),
 
 const effectTasks = (config: unknown): readonly unknown[] => {
   const tasks = configTasks(config);
-  return typeof tasks === "object" && tasks !== null
+  return isPlainObject(tasks)
     ? Object.entries(tasks)
         .filter(([name]) => name === "check:effect" || name.startsWith("check:effect:"))
         .map(([, task]: readonly [string, unknown]) => task)

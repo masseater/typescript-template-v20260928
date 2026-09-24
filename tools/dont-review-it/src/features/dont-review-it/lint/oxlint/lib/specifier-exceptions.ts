@@ -1,3 +1,5 @@
+import { isPlainObject } from "es-toolkit";
+
 import { matchesGlobPath } from "./glob-path-match.ts";
 
 import type { Options } from "@oxlint/plugins";
@@ -20,14 +22,14 @@ export type SpecifierException = {
 export const specifierExceptionsIn = (
   ruleOptions: Readonly<Options>,
 ): readonly SpecifierException[] => {
-  const [declared] = ruleOptions;
-  if (typeof declared !== "object" || declared === null || Array.isArray(declared)) return [];
+  const [declared]: readonly unknown[] = ruleOptions;
+  if (!isPlainObject(declared)) return [];
 
   const listed = declared.exceptions;
   if (!Array.isArray(listed)) return [];
 
   return listed.flatMap((listed) => {
-    if (typeof listed !== "object" || listed === null || Array.isArray(listed)) return [];
+    if (!isPlainObject(listed)) return [];
     const { path, reason } = listed;
     if (typeof path !== "string") return [];
     return [{ path, reason: typeof reason === "string" ? reason.trim() : "" }];

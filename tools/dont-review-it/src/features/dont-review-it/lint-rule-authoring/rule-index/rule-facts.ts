@@ -1,10 +1,9 @@
-import { Effect, FileSystem, type PlatformError } from "effect";
+import { Effect, FileSystem, type PlatformError, Predicate } from "effect";
 import { parseSync } from "oxc-parser";
 
 import { path, posixPath } from "../../platform/path.ts";
 import {
   declaratorsIn,
-  isAstNode,
   keyNameOf,
   listedNodesOf,
   moduleConstantsIn,
@@ -196,7 +195,7 @@ export const lintRuleFactsIn = ({
       .filter((statement) => statement.type === "ExportNamedDeclaration")
       .flatMap(declaratorsIn)
       .map((declarator) => declarator.init)
-      .filter(isAstNode)
+      .filter(Predicate.isReadonlyObject)
       .map(ruleCandidateOf)
       .filter((candidate): candidate is UnknownFields => candidate !== null)
       .flatMap((definition) => factsOf({ definition, constants, sourcePath }));

@@ -1,3 +1,5 @@
+import { isPlainObject } from "es-toolkit";
+
 import type { Options } from "@oxlint/plugins";
 
 export const NORMALIZING_METHODS: ReadonlySet<string> = new Set([
@@ -51,8 +53,8 @@ const DEFAULT_NORMALIZING_FUNCTIONS: readonly string[] = [
 ];
 
 export const normalizingFunctionsFrom = (ruleOptions: Readonly<Options>): ReadonlySet<string> => {
-  const [first] = ruleOptions;
-  if (typeof first !== "object" || first === null || Array.isArray(first)) {
+  const [first]: readonly unknown[] = ruleOptions;
+  if (!isPlainObject(first)) {
     return new Set(DEFAULT_NORMALIZING_FUNCTIONS);
   }
 

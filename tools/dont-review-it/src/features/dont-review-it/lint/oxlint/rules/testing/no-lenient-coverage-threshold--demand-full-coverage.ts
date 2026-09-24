@@ -1,7 +1,8 @@
+import { isPlainObject } from "es-toolkit";
+
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { defaultExportedObject } from "../../lib/default-exported-object.ts";
 import { declaresTrueAt, nestedObjectAt, objectPropertyOf } from "../../lib/object-literal.ts";
-import { isRecord } from "../../lib/record-value.ts";
 import { isTestRunnerConfig } from "../../lib/test-runner-config.ts";
 
 import type { ESTree, Options } from "@oxlint/plugins";
@@ -22,8 +23,8 @@ type CoverageRequirement = {
 const COVERAGE_METRICS = ["branches", "functions", "lines", "statements"];
 
 const requirementsFrom = (ruleOptions: Readonly<Options>): readonly CoverageRequirement[] => {
-  const [first] = ruleOptions;
-  const overrides = isRecord(first) ? first : {};
+  const [first]: readonly unknown[] = ruleOptions;
+  const overrides = isPlainObject(first) ? first : {};
   return COVERAGE_METRICS.map((metric) => {
     const override = overrides[metric];
     return { metric, required: typeof override === "number" ? override : FULL_COVERAGE };

@@ -1,7 +1,7 @@
 // @effect-diagnostics-next-line nodeBuiltinImport:off
 import { realpathSync } from "node:fs";
 
-import { attempt, sortBy, uniq } from "es-toolkit";
+import { attempt, isPlainObject, sortBy, uniq } from "es-toolkit";
 import * as ts from "typescript-6";
 
 import { path } from "../../../../platform/path.ts";
@@ -112,12 +112,11 @@ const resolvedTarget = ({
   if (typeof value === "string") {
     return resolvedStringTarget({ packageDirectory, target: value });
   }
-  if (depth > EXPORTS_CONDITION_DEPTH_LIMIT || value === null || typeof value !== "object") {
-    return unresolvedTarget();
-  }
+  if (depth > EXPORTS_CONDITION_DEPTH_LIMIT) return unresolvedTarget();
   if (Array.isArray(value)) {
     return resolvedArrayTarget({ depth, packageDirectory, alternatives: value });
   }
+  if (!isPlainObject(value)) return unresolvedTarget();
   return resolvedConditionTarget({
     conditions: Object.entries(value),
     depth,
@@ -196,9 +195,7 @@ const packageSurfaces = ({
   readonly packageName: string;
 }) => {
   const subpaths =
-    exportsField !== null &&
-    typeof exportsField === "object" &&
-    !Array.isArray(exportsField) &&
+    isPlainObject(exportsField) &&
     Object.keys(exportsField).some((subpathKey) => subpathKey.startsWith("."))
       ? Object.entries(exportsField)
       : [[".", exportsField] as const];
@@ -235,16 +232,9 @@ type PackageManifest = Readonly<Record<string, unknown>> & { readonly name: stri
 
 const packageManifest = (packageDirectory: string): PackageManifest | null => {
   const manifest = readJsonFile(path.join(packageDirectory, MANIFEST_FILE_NAME));
-  if (
-    manifest === null ||
-    typeof manifest !== "object" ||
-    !("name" in manifest) ||
-    typeof manifest.name !== "string" ||
-    manifest.name.length === 0
-  ) {
-    return null;
-  }
-  return manifest as PackageManifest;
+  if (!isPlainObject(manifest)) return null;
+  const { name } = manifest;
+  return typeof name === "string" && name.length > 0 ? { ...manifest, name } : null;
 };
 
 export const publicPackageEntries = (

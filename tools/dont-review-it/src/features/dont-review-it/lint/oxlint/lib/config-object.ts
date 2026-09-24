@@ -1,10 +1,12 @@
-import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "./ast-node.ts";
+import { Predicate } from "effect";
+
+import { NODE_TYPE_FIELD, type AstFields } from "./ast-node.ts";
 
 export const fieldsIn = (held: unknown): readonly AstFields[] =>
-  Array.isArray(held) ? held.filter(isAstFields) : [];
+  Array.isArray(held) ? held.filter(Predicate.isReadonlyObject) : [];
 
 export const nodeOfType = ({ held, type }: { readonly held: unknown; readonly type: string }) =>
-  isAstFields(held) && String(held[NODE_TYPE_FIELD]) === type ? held : null;
+  Predicate.isReadonlyObject(held) && String(held[NODE_TYPE_FIELD]) === type ? held : null;
 
 const OBJECT_EXPRESSION = "ObjectExpression";
 

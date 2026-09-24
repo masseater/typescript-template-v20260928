@@ -1,8 +1,9 @@
+import { Predicate } from "effect";
 import { groupBy, memoize, partition } from "es-toolkit";
 import { parseSync } from "oxc-parser";
 
 import { path } from "../../../../platform/path.ts";
-import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
+import { NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
 import { repositoryModulePath } from "../canonical-values/import-route-resolution.ts";
 import { realPathOf } from "../canonical-values/import-route-source-identity.ts";
 import { isRelativeImportSpecifier } from "../canonical-values/import-specifier.ts";
@@ -24,7 +25,7 @@ type Binding = { readonly bound: "privately" | "shared"; readonly target: string
 type BindingsByName = ReadonlyMap<string, Binding | null>;
 
 const exportNameOf = (moduleExportName: unknown): string => {
-  if (!isAstFields(moduleExportName)) return "";
+  if (!Predicate.isReadonlyObject(moduleExportName)) return "";
   return moduleExportName[NODE_TYPE_FIELD] === "Identifier"
     ? String(moduleExportName.name)
     : String(moduleExportName.value);
@@ -36,10 +37,10 @@ const IMPORTED_NAME_BY_SPECIFIER_KIND: Readonly<Record<string, string>> = {
 };
 
 const nodesIn = (syntaxField: unknown): readonly AstFields[] =>
-  Array.isArray(syntaxField) ? syntaxField.filter(isAstFields) : [];
+  Array.isArray(syntaxField) ? syntaxField.filter(Predicate.isReadonlyObject) : [];
 
 const specifierOf = (statement: AstFields): string =>
-  isAstFields(statement.source) ? String(statement.source.value) : "";
+  Predicate.isReadonlyObject(statement.source) ? String(statement.source.value) : "";
 
 const importsIn = (statement: AstFields): readonly (readonly [string, ImportedBinding])[] =>
   statement[NODE_TYPE_FIELD] === "ImportDeclaration"

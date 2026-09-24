@@ -1,4 +1,5 @@
-import { isRecord } from "../dependency-catalog/record-fields.ts";
+import { isPlainObject } from "es-toolkit";
+
 import { repositoryRelative } from "./repository-path-test-fixture.ts";
 
 interface ComponentsConfig {
@@ -22,7 +23,7 @@ const componentsConfigs: readonly ComponentsConfig[] = Object.entries(configModu
 );
 
 const registriesOf = (config: unknown): unknown => {
-  return isRecord(config)
+  return isPlainObject(config)
     ? Object.getOwnPropertyDescriptor(config, "registries")?.value
     : undefined;
 };
@@ -33,7 +34,7 @@ const registryViolations = (configs: readonly ComponentsConfig[]): string[] => {
     if (registries === undefined) {
       return [];
     }
-    if (!isRecord(registries)) {
+    if (!isPlainObject(registries)) {
       return [`${file}: registries は namespace から URL への対応表で書いてください。`];
     }
     return Object.entries(registries).flatMap(([namespace, source]) => {

@@ -1,4 +1,6 @@
-import { isAstFields, type AstFields } from "../ast-node.ts";
+import { Predicate } from "effect";
+
+import { type AstFields } from "../ast-node.ts";
 
 const NOTATION_KEYS: ReadonlySet<string> = new Set([
   "end",
@@ -27,7 +29,10 @@ const UNORDERED_MEMBERS_TYPE = "ObjectExpression";
 const spelledTemplate = (node: AstFields): string | null => {
   const substitutions = [node.expressions].flat();
   const [piece] = [node.quasis].flat();
-  const spelling = isAstFields(piece) && isAstFields(piece.value) ? piece.value.cooked : null;
+  const spelling =
+    Predicate.isReadonlyObject(piece) && Predicate.isReadonlyObject(piece.value)
+      ? piece.value.cooked
+      : null;
   return substitutions.length === 0 && typeof spelling === "string" ? spelling : null;
 };
 
@@ -35,7 +40,7 @@ const spelledOut = (held: unknown): string => JSON.stringify(held ?? null);
 
 const literalShape = (node: AstFields): string => {
   const pattern = node.regex;
-  if (isAstFields(pattern)) {
+  if (Predicate.isReadonlyObject(pattern)) {
     return `regex ${spelledOut(pattern.pattern)}${spelledOut(pattern.flags)}`;
   }
 
@@ -54,7 +59,7 @@ const atomShapeOf = (node: AstFields, nodeType: string): string | null => {
 
 export const syntaxShapeOf = (held: unknown): string => {
   if (Array.isArray(held)) return `[${held.map((held) => syntaxShapeOf(held)).join(",")}]`;
-  if (!isAstFields(held)) return spelledOut(held);
+  if (!Predicate.isReadonlyObject(held)) return spelledOut(held);
 
   const nodeType = typeof held.type === "string" ? held.type : "";
   const forwarded = FORWARDED_BY_TYPE.get(nodeType);

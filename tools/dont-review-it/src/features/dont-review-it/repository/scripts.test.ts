@@ -1,3 +1,4 @@
+import { isPlainObject } from "es-toolkit";
 import { describe, expect, it } from "vite-plus/test";
 
 import { field, workspaceManifests } from "./dependencies-test-fixture.ts";
@@ -16,7 +17,7 @@ function packageNames(manifests: readonly WorkspaceManifest[]): string[] {
 function toolReferences({ file, manifest }: WorkspaceManifest, tools: readonly string[]): string[] {
   const declared = ["dependencies", "devDependencies", "scripts"].flatMap((key) => {
     const value = field(manifest, key);
-    return typeof value === "object" && value !== null ? Object.entries(value) : [];
+    return isPlainObject(value) ? Object.entries(value) : [];
   });
   return declared
     .filter(([key, value]: readonly [string, unknown]) =>

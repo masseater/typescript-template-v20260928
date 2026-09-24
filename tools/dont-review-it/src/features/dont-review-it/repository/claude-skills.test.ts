@@ -1,6 +1,7 @@
 import { NodeServices } from "@effect/platform-node";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, FileSystem, Path, Schema } from "effect";
+import { isPlainObject } from "es-toolkit";
 import { describe, expect, it } from "vite-plus/test";
 import { parse } from "yaml";
 
@@ -58,7 +59,7 @@ const frontmatter = (skill: string) =>
       return yield* new SkillFrontmatterUnreadable({ reason: "missing", skill });
     }
     const parsed: unknown = parse(body);
-    if (typeof parsed !== "object" || parsed === null) {
+    if (!isPlainObject(parsed)) {
       return yield* new SkillFrontmatterUnreadable({ reason: "not-a-mapping", skill });
     }
     return Object.fromEntries(Object.entries(parsed));

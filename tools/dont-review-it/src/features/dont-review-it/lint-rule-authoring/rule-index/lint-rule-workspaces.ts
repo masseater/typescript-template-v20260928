@@ -45,9 +45,9 @@ const declaredWorkspaceDirs = (
         cause: unparsableDefinition,
       });
     }
-    if (typeof definition !== "object" || definition === null) return [];
+    if (!isPlainObject(definition)) return [];
 
-    const patterns = (definition as Record<string, unknown>)[WORKSPACE_PATTERNS_FIELD];
+    const patterns: unknown = definition[WORKSPACE_PATTERNS_FIELD];
     if (!Array.isArray(patterns)) return [];
 
     const expanded = yield* Effect.forEach(

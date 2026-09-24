@@ -1,3 +1,4 @@
+import { isSyntaxNode } from "../lint/oxlint/lib/nodes-of-type.ts";
 import { origins, variableOf, type Origin } from "./references.ts";
 
 import type { LintContext, Node, NodeOf } from "./lint-context.ts";
@@ -49,19 +50,13 @@ const isAtomConstructor = (inspection: LintContext, callee: Node): boolean => {
   });
 };
 
-const isNode = (value: unknown): value is Node => {
-  return (
-    typeof value === "object" && value !== null && "type" in value && typeof value.type === "string"
-  );
-};
-
 const children = (node: Node): Node[] => {
   return Object.entries(node).flatMap(([key, value]: readonly [string, unknown]) => {
     if (key === "parent") {
       return [];
     }
     const values: readonly unknown[] = Array.isArray(value) ? value : [value];
-    return values.filter((child) => isNode(child));
+    return values.filter((child) => isSyntaxNode(child));
   });
 };
 

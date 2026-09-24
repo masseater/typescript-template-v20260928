@@ -1,3 +1,4 @@
+import { isSyntaxNode } from "../lint/oxlint/lib/nodes-of-type.ts";
 import { filename, reportViolation, type LintContext, type Node } from "./lint-context.ts";
 
 import type { Visitor } from "vite-plus/lint/plugins";
@@ -25,17 +26,11 @@ const isModuleLocation = (node: Node): boolean =>
   node.property.type === "Identifier" &&
   moduleLocations.has(node.property.name);
 
-const isNode = (candidate: unknown): candidate is Node =>
-  typeof candidate === "object" &&
-  candidate !== null &&
-  "type" in candidate &&
-  typeof candidate.type === "string";
-
 const childrenOf = (node: Node): readonly Node[] =>
   Object.entries(node)
     .filter(([key]) => key !== "parent")
     .flatMap(([, child]: readonly [string, unknown]) =>
-      Array.isArray(child) ? child.filter(isNode) : isNode(child) ? [child] : [],
+      Array.isArray(child) ? child.filter(isSyntaxNode) : isSyntaxNode(child) ? [child] : [],
     );
 
 const readsModuleLocation = (node: Node): boolean =>

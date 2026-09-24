@@ -1,3 +1,4 @@
+import { isPlainObject } from "es-toolkit";
 import { describe, expect, it } from "vite-plus/test";
 
 import { stringEntriesOf } from "../dependency-catalog/record-fields.ts";
@@ -48,7 +49,7 @@ const workflowRuns = (): string[] => {
 };
 
 const scriptCommands = (): string[] => {
-  return typeof scripts === "object" && scripts !== null ? Object.values(scripts).map(String) : [];
+  return isPlainObject(scripts) ? Object.values(scripts).map(String) : [];
 };
 
 const suppressedFiles = (): string[] => {

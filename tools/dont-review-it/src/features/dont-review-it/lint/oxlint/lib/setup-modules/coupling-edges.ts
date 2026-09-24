@@ -1,7 +1,10 @@
-import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
+import { Predicate } from "effect";
+
+import { NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
 import { CONCATENATION_OPERATOR } from "../written-out-text.ts";
 
-export const astFieldsOf = (held: unknown): AstFields | null => (isAstFields(held) ? held : null);
+export const astFieldsOf = (held: unknown): AstFields | null =>
+  Predicate.isReadonlyObject(held) ? held : null;
 
 export const listedFieldsOf = (held: unknown): readonly AstFields[] =>
   (Array.isArray(held) ? held : [held]).map(astFieldsOf).filter((candidate) => candidate !== null);

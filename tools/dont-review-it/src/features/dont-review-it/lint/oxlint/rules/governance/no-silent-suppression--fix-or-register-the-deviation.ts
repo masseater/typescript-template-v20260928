@@ -1,3 +1,5 @@
+import { isPlainObject } from "es-toolkit";
+
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { matchesGlobPath } from "../../lib/glob-path-match.ts";
 import {
@@ -29,8 +31,8 @@ const configuredListOf = (
   ruleOptions: Readonly<Options>,
   { name, carried }: { readonly name: string; readonly carried: readonly string[] },
 ): readonly string[] => {
-  const [declared] = ruleOptions;
-  if (typeof declared !== "object" || declared === null || Array.isArray(declared)) return carried;
+  const [declared]: readonly unknown[] = ruleOptions;
+  if (!isPlainObject(declared)) return carried;
   const listed = declared[name];
   if (!Array.isArray(listed)) return carried;
   return listed.filter((candidate): candidate is string => typeof candidate === "string");

@@ -1,3 +1,5 @@
+import { isPlainObject } from "es-toolkit";
+
 import { originVisitor } from "./alias-visitor.ts";
 import { filename, type LintContext } from "./lint-context.ts";
 
@@ -47,13 +49,8 @@ const isProcessBoundaryBesideExitCode = (origin: Origin): boolean =>
   isProcessOutput(origin) || isRuntimeEntry(origin) || isBuiltinModuleLoader(origin);
 
 const builtinLoaderOnly = (inspection: OptionedLintContext): boolean => {
-  const [setting] = inspection.options;
-  return (
-    typeof setting === "object" &&
-    setting !== null &&
-    "builtinLoaderOnly" in setting &&
-    setting.builtinLoaderOnly === true
-  );
+  const [setting]: readonly unknown[] = inspection.options;
+  return isPlainObject(setting) && setting.builtinLoaderOnly === true;
 };
 
 const processBoundaryVisitor = (inspection: OptionedLintContext): Visitor => {

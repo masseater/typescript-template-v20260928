@@ -1,3 +1,5 @@
+import { isPlainObject } from "es-toolkit";
+
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { path } from "../../../../platform/path.ts";
 import { matchesGlobPath } from "../../lib/glob-path-match.ts";
@@ -13,8 +15,8 @@ const patternsFrom = (
   ruleOptions: Readonly<Options>,
   named: "targets" | "exclude",
 ): readonly string[] => {
-  const [first] = ruleOptions;
-  if (typeof first !== "object" || first === null || Array.isArray(first)) return [];
+  const [first]: readonly unknown[] = ruleOptions;
+  if (!isPlainObject(first)) return [];
   const patterns = first[named];
   if (!Array.isArray(patterns)) return [];
   return patterns.filter((candidate): candidate is string => typeof candidate === "string");

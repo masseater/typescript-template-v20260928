@@ -1,40 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { recordOf, stringEntriesOf } from "./record-fields.ts";
-
-describe("recordOf", () => {
-  describe("a plain object", () => {
-    const it = test.extend("dependencyFields", () => recordOf({ name: "left" }));
-
-    it("passes through", ({ dependencyFields }) => {
-      expect(dependencyFields).toStrictEqual({ name: "left" });
-    });
-  });
-
-  describe("nothing", () => {
-    const it = test.extend("dependencyFields", () => recordOf(null));
-
-    it("turns into an empty record", ({ dependencyFields }) => {
-      expect(dependencyFields).toStrictEqual({});
-    });
-  });
-
-  describe("a list", () => {
-    const it = test.extend("dependencyFields", () => recordOf(["name"]));
-
-    it("turns into an empty record", ({ dependencyFields }) => {
-      expect(dependencyFields).toStrictEqual({});
-    });
-  });
-
-  describe("a scalar", () => {
-    const it = test.extend("dependencyFields", () => recordOf("name"));
-
-    it("turns into an empty record", ({ dependencyFields }) => {
-      expect(dependencyFields).toStrictEqual({});
-    });
-  });
-});
+import { stringEntriesOf } from "./record-fields.ts";
 
 describe("stringEntriesOf", () => {
   describe("a record holding a nested value beside a specifier", () => {

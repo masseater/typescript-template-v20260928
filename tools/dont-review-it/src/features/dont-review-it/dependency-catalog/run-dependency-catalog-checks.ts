@@ -1,4 +1,5 @@
 import { Effect, type FileSystem } from "effect";
+import { isPlainObject } from "es-toolkit";
 
 import { textOrNull } from "../platform/file-system.ts";
 import { path } from "../platform/path.ts";
@@ -18,7 +19,6 @@ import {
   type DependencyCatalogProblem,
   type DependencyCatalogReport,
 } from "./problem.ts";
-import { recordOf } from "./record-fields.ts";
 import {
   catalogReferencingOverridesIn,
   parsedWorkspaceDefinitionOrNull,
@@ -46,8 +46,14 @@ const rootOverrideReferences = ({
   const rootManifest = manifests.find(
     (candidate) => candidate.relativePath === config.manifestFileName,
   );
-  const settings = recordOf(recordOf(rootManifest?.manifest)[config.rootManifestSettingsKey]);
-  return catalogReferencingOverridesIn({ overrides: settings[config.overridesKey], config });
+  const rootFields: unknown = rootManifest?.manifest;
+  const settings: unknown = isPlainObject(rootFields)
+    ? rootFields[config.rootManifestSettingsKey]
+    : null;
+  return catalogReferencingOverridesIn({
+    overrides: isPlainObject(settings) ? settings[config.overridesKey] : null,
+    config,
+  });
 };
 
 const findingsIn = ({

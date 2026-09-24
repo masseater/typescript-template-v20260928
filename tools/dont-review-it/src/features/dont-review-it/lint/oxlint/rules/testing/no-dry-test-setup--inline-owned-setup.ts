@@ -1,4 +1,4 @@
-import { memoize } from "es-toolkit";
+import { isPlainObject, memoize } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { path } from "../../../../platform/path.ts";
@@ -27,8 +27,8 @@ const configuredStrings = (
   ruleOptions: Readonly<Options>,
   named: "allowedFixturePackages" | "setupModuleNamePatterns",
 ): readonly string[] | null => {
-  const [first] = ruleOptions;
-  if (typeof first !== "object" || first === null || Array.isArray(first)) return null;
+  const [first]: readonly unknown[] = ruleOptions;
+  if (!isPlainObject(first)) return null;
 
   const configured = first[named];
   if (!Array.isArray(configured)) return null;

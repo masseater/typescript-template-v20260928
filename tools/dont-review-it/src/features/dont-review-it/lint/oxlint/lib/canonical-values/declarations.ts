@@ -1,3 +1,4 @@
+import { Predicate } from "effect";
 import { parseSync, type Comment, type ParseResult } from "oxc-parser";
 
 import {
@@ -214,13 +215,9 @@ const runtimeVariable = (input: {
 const isNodeFields = (
   candidate: unknown,
 ): candidate is { readonly end: number; readonly start: number; readonly type: string } =>
-  candidate !== null &&
-  typeof candidate === "object" &&
-  "type" in candidate &&
+  Predicate.isReadonlyObject(candidate) &&
   typeof candidate.type === "string" &&
-  "start" in candidate &&
   typeof candidate.start === "number" &&
-  "end" in candidate &&
   typeof candidate.end === "number";
 
 const identifierBinding = (input: {

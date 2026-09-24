@@ -1,3 +1,5 @@
+import { isPlainObject } from "es-toolkit";
+
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { nodesOfType } from "../../lib/nodes-of-type.ts";
 import { resolveBinding } from "../../lib/resolved-bindings.ts";
@@ -20,8 +22,8 @@ type MockVocabulary = {
 };
 
 const listedNames = (ruleOptions: Readonly<Options>, named: string): readonly string[] | null => {
-  const [first] = ruleOptions;
-  if (typeof first !== "object" || first === null || Array.isArray(first)) return null;
+  const [first]: readonly unknown[] = ruleOptions;
+  if (!isPlainObject(first)) return null;
 
   const listed = first[named];
   if (!Array.isArray(listed)) return null;

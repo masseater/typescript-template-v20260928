@@ -1,4 +1,6 @@
-import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
+import { Predicate } from "effect";
+
+import { NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
 
 const BOUND_FIELDS_BY_KIND: Readonly<Record<string, readonly string[]>> = {
   ArrowFunctionExpression: ["params"],
@@ -20,7 +22,7 @@ const READ_ONLY_FIELDS: ReadonlySet<string> = new Set([
 
 const patternNamesIn = (pattern: unknown): readonly string[] => {
   if (Array.isArray(pattern)) return pattern.flatMap(patternNamesIn);
-  if (!isAstFields(pattern)) return [];
+  if (!Predicate.isReadonlyObject(pattern)) return [];
   if (pattern[NODE_TYPE_FIELD] === "Identifier") return [String(pattern.name)];
 
   return Object.entries(pattern)
@@ -35,7 +37,7 @@ const namesBoundAt = (node: AstFields): readonly string[] =>
 
 const namesBoundWithin = (held: unknown): readonly string[] => {
   if (Array.isArray(held)) return held.flatMap(namesBoundWithin);
-  if (!isAstFields(held)) return [];
+  if (!Predicate.isReadonlyObject(held)) return [];
   return [...namesBoundAt(held), ...Object.values(held).flatMap(namesBoundWithin)];
 };
 

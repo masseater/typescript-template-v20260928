@@ -1,3 +1,5 @@
+import { isPlainObject } from "es-toolkit";
+
 import { staticMemberName } from "./static-names.ts";
 import { unwrapSubject } from "./subject-expressions.ts";
 
@@ -8,8 +10,8 @@ const spelledListFrom = (asked: {
   readonly key: string;
   readonly fallback: readonly string[];
 }): readonly string[] => {
-  const [first] = asked.options;
-  if (typeof first !== "object" || first === null || Array.isArray(first)) return asked.fallback;
+  const [first]: readonly unknown[] = asked.options;
+  if (!isPlainObject(first)) return asked.fallback;
 
   const configured = first[asked.key];
   if (!Array.isArray(configured)) return asked.fallback;

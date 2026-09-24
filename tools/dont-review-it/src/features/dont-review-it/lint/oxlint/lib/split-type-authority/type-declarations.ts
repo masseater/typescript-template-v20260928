@@ -1,7 +1,8 @@
+import { Predicate } from "effect";
 import { uniq } from "es-toolkit";
 import { parseSync } from "oxc-parser";
 
-import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
+import { NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
 import {
   canonicalTextOf,
   placeholdersIn,
@@ -100,10 +101,11 @@ const SHAPE_BY_KIND: ReadonlyMap<string, (statement: AstFields) => DeclaredShape
 const EXPORT_KIND = "ExportNamedDeclaration";
 
 const exportedTypeDeclarationOf = (statement: unknown): ExportedTypeDeclaration | null => {
-  if (!isAstFields(statement) || statement[NODE_TYPE_FIELD] !== EXPORT_KIND) return null;
+  if (!Predicate.isReadonlyObject(statement) || statement[NODE_TYPE_FIELD] !== EXPORT_KIND)
+    return null;
 
   const { declaration } = statement;
-  if (!isAstFields(declaration)) return null;
+  if (!Predicate.isReadonlyObject(declaration)) return null;
 
   const shapeOf = SHAPE_BY_KIND.get(String(declaration[NODE_TYPE_FIELD]));
   return shapeOf === undefined ? null : { statement: declaration, shapeOf };

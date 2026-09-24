@@ -1,4 +1,4 @@
-import { isNamedFields } from "../named-fields.ts";
+import { isPlainObject } from "es-toolkit";
 
 import type { Context, RuleMeta } from "@oxlint/plugins";
 import type { RuleMessage } from "../rule-message.ts";
@@ -117,7 +117,7 @@ const rowOf = (declared: Readonly<Record<string, unknown>>): RegistrationRow | n
 };
 
 const fieldsOf = (held: unknown): Readonly<Record<string, unknown>> =>
-  isNamedFields(held) ? held : {};
+  isPlainObject(held) ? held : {};
 
 const readEach = <Read>(
   held: unknown,

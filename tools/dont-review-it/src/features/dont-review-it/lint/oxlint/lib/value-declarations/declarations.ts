@@ -1,18 +1,19 @@
+import { Predicate } from "effect";
 import { parseSync } from "oxc-parser";
 
-import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
+import { NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
 import { importRoutesIn, type ImportRoutes } from "./import-routes.ts";
 import { normalizedBodyOf } from "./normalized-body.ts";
 
 const declaredNameOf = (node: AstFields): string | null => {
   const named = node.id;
-  if (!isAstFields(named) || named[NODE_TYPE_FIELD] !== "Identifier") return null;
+  if (!Predicate.isReadonlyObject(named) || named[NODE_TYPE_FIELD] !== "Identifier") return null;
   return String(named.name);
 };
 
 const boundNodesOf = (statement: AstFields): readonly AstFields[] =>
   statement[NODE_TYPE_FIELD] === "VariableDeclaration"
-    ? (statement.declarations as readonly unknown[]).filter(isAstFields)
+    ? (statement.declarations as readonly unknown[]).filter(Predicate.isReadonlyObject)
     : [statement];
 
 const namesSentAwayIn = (statements: readonly AstFields[]): ReadonlySet<string> =>
@@ -22,7 +23,9 @@ const namesSentAwayIn = (statements: readonly AstFields[]): ReadonlySet<string> 
         (statement) =>
           statement[NODE_TYPE_FIELD] === "ExportNamedDeclaration" && statement.source === null,
       )
-      .flatMap((statement) => (statement.specifiers as readonly unknown[]).filter(isAstFields))
+      .flatMap((statement) =>
+        (statement.specifiers as readonly unknown[]).filter(Predicate.isReadonlyObject),
+      )
       .map((specifier) => String((specifier.local as AstFields).name)),
   );
 
@@ -33,7 +36,7 @@ const exportedNodesIn = (statements: readonly AstFields[]): ReadonlySet<AstField
     statements.flatMap((statement) => {
       const declaring =
         statement[NODE_TYPE_FIELD] === "ExportNamedDeclaration" ? statement.declaration : statement;
-      if (!isAstFields(declaring)) return [];
+      if (!Predicate.isReadonlyObject(declaring)) return [];
       if (declaring !== statement) return boundNodesOf(declaring);
 
       return boundNodesOf(declaring).filter((node) => {
@@ -97,7 +100,7 @@ const valueDeclarationAt = (node: AstFields, reading: Reading): ValueDeclaration
 
 const declarationsWithin = (held: unknown, reading: Reading): readonly ValueDeclaration[] => {
   if (Array.isArray(held)) return held.flatMap((member) => declarationsWithin(member, reading));
-  if (!isAstFields(held)) return [];
+  if (!Predicate.isReadonlyObject(held)) return [];
 
   const declared = valueDeclarationAt(held, reading);
   return [
@@ -115,6 +118,6 @@ export const valueDeclarationsIn = (input: {
   return declarationsWithin(statements, {
     source: input.source,
     routes: importRoutesIn({ body: statements, relativePath: input.relativePath }),
-    exportedNodes: exportedNodesIn(statements.filter(isAstFields)),
+    exportedNodes: exportedNodesIn(statements.filter(Predicate.isReadonlyObject)),
   });
 };

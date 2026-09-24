@@ -1,3 +1,5 @@
+import { isPlainObject } from "es-toolkit";
+
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import {
   isAssertionChain,
@@ -27,8 +29,8 @@ const exactRestatements: ReadonlyMap<string, string> = new Map(
 const ALLOWED_MATCHERS_OPTION = "allowedMatchers";
 
 const allowedMatchersFrom = (ruleOptions: Readonly<Options>): ReadonlySet<string> => {
-  const [first] = ruleOptions;
-  if (typeof first !== "object" || first === null || Array.isArray(first)) return new Set();
+  const [first]: readonly unknown[] = ruleOptions;
+  if (!isPlainObject(first)) return new Set();
 
   const configured = first[ALLOWED_MATCHERS_OPTION];
   if (!Array.isArray(configured)) return new Set();

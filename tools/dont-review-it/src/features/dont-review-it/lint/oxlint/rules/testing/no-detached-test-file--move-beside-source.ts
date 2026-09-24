@@ -1,7 +1,7 @@
 // @effect-diagnostics-next-line nodeBuiltinImport:off
 import { existsSync } from "node:fs";
 
-import { memoize } from "es-toolkit";
+import { isPlainObject, memoize } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { path } from "../../../../platform/path.ts";
@@ -17,8 +17,8 @@ const stringsFrom = (
   ruleOptions: Readonly<Options>,
   named: "testFileSuffixes" | "exemptPaths",
 ): readonly string[] => {
-  const [first] = ruleOptions;
-  if (typeof first !== "object" || first === null || Array.isArray(first)) return [];
+  const [first]: readonly unknown[] = ruleOptions;
+  if (!isPlainObject(first)) return [];
   const configured = first[named];
   if (!Array.isArray(configured)) return [];
   return configured.filter((candidate): candidate is string => typeof candidate === "string");

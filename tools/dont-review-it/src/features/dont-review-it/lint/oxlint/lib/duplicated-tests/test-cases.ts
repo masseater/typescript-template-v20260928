@@ -1,6 +1,7 @@
+import { Predicate } from "effect";
 import { parseSync } from "oxc-parser";
 
-import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
+import { NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
 import {
   DEFAULT_SOURCE_NAME,
   nodeCountOf,
@@ -17,17 +18,20 @@ const receiverOf = (callee: AstFields): unknown => {
   if (callee[NODE_TYPE_FIELD] === "CallExpression") return callee.callee;
   if (callee[NODE_TYPE_FIELD] !== "MemberExpression") return null;
   const member = callee.property;
-  return isAstFields(member) && member.name === FIXTURE_BUILDER_MEMBER ? null : callee.object;
+  return Predicate.isReadonlyObject(member) && member.name === FIXTURE_BUILDER_MEMBER
+    ? null
+    : callee.object;
 };
 
 const calleeRootName = (callee: unknown): string | null => {
-  if (!isAstFields(callee)) return null;
+  if (!Predicate.isReadonlyObject(callee)) return null;
   if (callee[NODE_TYPE_FIELD] === "Identifier") return String(callee.name);
   return calleeRootName(receiverOf(callee));
 };
 
 const titleOf = (handedArgument: unknown): string | null => {
-  if (!isAstFields(handedArgument) || handedArgument[NODE_TYPE_FIELD] !== "Literal") return null;
+  if (!Predicate.isReadonlyObject(handedArgument) || handedArgument[NODE_TYPE_FIELD] !== "Literal")
+    return null;
   return typeof handedArgument.value === "string" ? handedArgument.value : null;
 };
 
@@ -37,7 +41,8 @@ const RUNNER_BODY_TYPES: ReadonlySet<string> = new Set([
 ]);
 
 const runnerBodyOf = (handedArgument: unknown): unknown =>
-  isAstFields(handedArgument) && RUNNER_BODY_TYPES.has(String(handedArgument[NODE_TYPE_FIELD]))
+  Predicate.isReadonlyObject(handedArgument) &&
+  RUNNER_BODY_TYPES.has(String(handedArgument[NODE_TYPE_FIELD]))
     ? handedArgument.body
     : null;
 
@@ -80,7 +85,7 @@ const situatedTestCasesIn = (
 ): readonly { readonly declaration: BodyDeclaration; readonly situation: readonly string[] }[] => {
   if (Array.isArray(syntaxField))
     return syntaxField.flatMap((part) => situatedTestCasesIn(part, { situation, source }));
-  if (!isAstFields(syntaxField)) return [];
+  if (!Predicate.isReadonlyObject(syntaxField)) return [];
 
   const testCase = testCaseIn(syntaxField, source);
   if (testCase !== null) return [{ declaration: testCase, situation }];

@@ -1,7 +1,8 @@
+import { isPlainObject } from "es-toolkit";
+
 import { path } from "../../../../platform/path.ts";
 import { matchesGlobPath } from "../glob-path-match.ts";
 import { listedTexts } from "../listed-texts.ts";
-import { isNamedFields } from "../named-fields.ts";
 import { segmentsOf } from "../path-segments.ts";
 
 import type { Context, RuleMeta } from "@oxlint/plugins";
@@ -45,8 +46,8 @@ const declaredListOf = (
   ruleSettings: Context["options"],
   settingField: string,
 ): readonly unknown[] => {
-  const [first] = ruleSettings;
-  if (!isNamedFields(first)) return [];
+  const [first]: readonly unknown[] = ruleSettings;
+  if (!isPlainObject(first)) return [];
   const declared = first[settingField];
   return Array.isArray(declared) ? declared : [];
 };
@@ -59,7 +60,7 @@ export type RestrictedTargetEntry = {
 };
 
 const entryOf = (held: unknown): RestrictedTargetEntry | null => {
-  if (!isNamedFields(held)) return null;
+  if (!isPlainObject(held)) return null;
   const { module, substitute } = held;
   if (typeof module !== "string" || module === "") return null;
   if (typeof substitute !== "string") return null;
@@ -85,7 +86,7 @@ export type InternalAlias = {
 };
 
 const aliasOf = (held: unknown): InternalAlias | null => {
-  if (!isNamedFields(held)) return null;
+  if (!isPlainObject(held)) return null;
   const { prefix, directory } = held;
   if (typeof prefix !== "string" || prefix === "") return null;
   return typeof directory === "string" ? { prefix, directory } : null;

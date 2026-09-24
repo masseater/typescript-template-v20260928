@@ -1,4 +1,4 @@
-import { zip } from "es-toolkit";
+import { isPlainObject, zip } from "es-toolkit";
 
 import { matchesGlobSegment } from "../../../../lint-rule-authoring/index.ts";
 import { path } from "../../../../platform/path.ts";
@@ -13,8 +13,7 @@ import { toPosixPath } from "../posix-path.ts";
 
 const manifestOf = (packageDirectory: string): Readonly<Record<string, unknown>> | null => {
   const read = readJsonFile(path.join(packageDirectory, MANIFEST_FILE_NAME));
-  if (read === null || typeof read !== "object" || Array.isArray(read)) return null;
-  return read as Readonly<Record<string, unknown>>;
+  return isPlainObject(read) ? read : null;
 };
 
 const RELATIVE_TARGET_PREFIX = "./";
@@ -31,12 +30,11 @@ const entriesUnder = (
   if (typeof held === "string") {
     return held.startsWith(RELATIVE_TARGET_PREFIX) ? [{ subpath, target: held }] : [];
   }
-  if (depth > EXPORTS_CONDITION_DEPTH_LIMIT || held === null || typeof held !== "object") {
-    return [];
-  }
+  if (depth > EXPORTS_CONDITION_DEPTH_LIMIT) return [];
   if (Array.isArray(held)) {
     return held.flatMap((nested) => entriesUnder(nested, { subpath, depth: depth + 1 }));
   }
+  if (!isPlainObject(held)) return [];
   return Object.entries(held).flatMap(([named, nested]) =>
     entriesUnder(nested, {
       subpath: named.startsWith(".") ? named : subpath,

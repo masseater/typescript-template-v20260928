@@ -1,6 +1,7 @@
 import { NodeServices } from "@effect/platform-node";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, FileSystem, Path, Schema } from "effect";
+import { isPlainObject } from "es-toolkit";
 import { describe, expect, it } from "vite-plus/test";
 
 const configFiles = [".fallowrc.json", ".fallowrc.production.json"] as const;
@@ -33,7 +34,7 @@ const stringsIn = (value: unknown): readonly string[] => {
   if (Array.isArray(value)) {
     return value.flatMap(stringsIn);
   }
-  if (typeof value === "object" && value !== null) {
+  if (isPlainObject(value)) {
     return Object.values(value).flatMap(stringsIn);
   }
   return [];
@@ -88,7 +89,7 @@ const exclusionsOf = (file: string): readonly string[] =>
 
 const rulesTurnedOff = (file: string): readonly string[] => {
   const rules = configOf(file)["rules"];
-  return typeof rules === "object" && rules !== null
+  return isPlainObject(rules)
     ? Object.entries(rules).flatMap(([rule, level]) => (level === "off" ? [rule] : []))
     : [];
 };

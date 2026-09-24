@@ -1,6 +1,7 @@
 import { NodeServices } from "@effect/platform-node";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, FileSystem, Path } from "effect";
+import { isPlainObject } from "es-toolkit";
 import { describe, expect, it } from "vite-plus/test";
 
 import { overridePluginMismatches } from "./lint-test-fixture.ts";
@@ -71,7 +72,7 @@ const missingWorkspaceGlobs = (patterns: readonly string[]): string[] => {
 };
 
 const extendsValue = (config: unknown): string | undefined => {
-  if (typeof config !== "object" || config === null) {
+  if (!isPlainObject(config)) {
     return undefined;
   }
   const value = Reflect.get(config, "extends");
@@ -79,7 +80,7 @@ const extendsValue = (config: unknown): string | undefined => {
 };
 
 const includeValue = (config: unknown): readonly string[] | undefined => {
-  if (typeof config !== "object" || config === null) {
+  if (!isPlainObject(config)) {
     return undefined;
   }
   const value = Reflect.get(config, "include");
@@ -135,7 +136,7 @@ const viteConfigsOutsideInclude = (): string[] => {
 const qualityIncludesDoctor = (): boolean => {
   const [module] = Object.values(qualityTsconfig);
   const config = module?.default;
-  if (typeof config !== "object" || config === null) {
+  if (!isPlainObject(config)) {
     return false;
   }
   const include = includeValue(config);

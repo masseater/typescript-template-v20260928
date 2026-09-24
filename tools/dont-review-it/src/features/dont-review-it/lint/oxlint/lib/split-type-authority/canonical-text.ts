@@ -1,6 +1,7 @@
+import { Predicate } from "effect";
 import { uniq } from "es-toolkit";
 
-import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
+import { NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
 
 const SPAN_FIELDS: ReadonlySet<string> = new Set(["end", "loc", "range", "start"]);
 
@@ -12,7 +13,7 @@ const namesIn = (
   pickedNamesOf: (node: AstFields) => readonly string[],
 ): string[] => {
   if (Array.isArray(node)) return node.flatMap((member) => namesIn(member, pickedNamesOf));
-  if (!isAstFields(node)) return [];
+  if (!Predicate.isReadonlyObject(node)) return [];
   return [
     ...pickedNamesOf(node),
     ...comparedFieldsOf(node).flatMap(([, held]) => namesIn(held, pickedNamesOf)),
@@ -68,7 +69,7 @@ export const canonicalTextOf = (node: unknown, placeholders: TypeParameterPlaceh
   if (Array.isArray(node)) {
     return `[${node.map((member) => canonicalTextOf(member, placeholders)).join(",")}]`;
   }
-  if (!isAstFields(node)) return JSON.stringify(node);
+  if (!Predicate.isReadonlyObject(node)) return JSON.stringify(node);
 
   const nodeKind = String(node[NODE_TYPE_FIELD]);
   const unordered = UNORDERED_LISTS.get(nodeKind);

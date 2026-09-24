@@ -1,9 +1,8 @@
-import { memoize } from "es-toolkit";
+import { isPlainObject, memoize } from "es-toolkit";
 import { parse } from "jsonc-parser";
 
 import { path } from "../../../platform/path.ts";
 import { readTextFile } from "./canonical-values/source-files.ts";
-import { isNamedFields } from "./named-fields.ts";
 
 export type TsconfigExtends = {
   readonly tsconfigPath: string;
@@ -15,7 +14,7 @@ export const TSCONFIG_FILE_NAME = "tsconfig.json";
 export const parseJsonc: (text: string) => unknown = parse;
 
 const specifiersOf = (config: unknown): readonly string[] => {
-  if (!isNamedFields(config)) return [];
+  if (!isPlainObject(config)) return [];
   const declared = config.extends;
   if (typeof declared === "string") return [declared];
   if (!Array.isArray(declared)) return [];

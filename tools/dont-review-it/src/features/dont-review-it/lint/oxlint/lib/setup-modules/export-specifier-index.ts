@@ -1,4 +1,4 @@
-import { groupBy, uniq, uniqBy } from "es-toolkit";
+import { groupBy, isPlainObject, uniq, uniqBy } from "es-toolkit";
 
 import { path } from "../../../../platform/path.ts";
 import {
@@ -21,9 +21,7 @@ const subpathTargetPairsOf = (
     return [[subpath, path.resolve(packageDirectory, exportTarget)]];
   }
   if (depth > EXPORTS_CONDITION_DEPTH_LIMIT) return [];
-  if (exportTarget === null || typeof exportTarget !== "object" || Array.isArray(exportTarget)) {
-    return [];
-  }
+  if (!isPlainObject(exportTarget)) return [];
   return Object.entries(exportTarget)
     .filter(([conditionName]) => conditionName !== `./${MANIFEST_FILE_NAME}`)
     .flatMap(([conditionName, nestedTarget]) =>
@@ -58,14 +56,10 @@ const manifestSurfaceOf = (
   packageDirectory: string,
 ): { readonly packageName: string; readonly exportsField: unknown } | null => {
   const manifest = readJsonFile(path.join(packageDirectory, MANIFEST_FILE_NAME));
-  if (manifest === null || typeof manifest !== "object") return null;
-  if (!("name" in manifest) || typeof manifest.name !== "string" || manifest.name.length === 0) {
-    return null;
-  }
-  return {
-    packageName: manifest.name,
-    exportsField: "exports" in manifest ? manifest.exports : undefined,
-  };
+  if (!isPlainObject(manifest)) return null;
+  const packageName: unknown = manifest.name;
+  if (typeof packageName !== "string" || packageName.length === 0) return null;
+  return { packageName, exportsField: manifest.exports };
 };
 
 const RE_EXPORT_DEPTH_LIMIT = 4;

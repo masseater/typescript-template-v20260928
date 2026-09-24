@@ -1,4 +1,6 @@
-import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
+import { Predicate } from "effect";
+
+import { NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
 import {
   importedDeclarationOf,
   type ImportedName,
@@ -28,7 +30,7 @@ const readPositionsOf = (node: AstFields): readonly unknown[] => {
 
 const namesReadWithin = (held: unknown): readonly string[] => {
   if (Array.isArray(held)) return held.flatMap(namesReadWithin);
-  if (!isAstFields(held)) return [];
+  if (!Predicate.isReadonlyObject(held)) return [];
   if (held[NODE_TYPE_FIELD] === IDENTIFIER_KIND) return [String(held.name)];
   return readPositionsOf(held).flatMap(namesReadWithin);
 };

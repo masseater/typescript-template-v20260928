@@ -1,3 +1,4 @@
+import { isPlainObject } from "es-toolkit";
 import { parse } from "shell-quote";
 
 import { launchers, packageManagers, scriptPolicy } from "./script-policy-test-fixture.ts";
@@ -34,11 +35,7 @@ const stringTokens = (tokens: readonly unknown[]): string[] => {
 };
 
 const separatesSegments = (token: unknown): boolean =>
-  typeof token === "object" &&
-  token !== null &&
-  "op" in token &&
-  typeof token.op === "string" &&
-  segmentOperators.has(token.op);
+  isPlainObject(token) && typeof token.op === "string" && segmentOperators.has(token.op);
 
 const words = (command: string): readonly (readonly string[])[] => {
   assertBalancedShellQuotes(command);
@@ -124,11 +121,11 @@ function commandViolations(name: string, command: string): string[] {
 }
 
 function scriptViolations(manifest: unknown): string[] {
-  if (typeof manifest !== "object" || manifest === null || !("scripts" in manifest)) {
+  if (!isPlainObject(manifest) || !("scripts" in manifest)) {
     return [];
   }
   const scripts: unknown = manifest.scripts;
-  if (typeof scripts !== "object" || scripts === null || Array.isArray(scripts)) {
+  if (!isPlainObject(scripts)) {
     throw new Error("package.json scripts must be an object");
   }
   return Object.entries(scripts).flatMap(([entryName, command]: readonly [string, unknown]) => {

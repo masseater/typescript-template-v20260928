@@ -1,3 +1,5 @@
+import { isPlainObject } from "es-toolkit";
+
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { nodesOfType } from "../../lib/nodes-of-type.ts";
 import { propertyKeyOf } from "../../lib/object-literal.ts";
@@ -13,8 +15,8 @@ import type { ESTree } from "@oxlint/plugins";
 
 const listedPluginsOf = (ruleOptions: readonly unknown[]): readonly string[] => {
   const [held] = ruleOptions;
-  if (held === null || typeof held !== "object") return [];
-  const listed = (held as { readonly plugins?: unknown }).plugins;
+  if (!isPlainObject(held)) return [];
+  const listed: unknown = held.plugins;
   return Array.isArray(listed)
     ? listed.filter((named): named is string => typeof named === "string")
     : [];

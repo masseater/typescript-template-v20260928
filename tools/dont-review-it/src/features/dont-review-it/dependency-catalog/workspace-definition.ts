@@ -1,7 +1,7 @@
-import { attempt } from "es-toolkit";
+import { attempt, isPlainObject } from "es-toolkit";
 import { parse } from "yaml";
 
-import { recordOf, stringEntriesOf } from "./record-fields.ts";
+import { stringEntriesOf } from "./record-fields.ts";
 
 import type { DependencyCatalogChecksConfig } from "./config.ts";
 
@@ -58,7 +58,9 @@ const parseWorkspaceDefinition = ({
   readonly source: string;
   readonly config: DependencyCatalogChecksConfig;
 }): WorkspaceDefinition => {
-  const definition = recordOf(parse(source));
+  const parsed: unknown = parse(source);
+  const definition = isPlainObject(parsed) ? parsed : {};
+  const namedCatalogs: unknown = definition[config.namedCatalogsKey];
   const declaredPatterns = definition[config.packagesKey];
 
   return {
@@ -71,7 +73,7 @@ const parseWorkspaceDefinition = ({
         dependencyName,
         version,
       })),
-      ...Object.entries(recordOf(definition[config.namedCatalogsKey])).flatMap(
+      ...Object.entries(isPlainObject(namedCatalogs) ? namedCatalogs : {}).flatMap(
         ([catalogName, declaredEntries]) =>
           stringEntriesOf(declaredEntries).map(([dependencyName, version]) => ({
             catalogName,

@@ -1,10 +1,9 @@
+import { Predicate } from "effect";
+
 import type { UnknownFields } from "./unknown-fields.ts";
 
-export const isAstNode = (candidate: unknown): candidate is UnknownFields =>
-  typeof candidate === "object" && candidate !== null;
-
 export const nodesIn = (candidate: unknown): readonly UnknownFields[] =>
-  Array.isArray(candidate) ? candidate.filter(isAstNode) : [];
+  Array.isArray(candidate) ? candidate.filter(Predicate.isReadonlyObject) : [];
 
 export const keyNameOf = (property: UnknownFields): string | null => {
   const named = property.key as UnknownFields;
@@ -115,7 +114,10 @@ export const resolveText = (input: ResolveInput): string | null => {
 
 export const declaratorsIn = (statement: UnknownFields): readonly UnknownFields[] => {
   if (statement.type === "VariableDeclaration") return nodesIn(statement.declarations);
-  if (statement.type === "ExportNamedDeclaration" && isAstNode(statement.declaration)) {
+  if (
+    statement.type === "ExportNamedDeclaration" &&
+    Predicate.isReadonlyObject(statement.declaration)
+  ) {
     return declaratorsIn(statement.declaration);
   }
   return [];
@@ -126,7 +128,7 @@ export const moduleConstantsIn = (statements: readonly UnknownFields[]): Constan
     statements.flatMap(declaratorsIn).flatMap((declarator) => {
       const binding = declarator.id as UnknownFields;
       const initializer = declarator.init;
-      return binding.type === "Identifier" && isAstNode(initializer)
+      return binding.type === "Identifier" && Predicate.isReadonlyObject(initializer)
         ? [[binding.name as string, initializer] as const]
         : [];
     }),

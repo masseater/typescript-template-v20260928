@@ -2,6 +2,7 @@ import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
 import { Effect, FileSystem, Path, Schema, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
+import { isPlainObject } from "es-toolkit";
 import { describe, expect } from "vite-plus/test";
 
 import { filePathOf } from "./platform/path.ts";
@@ -110,7 +111,7 @@ const lintedConsumer = (consumerPath: string) =>
 
 const messagesIn = (jsonNode: unknown): readonly string[] => {
   if (Array.isArray(jsonNode)) return jsonNode.flatMap(messagesIn);
-  if (jsonNode === null || typeof jsonNode !== "object") return [];
+  if (!isPlainObject(jsonNode)) return [];
   return Object.entries(jsonNode).flatMap(([fieldName, nested]) =>
     fieldName === "message" && typeof nested === "string" ? [nested] : messagesIn(nested),
   );

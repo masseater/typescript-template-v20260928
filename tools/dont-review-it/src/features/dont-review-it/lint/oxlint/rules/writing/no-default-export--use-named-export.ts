@@ -1,3 +1,5 @@
+import { isPlainObject } from "es-toolkit";
+
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { path } from "../../../../platform/path.ts";
 
@@ -9,8 +11,8 @@ const exportedNameOf = (exported: ESTree.ModuleExportName): string =>
   exported.type === "Literal" ? exported.value : exported.name;
 
 const toolRequiredFileNamesFrom = (ruleOptions: Readonly<Options>): readonly string[] => {
-  const [first] = ruleOptions;
-  if (typeof first !== "object" || first === null || Array.isArray(first)) return [];
+  const [first]: readonly unknown[] = ruleOptions;
+  if (!isPlainObject(first)) return [];
 
   const { toolRequiredFileNames } = first;
   if (!Array.isArray(toolRequiredFileNames)) return [];

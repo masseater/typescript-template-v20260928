@@ -1,4 +1,4 @@
-import { isNil } from "es-toolkit";
+import { isNil, isPlainObject } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import {
@@ -24,8 +24,8 @@ const DEFAULT_UNCONSTRAINED_TYPE_NAMES: readonly string[] = ["Function"];
 const namedSetsFrom =
   (ruleOptions: Readonly<Options>) =>
   (named: string, fallback: readonly string[]): ReadonlySet<string> => {
-    const [first] = ruleOptions;
-    if (typeof first !== "object" || first === null || Array.isArray(first)) {
+    const [first]: readonly unknown[] = ruleOptions;
+    if (!isPlainObject(first)) {
       return new Set(fallback);
     }
 

@@ -1,11 +1,13 @@
+import { isPlainObject } from "es-toolkit";
+
 import { createLintRuleAuthoringRule } from "../../../../create-rule.ts";
 import { symbolPrefixedSegmentsOf } from "../../../../symbol-prefixed-segments.ts";
 
 import type { ESTree, Options } from "@oxlint/plugins";
 
 const allowedNamesFrom = (ruleOptions: Readonly<Options>): readonly string[] => {
-  const [first] = ruleOptions;
-  if (typeof first !== "object" || first === null || Array.isArray(first)) return [];
+  const [first]: readonly unknown[] = ruleOptions;
+  if (!isPlainObject(first)) return [];
   const { allowedNames } = first;
   if (!Array.isArray(allowedNames)) return [];
   return allowedNames.filter(

@@ -1,4 +1,6 @@
-import { BACK_REFERENCE_FIELD, isAstFields, NODE_TYPE_FIELD } from "./ast-node.ts";
+import { Predicate } from "effect";
+
+import { BACK_REFERENCE_FIELD, NODE_TYPE_FIELD } from "./ast-node.ts";
 
 import type { ESTree } from "@oxlint/plugins";
 
@@ -13,29 +15,29 @@ type NodeOfType<T extends ESTree.Node["type"]> = ESTree.Node extends infer Held
 const isNodeOfType = <T extends ESTree.Node["type"]>(
   held: unknown,
   nodeType: T,
-): held is NodeOfType<T> => isAstFields(held) && held[NODE_TYPE_FIELD] === nodeType;
+): held is NodeOfType<T> => Predicate.isReadonlyObject(held) && held[NODE_TYPE_FIELD] === nodeType;
 
 type TypedNodeVisit<T extends ESTree.Node["type"]> = {
   readonly node: NodeOfType<T>;
   readonly ancestors: readonly ESTree.Node[];
 };
 
-const isNode = (held: unknown): held is ESTree.Node =>
-  isAstFields(held) && typeof held[NODE_TYPE_FIELD] === "string";
+export const isSyntaxNode = (held: unknown): held is ESTree.Node =>
+  Predicate.isReadonlyObject(held) && typeof held[NODE_TYPE_FIELD] === "string";
 
 const visitsWithin = <T extends ESTree.Node["type"]>(
   held: unknown,
   walk: { readonly nodeType: T; readonly ancestors: readonly ESTree.Node[] },
 ): readonly TypedNodeVisit<T>[] => {
   if (Array.isArray(held)) return held.flatMap((listed) => visitsWithin(listed, walk));
-  if (!isAstFields(held)) return [];
+  if (!Predicate.isReadonlyObject(held)) return [];
 
   const nested = Object.entries(held)
     .filter(([field]) => field !== BACK_REFERENCE_FIELD)
     .flatMap(([, carried]) =>
       visitsWithin(carried, {
         nodeType: walk.nodeType,
-        ancestors: isNode(held) ? [...walk.ancestors, held] : walk.ancestors,
+        ancestors: isSyntaxNode(held) ? [...walk.ancestors, held] : walk.ancestors,
       }),
     );
   return isNodeOfType(held, walk.nodeType)

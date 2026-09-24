@@ -1,4 +1,4 @@
-import { uniq } from "es-toolkit";
+import { isPlainObject, uniq } from "es-toolkit";
 
 import { path } from "../../../../platform/path.ts";
 import { pathIsInside } from "../path-is-inside.ts";
@@ -92,7 +92,7 @@ export const packageExportTargetPatterns = ({
 }): readonly string[] | null => {
   if (typeof exportTarget === "string") return [exportTarget];
   if (exportTarget === null) return [];
-  if (depth > EXPORTS_CONDITION_DEPTH_LIMIT || typeof exportTarget !== "object") return null;
+  if (depth > EXPORTS_CONDITION_DEPTH_LIMIT) return null;
   if (Array.isArray(exportTarget)) {
     const nested = exportTarget.map((alternative) =>
       packageExportTargetPatterns({ depth: depth + 1, includeTypes, value: alternative }),
@@ -101,6 +101,7 @@ export const packageExportTargetPatterns = ({
       ? null
       : nested.flatMap((patterns) => patterns as readonly string[]);
   }
+  if (!isPlainObject(exportTarget)) return null;
   const nested = Object.entries(exportTarget).flatMap(([condition, branchTarget]) => {
     if ((!includeTypes && /^types(?:@|$)/u.test(condition)) || branchTarget === null) return [];
     return [packageExportTargetPatterns({ depth: depth + 1, includeTypes, value: branchTarget })];
@@ -157,7 +158,7 @@ export const substitutePackageExportPattern = (exportTarget: unknown, capture: s
   if (Array.isArray(exportTarget)) {
     return exportTarget.map((alternative) => substitutePackageExportPattern(alternative, capture));
   }
-  if (exportTarget === null || typeof exportTarget !== "object") return exportTarget;
+  if (!isPlainObject(exportTarget)) return exportTarget;
   return Object.fromEntries(
     Object.entries(exportTarget).map(([condition, branchTarget]) => [
       condition,

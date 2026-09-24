@@ -1,3 +1,5 @@
+import { isPlainObject } from "es-toolkit";
+
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { ancestorsOf } from "../../lib/ast-node.ts";
 import { nodesOfType } from "../../lib/nodes-of-type.ts";
@@ -48,8 +50,8 @@ const PARSED_VALUE_MATCHER_OPTION = "parsedValueMatcher";
 const DEFAULT_PARSED_VALUE_MATCHER = "toHaveParsedFields";
 
 const parsedValueMatcherFrom = (ruleOptions: Readonly<Options>): string => {
-  const [first] = ruleOptions;
-  if (typeof first !== "object" || first === null || Array.isArray(first)) {
+  const [first]: readonly unknown[] = ruleOptions;
+  if (!isPlainObject(first)) {
     return DEFAULT_PARSED_VALUE_MATCHER;
   }
   const configured = first[PARSED_VALUE_MATCHER_OPTION];

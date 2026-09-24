@@ -1,9 +1,8 @@
-import { maxBy, memoize } from "es-toolkit";
+import { isPlainObject, maxBy, memoize } from "es-toolkit";
 
 import { path } from "../../../platform/path.ts";
 import { readTextFile } from "./canonical-values/source-files.ts";
 import { listedTexts } from "./listed-texts.ts";
-import { namedFieldsOf } from "./named-fields.ts";
 import { parseJsonc, TSCONFIG_FILE_NAME } from "./nearest-tsconfig.ts";
 
 const PLACE_NAMING_SPECIFIER = /^(?:\.{1,2}\/|#)/u;
@@ -19,9 +18,10 @@ const aliasesIn = (
   configPath: string,
   config: Readonly<Record<string, unknown>>,
 ): PathAliases | null => {
-  const compilerOptions = namedFieldsOf(config.compilerOptions);
-  const declared = compilerOptions === null ? null : namedFieldsOf(compilerOptions.paths);
-  if (compilerOptions === null || declared === null) return null;
+  const compilerOptions: unknown = config.compilerOptions;
+  if (!isPlainObject(compilerOptions)) return null;
+  const declared: unknown = compilerOptions.paths;
+  if (!isPlainObject(declared)) return null;
 
   const baseUrl = textOf(compilerOptions.baseUrl) ?? ".";
   const patternTargets = new Map(
@@ -39,8 +39,8 @@ const inheritedSpecifiersOf = (config: Readonly<Record<string, unknown>>): reado
 const aliasesAt = (configPath: string, visited: ReadonlySet<string>): PathAliases | null => {
   if (visited.has(configPath)) return null;
   const configJsonc = readTextFile(configPath);
-  const config = configJsonc === null ? null : namedFieldsOf(parseJsonc(configJsonc));
-  if (config === null) return null;
+  const config = configJsonc === null ? null : parseJsonc(configJsonc);
+  if (!isPlainObject(config)) return null;
 
   const own = aliasesIn(configPath, config);
   if (own !== null) return own;

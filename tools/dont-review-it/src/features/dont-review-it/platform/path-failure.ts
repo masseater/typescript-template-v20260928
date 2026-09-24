@@ -1,3 +1,4 @@
+import { Predicate } from "effect";
 import { attempt } from "es-toolkit";
 
 import type { PlatformError } from "effect";
@@ -11,8 +12,7 @@ const NOT_A_LINK_CODE = "EINVAL";
 const LINK_LOOP_CODE = "ELOOP";
 
 export const failureCodeOf = (failure: unknown): string | null => {
-  if (typeof failure !== "object" || failure === null) return null;
-  if (!("code" in failure)) return null;
+  if (!Predicate.hasProperty(failure, "code")) return null;
   return typeof failure.code === "string" ? failure.code : null;
 };
 

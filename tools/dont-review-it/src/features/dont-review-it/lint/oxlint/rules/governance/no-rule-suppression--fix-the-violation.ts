@@ -1,4 +1,4 @@
-import { uniq } from "es-toolkit";
+import { isPlainObject, uniq } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { LINT_SEVERITY } from "../../../../lint-rule-authoring/index.ts";
@@ -44,8 +44,8 @@ const DETERMINISM_GATE_RULES: readonly string[] = [
 ];
 
 const targetRulesFrom = (ruleOptions: Readonly<Options>): readonly string[] => {
-  const [declared] = ruleOptions;
-  if (typeof declared !== "object" || declared === null || Array.isArray(declared)) {
+  const [declared]: readonly unknown[] = ruleOptions;
+  if (!isPlainObject(declared)) {
     return DETERMINISM_GATE_RULES;
   }
   const listed = declared.targetRules;

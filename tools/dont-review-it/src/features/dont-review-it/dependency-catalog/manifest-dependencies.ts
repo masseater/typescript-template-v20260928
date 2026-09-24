@@ -1,4 +1,6 @@
-import { recordOf, stringEntriesOf } from "./record-fields.ts";
+import { isPlainObject } from "es-toolkit";
+
+import { stringEntriesOf } from "./record-fields.ts";
 
 import type { DependencyCatalogChecksConfig } from "./config.ts";
 
@@ -18,9 +20,11 @@ export const dependencyReferencesIn = ({
   readonly config: DependencyCatalogChecksConfig;
 }): readonly DependencyReference[] =>
   config.dependencyFields.flatMap((field) =>
-    stringEntriesOf(recordOf(manifest)[field]).map(([dependencyName, specifier]) => ({
-      manifestPath,
-      dependencyName,
-      specifier,
-    })),
+    stringEntriesOf(isPlainObject(manifest) ? manifest[field] : null).map(
+      ([dependencyName, specifier]) => ({
+        manifestPath,
+        dependencyName,
+        specifier,
+      }),
+    ),
   );

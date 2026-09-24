@@ -1,4 +1,5 @@
-import { isRecord } from "../dependency-catalog/record-fields.ts";
+import { isPlainObject } from "es-toolkit";
+
 import { repositoryRelative } from "./repository-path-test-fixture.ts";
 import { replacementFor, replacementMessage } from "./retired-packages.ts";
 import { dependencyFields } from "./workspace-layout.ts";
@@ -10,7 +11,9 @@ interface WorkspaceManifest {
 }
 
 const field = (declared: unknown, propertyName: string): unknown =>
-  isRecord(declared) ? Object.getOwnPropertyDescriptor(declared, propertyName)?.value : undefined;
+  isPlainObject(declared)
+    ? Object.getOwnPropertyDescriptor(declared, propertyName)?.value
+    : undefined;
 
 const rootManifests: Readonly<Record<string, unknown>> = import.meta.glob(
   "../../../../../../package.json",
@@ -43,7 +46,7 @@ const applicationNames = (workspaces: readonly WorkspaceManifest[]): string[] =>
 const declaredDependencies = (manifest: unknown): string[] => {
   return dependencyFields.flatMap((key) => {
     const value = field(manifest, key);
-    return typeof value === "object" && value !== null ? Object.keys(value) : [];
+    return isPlainObject(value) ? Object.keys(value) : [];
   });
 };
 
@@ -90,7 +93,7 @@ const developmentOnlyDependencyViolations = (
       return [];
     }
     const dependencies = field(manifest, "dependencies");
-    if (typeof dependencies !== "object" || dependencies === null) {
+    if (!isPlainObject(dependencies)) {
       return [];
     }
     return Object.keys(dependencies)

@@ -1,6 +1,7 @@
 // @effect-diagnostics-next-line nodeBuiltinImport:off
 import { execFileSync } from "node:child_process";
 
+import { Predicate } from "effect";
 import { attempt, omitBy } from "es-toolkit";
 
 import { gitExecutablePath } from "../../../repository-checks/index.ts";
@@ -13,10 +14,7 @@ export type GitEnvironment = {
 };
 
 const answeredWithoutValue = (failure: unknown): boolean =>
-  typeof failure === "object" &&
-  failure !== null &&
-  "status" in failure &&
-  typeof failure.status === "number";
+  Predicate.hasProperty(failure, "status") && typeof failure.status === "number";
 
 export const gitOutput = (
   gitArguments: readonly string[],

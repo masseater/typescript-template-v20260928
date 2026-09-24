@@ -1,3 +1,5 @@
+import { isPlainObject } from "es-toolkit";
+
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { nodesOfType } from "../../lib/nodes-of-type.ts";
 import { isAssertionEntryCall } from "../../lib/spec-syntax/assertion-entries.ts";
@@ -22,8 +24,8 @@ import type { ScopeLookup } from "../../lib/resolved-bindings.ts";
 const SNAPSHOT_MATCHERS_OPTION = "snapshotMatchers";
 
 const snapshotMatchersFrom = (ruleOptions: Readonly<Options>): ReadonlySet<string> => {
-  const [first] = ruleOptions;
-  if (typeof first !== "object" || first === null || Array.isArray(first)) return SNAPSHOT_MATCHERS;
+  const [first]: readonly unknown[] = ruleOptions;
+  if (!isPlainObject(first)) return SNAPSHOT_MATCHERS;
 
   const configured = first[SNAPSHOT_MATCHERS_OPTION];
   if (!Array.isArray(configured)) return SNAPSHOT_MATCHERS;

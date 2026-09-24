@@ -1,3 +1,5 @@
+import { isPlainObject } from "es-toolkit";
+
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { isDataImportReference } from "../../lib/spec-syntax/data-imports.ts";
 import {
@@ -24,8 +26,8 @@ const HANDLER_SCOPING_WRAPPERS_OPTION = "handlerScopingWrappers";
 const DEFAULT_HANDLER_SCOPING_WRAPPERS: readonly string[] = [];
 
 const handlerScopingWrappersFrom = (ruleOptions: Readonly<Options>): ReadonlySet<string> => {
-  const [first] = ruleOptions;
-  if (typeof first !== "object" || first === null || Array.isArray(first)) {
+  const [first]: readonly unknown[] = ruleOptions;
+  if (!isPlainObject(first)) {
     return new Set(DEFAULT_HANDLER_SCOPING_WRAPPERS);
   }
 

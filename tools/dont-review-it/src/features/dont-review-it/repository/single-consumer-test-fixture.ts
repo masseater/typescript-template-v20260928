@@ -1,5 +1,6 @@
 import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, FileSystem, Path } from "effect";
+import { isPlainObject } from "es-toolkit";
 
 import { directoryEntries, type TreeScan } from "../platform/directory-entries.ts";
 import { path } from "../platform/path.ts";
@@ -398,9 +399,7 @@ const subpathTarget = (
 
 const exportKeys = (manifest: unknown): readonly string[] => {
   const exportsField = field(manifest, "exports");
-  return typeof exportsField === "object" && exportsField !== null && !Array.isArray(exportsField)
-    ? Object.keys(exportsField)
-    : [];
+  return isPlainObject(exportsField) ? Object.keys(exportsField) : [];
 };
 
 const declaredBins = (manifest: unknown): readonly string[] => {
@@ -409,7 +408,7 @@ const declaredBins = (manifest: unknown): readonly string[] => {
     const name = field(manifest, "name");
     return typeof name === "string" ? [name.replace(/^@[^/]+\//u, "")] : [];
   }
-  return typeof bin === "object" && bin !== null && !Array.isArray(bin) ? Object.keys(bin) : [];
+  return isPlainObject(bin) ? Object.keys(bin) : [];
 };
 
 const rootScriptCommands = (workspaces: readonly WorkspaceManifest[]): readonly string[] =>
@@ -417,7 +416,7 @@ const rootScriptCommands = (workspaces: readonly WorkspaceManifest[]): readonly 
     .filter((workspace) => directoryOf(workspace.file) === "root")
     .flatMap((workspace) => {
       const scripts = field(workspace.manifest, "scripts");
-      return typeof scripts === "object" && scripts !== null && !Array.isArray(scripts)
+      return isPlainObject(scripts)
         ? Object.values(scripts).filter((command): command is string => typeof command === "string")
         : [];
     });

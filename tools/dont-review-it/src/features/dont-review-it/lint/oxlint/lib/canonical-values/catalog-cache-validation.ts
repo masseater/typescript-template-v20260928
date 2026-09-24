@@ -1,6 +1,8 @@
 // @effect-diagnostics-next-line nodeBuiltinImport:off
 import { createHash } from "node:crypto";
 
+import { isPlainObject } from "es-toolkit";
+
 import { path } from "../../../../platform/path.ts";
 import {
   canonicalValueKey,
@@ -110,7 +112,7 @@ const hasResolvedSourcePaths = (candidate: object): boolean => {
 };
 
 const isImportRoute = (candidate: unknown): boolean => {
-  if (candidate === null || typeof candidate !== "object") return false;
+  if (!isPlainObject(candidate)) return false;
   if (!hasNonemptyStringProperty(candidate, "exportName")) return false;
   if (!hasNonemptyStringProperty(candidate, "specifier")) return false;
   return hasResolvedSourcePaths(candidate);
@@ -123,7 +125,7 @@ const hasCanonicalValues = (candidate: unknown): candidate is readonly Canonical
 };
 
 const isCanonicalValuesEntry = (candidate: unknown): candidate is CanonicalValuesEntry => {
-  if (candidate === null || typeof candidate !== "object") return false;
+  if (!isPlainObject(candidate)) return false;
   if (!hasEntryFields(candidate)) return false;
   if (!hasValidEntryOffsets(candidate) || !hasValidEntryIdentity(candidate)) return false;
   if (!Array.isArray(candidate.importRoutes) || !candidate.importRoutes.every(isImportRoute))
@@ -138,7 +140,7 @@ const hasCachedCatalogFields = (
   ["entries", "fingerprint", "integrity", "version"].every((field) => field in candidate);
 
 export const isCachedCatalog = (candidate: unknown): candidate is CachedCatalog => {
-  if (candidate === null || typeof candidate !== "object") return false;
+  if (!isPlainObject(candidate)) return false;
   if (!hasCachedCatalogFields(candidate)) return false;
   if (candidate.version !== CACHE_FORMAT_VERSION) return false;
   if (typeof candidate.fingerprint !== "string" || typeof candidate.integrity !== "string")

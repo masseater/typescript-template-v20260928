@@ -7,7 +7,7 @@ import {
   type AssetFetcher,
 } from "@repo/config";
 import { readOptionalStorage, readStorage } from "@repo/config/storage";
-import { Config, Effect, Layer, Option, Redacted } from "effect";
+import { Config, Effect, Layer, Option, Predicate, Redacted } from "effect";
 import {
   Binding,
   D1,
@@ -24,12 +24,9 @@ import type { D1Database, Flagship, SendEmail } from "@cloudflare/workers-types"
 import type { AuthFailure } from "@repo/auth";
 import type { TelemetryInvalid } from "@repo/observability";
 const isFetcher = (decoded: unknown): decoded is AssetFetcher =>
-  typeof decoded === "object" &&
-  decoded !== null &&
-  typeof Reflect.get(decoded, "fetch") === "function";
+  Predicate.isObject(decoded) && typeof Reflect.get(decoded, "fetch") === "function";
 const isFlagship = (decoded: unknown): decoded is Flagship =>
-  typeof decoded === "object" &&
-  decoded !== null &&
+  Predicate.isObject(decoded) &&
   ["getBooleanValue", "getStringValue", "getNumberValue", "getObjectValue"].every(
     (method) => typeof Reflect.get(decoded, method) === "function",
   );
@@ -37,8 +34,7 @@ class WorkerDatabase extends D1.Service<WorkerDatabase>()("WorkerDatabase", { bi
 class WorkerAssets extends Binding.Service<WorkerAssets>()("WorkerAssets", "ASSETS", isFetcher) {}
 class OutboundEmail extends Email.Tag<OutboundEmail>()("OutboundEmail") {}
 class WorkersModel extends WorkersAi.Tag<WorkersModel>()("WorkersModel") {}
-const isWorkerEnv = (env: unknown): env is WorkerEnv =>
-  typeof env === "object" && env !== null && !Array.isArray(env);
+const isWorkerEnv = (env: unknown): env is WorkerEnv => Predicate.isObject(env);
 const bindingPresent = (env: WorkerEnv, spelled: string): boolean =>
   Reflect.get(env, spelled) !== undefined;
 const sharedBindings = Layer.mergeAll(

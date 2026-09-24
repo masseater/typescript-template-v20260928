@@ -1,4 +1,4 @@
-import { range, sumBy } from "es-toolkit";
+import { isPlainObject, range, sumBy } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { nodesOfType } from "../../lib/nodes-of-type.ts";
@@ -27,8 +27,8 @@ const DEFAULT_MAX_ASSERTIONS = 1;
 const MAX_ASSERTIONS_OPTION = "maxAssertions";
 
 const maxAssertionsFrom = (ruleSettings: Readonly<Options>): number => {
-  const [first] = ruleSettings;
-  if (typeof first !== "object" || first === null || Array.isArray(first)) {
+  const [first]: readonly unknown[] = ruleSettings;
+  if (!isPlainObject(first)) {
     return DEFAULT_MAX_ASSERTIONS;
   }
   const configured = first[MAX_ASSERTIONS_OPTION];

@@ -1,5 +1,7 @@
+import { Predicate } from "effect";
+
 import { path } from "../../../../platform/path.ts";
-import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
+import { NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
 import { toPosixPath } from "../posix-path.ts";
 
 export type ImportRoutes = ReadonlyMap<string, string>;
@@ -38,7 +40,7 @@ const routesThrough = (input: {
   readonly module: string;
 }): readonly (readonly [string, string])[] =>
   (input.declaration.specifiers as readonly unknown[])
-    .filter(isAstFields)
+    .filter(Predicate.isReadonlyObject)
     .map((specifier) => [
       String((specifier.local as AstFields).name),
       `${input.module}#${takenNameOf(specifier)}`,
@@ -49,7 +51,7 @@ export const importRoutesIn = (input: {
   readonly relativePath: string;
 }): ImportRoutes =>
   new Map(
-    input.body.filter(isAstFields).flatMap((statement) =>
+    input.body.filter(Predicate.isReadonlyObject).flatMap((statement) =>
       statement[NODE_TYPE_FIELD] === "ImportDeclaration"
         ? routesThrough({
             declaration: statement,

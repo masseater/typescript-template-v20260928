@@ -1,3 +1,5 @@
+import { isPlainObject } from "es-toolkit";
+
 import { field, rootManifests, workspaceManifests } from "./dependencies-test-fixture.ts";
 import { directoryOfGlobKey } from "./repository-path-test-fixture.ts";
 
@@ -16,7 +18,7 @@ const serveEnv: ConfigEnv = { command: "serve", mode: "development" };
 
 function scriptsOf(manifest: unknown): Readonly<Record<string, unknown>> {
   const scripts = field(manifest, "scripts");
-  return typeof scripts === "object" && scripts !== null ? { ...scripts } : {};
+  return isPlainObject(scripts) ? { ...scripts } : {};
 }
 
 const workspaceScripts: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {

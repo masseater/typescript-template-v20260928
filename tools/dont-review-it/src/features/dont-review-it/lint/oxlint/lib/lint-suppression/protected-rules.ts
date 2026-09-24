@@ -1,4 +1,4 @@
-import { uniq } from "es-toolkit";
+import { isPlainObject, uniq } from "es-toolkit";
 
 import { bareRuleNameOf } from "./suppression-directives.ts";
 
@@ -34,9 +34,8 @@ export const PROTECTION_SCHEMA = {
 type DeclaredFields = Readonly<Record<string, Options[number]>>;
 
 const declaredFieldsIn = (ruleOptions: Readonly<Options>): DeclaredFields => {
-  const [declared] = ruleOptions;
-  const spelled = typeof declared === "object" && declared !== null && !Array.isArray(declared);
-  return spelled ? declared : {};
+  const [declared]: readonly unknown[] = ruleOptions;
+  return isPlainObject(declared) ? declared : {};
 };
 
 const spelledTextsAt = ({
@@ -56,8 +55,8 @@ export type ProtectionDeviation = {
   readonly grounds: string;
 };
 
-const deviationOf = (listed: Options[number]): readonly ProtectionDeviation[] => {
-  if (typeof listed !== "object" || listed === null || Array.isArray(listed)) return [];
+const deviationOf = (listed: unknown): readonly ProtectionDeviation[] => {
+  if (!isPlainObject(listed)) return [];
   const { rule, reason } = listed;
   if (typeof rule !== "string" || rule === "") return [];
   return [{ rule, grounds: typeof reason === "string" ? reason.trim() : "" }];

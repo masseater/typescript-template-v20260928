@@ -1,7 +1,8 @@
+import { isPlainObject } from "es-toolkit";
+
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { defaultExportedObject } from "../../lib/default-exported-object.ts";
 import { nestedObjectAt, objectValueOf } from "../../lib/object-literal.ts";
-import { isRecord } from "../../lib/record-value.ts";
 import { isTestRunnerConfig } from "../../lib/test-runner-config.ts";
 
 import type { ESTree, Options } from "@oxlint/plugins";
@@ -13,8 +14,8 @@ const EXCLUDE_KEY = "exclude";
 const DEFAULT_PATTERN = "specs/**";
 
 const requiredPatternFrom = (ruleOptions: Readonly<Options>): string => {
-  const [first] = ruleOptions;
-  const declared = isRecord(first) ? first.pattern : undefined;
+  const [first]: readonly unknown[] = ruleOptions;
+  const declared = isPlainObject(first) ? first.pattern : undefined;
   return typeof declared === "string" ? declared : DEFAULT_PATTERN;
 };
 

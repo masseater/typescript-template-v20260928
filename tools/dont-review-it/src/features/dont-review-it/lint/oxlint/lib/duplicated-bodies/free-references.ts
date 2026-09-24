@@ -1,4 +1,6 @@
-import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
+import { Predicate } from "effect";
+
+import { NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
 
 export const IMPORT_META_REFERENCE = "import.meta";
 
@@ -51,7 +53,7 @@ const namingFieldsOf = (node: AstFields): readonly string[] => {
 
 const nestedOf = (syntaxField: unknown): readonly AstFields[] => {
   if (Array.isArray(syntaxField)) return syntaxField.flatMap(nestedOf);
-  return isAstFields(syntaxField) ? [syntaxField] : [];
+  return Predicate.isReadonlyObject(syntaxField) ? [syntaxField] : [];
 };
 
 const PATTERN_FIELDS_BY_KIND: Readonly<Record<string, readonly string[]>> = {
@@ -103,14 +105,15 @@ const FILE_RELATIVE_META_PROPERTIES: ReadonlySet<string> = new Set([
 ]);
 
 const isImportMeta = (syntaxField: unknown): boolean =>
-  isAstFields(syntaxField) &&
+  Predicate.isReadonlyObject(syntaxField) &&
   kindOf(syntaxField) === "MetaProperty" &&
-  isAstFields(syntaxField.meta) &&
+  Predicate.isReadonlyObject(syntaxField.meta) &&
   syntaxField.meta.name === "import";
 
 const readsFileRelativeMeta = (member: AstFields): boolean =>
   member.computed === true ||
-  (isAstFields(member.property) && FILE_RELATIVE_META_PROPERTIES.has(String(member.property.name)));
+  (Predicate.isReadonlyObject(member.property) &&
+    FILE_RELATIVE_META_PROPERTIES.has(String(member.property.name)));
 
 const ownReferenceOf = (node: AstFields): readonly string[] => {
   const kind = kindOf(node);

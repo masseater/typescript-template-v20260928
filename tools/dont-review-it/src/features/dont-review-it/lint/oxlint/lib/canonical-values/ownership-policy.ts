@@ -1,3 +1,5 @@
+import { isPlainObject } from "es-toolkit";
+
 import type { Context, RuleMeta } from "@oxlint/plugins";
 
 export const OWNERSHIP_POLICY_SCHEMA: NonNullable<RuleMeta["schema"]> = [
@@ -12,8 +14,8 @@ const UNCONFIGURED_OWNERSHIP_POLICY =
   "not configured (set the ownershipPolicy option of this rule)";
 
 export const ownershipPolicyOf = (ruleOptions: Context["options"]): string => {
-  const configured = ruleOptions[0];
-  if (typeof configured !== "object" || configured === null || Array.isArray(configured)) {
+  const configured: unknown = ruleOptions[0];
+  if (!isPlainObject(configured)) {
     return UNCONFIGURED_OWNERSHIP_POLICY;
   }
   const policy = configured.ownershipPolicy;

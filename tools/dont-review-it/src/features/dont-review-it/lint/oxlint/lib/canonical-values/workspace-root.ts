@@ -1,3 +1,5 @@
+import { isPlainObject } from "es-toolkit";
+
 import { path } from "../../../../platform/path.ts";
 import { MANIFEST_FILE_NAME } from "./package-manifest.ts";
 import { readJsonFile } from "./read-json-file.ts";
@@ -12,8 +14,7 @@ const WORKSPACES_FIELD = "workspaces";
 
 const manifestDeclaresWorkspaces = (directory: string): boolean => {
   const manifest = readJsonFile(path.join(directory, MANIFEST_FILE_NAME));
-  if (manifest === null || typeof manifest !== "object") return false;
-  return WORKSPACES_FIELD in manifest;
+  return isPlainObject(manifest) && WORKSPACES_FIELD in manifest;
 };
 
 const isWorkspaceRoot = (directory: string): boolean =>

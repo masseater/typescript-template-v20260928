@@ -1,4 +1,4 @@
-import { uniq, uniqBy } from "es-toolkit";
+import { isPlainObject, uniq, uniqBy } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { nodesOfType } from "../../lib/nodes-of-type.ts";
@@ -21,8 +21,8 @@ import type { ESTree, Options, Scope, Variable } from "@oxlint/plugins";
 const HOOK_NAMES_OPTION = "hookNames";
 
 const hookNamesFrom = (ruleOptions: Readonly<Options>): ReadonlySet<string> => {
-  const [first] = ruleOptions;
-  if (typeof first !== "object" || first === null || Array.isArray(first)) {
+  const [first]: readonly unknown[] = ruleOptions;
+  if (!isPlainObject(first)) {
     return new Set(INJECTED_TEST_HOOK_SPELLINGS);
   }
 

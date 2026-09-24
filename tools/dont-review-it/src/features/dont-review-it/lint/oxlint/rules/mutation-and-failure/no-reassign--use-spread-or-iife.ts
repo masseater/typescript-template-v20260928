@@ -1,3 +1,5 @@
+import { isPlainObject } from "es-toolkit";
+
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { isSugared } from "../../lib/node-kinds.ts";
 
@@ -8,8 +10,8 @@ const AMBIENT_ONLY_FILE_NAME = /\.d\.[cm]?ts$/u;
 const PLATFORM_ASSIGN_ONLY_TARGETS = ["process.exitCode"];
 
 const assignOnlyTargetsFrom = (ruleOptions: Readonly<Options>): readonly string[] => {
-  const [first] = ruleOptions;
-  if (typeof first !== "object" || first === null || Array.isArray(first)) {
+  const [first]: readonly unknown[] = ruleOptions;
+  if (!isPlainObject(first)) {
     return PLATFORM_ASSIGN_ONLY_TARGETS;
   }
 

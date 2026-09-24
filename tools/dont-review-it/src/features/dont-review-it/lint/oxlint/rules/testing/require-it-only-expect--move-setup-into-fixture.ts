@@ -1,3 +1,5 @@
+import { isPlainObject } from "es-toolkit";
+
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { nodesOfType } from "../../lib/nodes-of-type.ts";
 import {
@@ -21,8 +23,8 @@ import type { ESTree, Options } from "@oxlint/plugins";
 const ALLOWED_UTILITIES_OPTION = "allowedExpectUtilities";
 
 const allowedUtilitiesFrom = (ruleOptions: Readonly<Options>): ReadonlySet<string> => {
-  const [first] = ruleOptions;
-  if (typeof first !== "object" || first === null || Array.isArray(first)) {
+  const [first]: readonly unknown[] = ruleOptions;
+  if (!isPlainObject(first)) {
     return ASSERTION_COUNT_DECLARATIONS;
   }
 

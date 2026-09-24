@@ -1,3 +1,5 @@
+import { isPlainObject } from "es-toolkit";
+
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { exemptionsWrittenAbove } from "../../lib/directive-comments.ts";
 import { nodesOfType } from "../../lib/nodes-of-type.ts";
@@ -27,8 +29,8 @@ const BUILTIN_MODULE_PREFIXES_OPTION = "builtinModulePrefixes";
 const DEFAULT_BUILTIN_MODULE_PREFIXES: readonly string[] = ["node:"];
 
 const builtinModulePrefixesFrom = (ruleOptions: Readonly<Options>): readonly string[] => {
-  const [first] = ruleOptions;
-  if (typeof first !== "object" || first === null || Array.isArray(first)) {
+  const [first]: readonly unknown[] = ruleOptions;
+  if (!isPlainObject(first)) {
     return DEFAULT_BUILTIN_MODULE_PREFIXES;
   }
 

@@ -1,3 +1,4 @@
+import { Predicate } from "effect";
 import { sumBy } from "es-toolkit";
 import { parseSync } from "oxc-parser";
 
@@ -10,11 +11,8 @@ export const DEFAULT_SOURCE_NAME = "source.tsx";
 
 const startOf = (statement: UnknownFields): number => Number(statement.start);
 
-const isNode = (syntaxField: unknown): syntaxField is UnknownFields =>
-  syntaxField !== null && typeof syntaxField === "object" && !Array.isArray(syntaxField);
-
 const bindingsOf = (statement: UnknownFields): readonly UnknownFields[] =>
-  (statement.declarations as readonly unknown[]).filter(isNode);
+  (statement.declarations as readonly unknown[]).filter(Predicate.isReadonlyObject);
 
 const POSITION_FIELDS: ReadonlySet<string> = new Set(["start", "end", "range", "loc"]);
 
@@ -25,7 +23,7 @@ const namedFieldsOf = (node: UnknownFields): readonly (readonly [string, unknown
 
 export const structureOf = (syntaxField: unknown): string => {
   if (Array.isArray(syntaxField)) return `[${syntaxField.map(structureOf).join(",")}]`;
-  if (!isNode(syntaxField)) {
+  if (!Predicate.isReadonlyObject(syntaxField)) {
     return typeof syntaxField === "bigint"
       ? `bigint:${String(syntaxField)}`
       : JSON.stringify(syntaxField);
@@ -38,7 +36,7 @@ export const structureOf = (syntaxField: unknown): string => {
 export const nodeCountOf = (syntaxField: unknown): number => {
   if (Array.isArray(syntaxField))
     return sumBy(syntaxField, (nestedItem: unknown) => nodeCountOf(nestedItem));
-  if (!isNode(syntaxField)) return 0;
+  if (!Predicate.isReadonlyObject(syntaxField)) return 0;
   const own = typeof syntaxField[NODE_TYPE_FIELD] === "string" ? 1 : 0;
   return own + sumBy(namedFieldsOf(syntaxField), ([, nested]) => nodeCountOf(nested));
 };
@@ -157,7 +155,7 @@ const declarationsFromStatement = (
   source: string,
   statement: unknown,
 ): readonly ReferencingDeclaration[] => {
-  if (!isNode(statement)) return [];
+  if (!Predicate.isReadonlyObject(statement)) return [];
 
   const statementKind = statement[NODE_TYPE_FIELD];
   if (statementKind === "ExportNamedDeclaration") {

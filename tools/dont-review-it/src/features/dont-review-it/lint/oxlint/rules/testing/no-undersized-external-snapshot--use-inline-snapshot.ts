@@ -1,4 +1,4 @@
-import { zip } from "es-toolkit";
+import { isPlainObject, zip } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { nodeVisitsOfType } from "../../lib/nodes-of-type.ts";
@@ -21,8 +21,8 @@ import type { ESTree, Options, Range } from "@oxlint/plugins";
 const MAX_LINES_OPTION = "maxLines";
 
 const maxLinesFrom = (ruleOptions: Readonly<Options>): number => {
-  const [first] = ruleOptions;
-  if (typeof first !== "object" || first === null || Array.isArray(first)) {
+  const [first]: readonly unknown[] = ruleOptions;
+  if (!isPlainObject(first)) {
     return MAX_INLINE_RECORD_LINES;
   }
   const configured = first[MAX_LINES_OPTION];

@@ -1,10 +1,9 @@
-import { Effect, type FileSystem, type PlatformError } from "effect";
+import { Effect, type FileSystem, type PlatformError, Predicate } from "effect";
 import { parseSync } from "oxc-parser";
 
 import { textOrNull } from "../../platform/file-system.ts";
 import { path } from "../../platform/path.ts";
 import {
-  isAstNode,
   moduleConstantsIn,
   nodesIn,
   propertyOf,
@@ -17,7 +16,7 @@ import type { UnknownFields } from "../unknown-fields.ts";
 const TESTER_NAME = "testLintRule";
 
 const isNode = (candidate: unknown): candidate is UnknownFields =>
-  isAstNode(candidate) && typeof candidate.type === "string";
+  Predicate.isReadonlyObject(candidate) && typeof candidate.type === "string";
 
 const nodesUnder = (node: UnknownFields): readonly UnknownFields[] => [
   node,

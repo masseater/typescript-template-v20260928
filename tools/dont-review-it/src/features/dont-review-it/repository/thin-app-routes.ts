@@ -1,3 +1,5 @@
+import { Predicate } from "effect";
+
 import { filename, reportViolation, type LintContext, type Node } from "./lint-context.ts";
 
 import type { Visitor } from "vite-plus/lint/plugins";
@@ -11,7 +13,7 @@ const isAppRouteModule = (inspected: string): boolean => {
 };
 
 const containsJsx = (node: unknown): boolean => {
-  if (typeof node !== "object" || node === null) {
+  if (!Predicate.isObjectOrArray(node)) {
     return false;
   }
   if ("type" in node && (node.type === "JSXElement" || node.type === "JSXFragment")) {

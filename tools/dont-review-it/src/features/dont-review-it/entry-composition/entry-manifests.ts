@@ -1,9 +1,8 @@
 import { Effect, FileSystem } from "effect";
-import { attempt, uniq } from "es-toolkit";
+import { attempt, isPlainObject, uniq } from "es-toolkit";
 import { parseTree, type Node, type ParseError } from "jsonc-parser";
 import { parse } from "yaml";
 
-import { recordOf } from "../dependency-catalog/record-fields.ts";
 import { isMissingPath } from "../platform/path-failure.ts";
 import { path, posixPath } from "../platform/path.ts";
 import { directoriesMatching } from "../platform/workspace-patterns.ts";
@@ -116,7 +115,9 @@ const workspaceDirectoriesOf = ({
       };
     }
 
-    const declaredPatterns = recordOf(definition)[config.workspacePatternsKey];
+    const declaredPatterns: unknown = isPlainObject(definition)
+      ? definition[config.workspacePatternsKey]
+      : null;
     const patterns = Array.isArray(declaredPatterns)
       ? declaredPatterns.filter((pattern): pattern is string => typeof pattern === "string")
       : [];

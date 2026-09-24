@@ -1,4 +1,4 @@
-import { sortBy } from "es-toolkit";
+import { isPlainObject, sortBy } from "es-toolkit";
 
 import { path } from "../../../../platform/path.ts";
 import {
@@ -17,22 +17,13 @@ const WORKSPACE_PROTOCOL = "workspace:";
 
 const NODE_MODULES_DIRECTORY_NAME = "node_modules";
 
-const isRecord = (held: unknown): held is Record<string, unknown> =>
-  held !== null && typeof held === "object" && !Array.isArray(held);
-
-const recordFieldOf = (
-  manifest: Record<string, unknown>,
-  field: string,
-): Record<string, unknown> => {
-  const declared = manifest[field];
-  return isRecord(declared) ? declared : {};
-};
+const SPECIFIER_FIELDS = ["dependencies", "devDependencies", "peerDependencies"];
 
 const ROOT_SUBPATH = ".";
 
 const rootExportsOf = (exportsField: unknown): unknown => {
   if (typeof exportsField === "string") return exportsField;
-  if (!isRecord(exportsField)) return null;
+  if (!isPlainObject(exportsField)) return null;
   const subpaths = Object.entries(exportsField);
   const root = subpaths.find(([subpath]) => subpath === ROOT_SUBPATH);
   if (root !== undefined) return root[1];
@@ -42,7 +33,7 @@ const rootExportsOf = (exportsField: unknown): unknown => {
 const TYPES_CONDITION = "types";
 
 const typesConditionIn = (held: unknown, depth: number): string | null => {
-  if (!isRecord(held) || depth > EXPORTS_CONDITION_DEPTH_LIMIT) return null;
+  if (!isPlainObject(held) || depth > EXPORTS_CONDITION_DEPTH_LIMIT) return null;
   const conditions = Object.entries(held);
   const declared = conditions.find(
     ([condition, checked]) => condition === TYPES_CONDITION && typeof checked === "string",
@@ -57,7 +48,7 @@ const typesConditionIn = (held: unknown, depth: number): string | null => {
 
 const anyConditionIn = (held: unknown, depth: number): string | null => {
   if (typeof held === "string") return held;
-  if (!isRecord(held) || depth > EXPORTS_CONDITION_DEPTH_LIMIT) return null;
+  if (!isPlainObject(held) || depth > EXPORTS_CONDITION_DEPTH_LIMIT) return null;
   for (const [, nested] of Object.entries(held)) {
     const found = anyConditionIn(nested, depth + 1);
     if (found !== null) return found;
@@ -93,7 +84,7 @@ const declarationsCandidateFor = (entryPath: string): string | null => {
 
 const declarationsOf = (dependencyDirectory: string): string | null => {
   const manifest = readJsonFile(path.join(dependencyDirectory, MANIFEST_FILE_NAME));
-  if (!isRecord(manifest)) return null;
+  if (!isPlainObject(manifest)) return null;
   for (const entryPath of entryPathsOf(manifest)) {
     const candidate = declarationsCandidateFor(entryPath);
     if (candidate === null) continue;
@@ -105,13 +96,14 @@ const declarationsOf = (dependencyDirectory: string): string | null => {
 
 export const dependencyTypeEntries = (packageDirectory: string): readonly DependencyTypeEntry[] => {
   const manifest = readJsonFile(path.join(packageDirectory, MANIFEST_FILE_NAME));
-  if (!isRecord(manifest)) return [];
+  if (!isPlainObject(manifest)) return [];
 
-  const specifiers = {
-    ...recordFieldOf(manifest, "dependencies"),
-    ...recordFieldOf(manifest, "devDependencies"),
-    ...recordFieldOf(manifest, "peerDependencies"),
-  };
+  const specifiers: Readonly<Record<string, unknown>> = Object.fromEntries(
+    SPECIFIER_FIELDS.flatMap((field) => {
+      const declared: unknown = manifest[field];
+      return isPlainObject(declared) ? Object.entries(declared) : [];
+    }),
+  );
 
   const listedEntries = Object.entries(specifiers).flatMap(([packageName, range]) => {
     if (typeof range === "string" && range.startsWith(WORKSPACE_PROTOCOL)) return [];

@@ -1,3 +1,5 @@
+import { isPlainObject } from "es-toolkit";
+
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { resolveBinding, type ScopeLookup } from "../../lib/resolved-bindings.ts";
 import {
@@ -14,8 +16,8 @@ const DEFAULT_ORDERING_ALIAS_PREFIXES: readonly string[] = ["_"];
 const ORDERING_ALIAS_PREFIXES_OPTION = "orderingAliasPrefixes";
 
 const orderingAliasPrefixesFrom = (ruleOptions: Readonly<Options>): readonly string[] => {
-  const [first] = ruleOptions;
-  if (typeof first !== "object" || first === null || Array.isArray(first)) {
+  const [first]: readonly unknown[] = ruleOptions;
+  if (!isPlainObject(first)) {
     return DEFAULT_ORDERING_ALIAS_PREFIXES;
   }
 

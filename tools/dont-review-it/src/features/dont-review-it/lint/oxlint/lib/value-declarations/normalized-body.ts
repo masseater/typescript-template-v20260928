@@ -1,6 +1,7 @@
+import { Predicate } from "effect";
 import { memoize } from "es-toolkit";
 
-import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
+import { NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
 import { boundNamesIn } from "./bound-names.ts";
 
 import type { ImportRoutes } from "./import-routes.ts";
@@ -31,7 +32,7 @@ const NAME_FIELD = "name";
 
 const structureOf = (held: unknown, spell: Spelling): string => {
   if (Array.isArray(held)) return `[${held.map((child) => structureOf(child, spell)).join(",")}]`;
-  if (!isAstFields(held)) return jsonTextOf(held);
+  if (!Predicate.isReadonlyObject(held)) return jsonTextOf(held);
 
   const namesABinding = held[NODE_TYPE_FIELD] === "Identifier";
   return `{${Object.entries(held)
