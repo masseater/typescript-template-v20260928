@@ -86,10 +86,10 @@ function copyMaps(source: string, destination: string): Effect.Effect<number, Ar
   }).pipe(Effect.provide(layer));
 }
 
-function fileExists(file: string): Effect.Effect<boolean> {
+function fileExists(file: string): Effect.Effect<boolean, ArtifactFailure> {
   return Effect.gen(function* checkFile() {
     const filesystem = yield* FileSystem.FileSystem;
-    return yield* filesystem.exists(file).pipe(Effect.orElseSucceed(() => false));
+    return yield* filesystem.exists(file).pipe(Effect.mapError(ioFailed));
   }).pipe(Effect.provide(layer));
 }
 
@@ -99,12 +99,16 @@ const requireClientSourceMaps = Effect.fn("requireClientSourceMaps")(
   function* requireClientSourceMaps(repositoryRoot: string, target: BuildTarget) {
     const filesystem = yield* FileSystem.FileSystem;
     const { client } = sourceMapDirectories(repositoryRoot, target);
-    const declared = yield* filesystem
-      .readFileString(sourceMapManifest(repositoryRoot, target))
-      .pipe(
-        Effect.flatMap(Schema.decodeEffect(EmittedMaps)),
-        Effect.mapError(() => new ArtifactFailure({ code: "source_maps_missing" })),
-      );
+    const manifest = sourceMapManifest(repositoryRoot, target);
+    if (!(yield* fileExists(manifest))) {
+      return yield* fail("source_maps_missing");
+    }
+    const recorded = yield* filesystem.readFileString(manifest).pipe(Effect.mapError(ioFailed));
+    const declared = yield* Schema.decodeEffect(EmittedMaps)(recorded).pipe(
+      Effect.mapError(
+        (cause) => new ArtifactFailure({ cause, code: "source_map_manifest_invalid" }),
+      ),
+    );
     const present = yield* Effect.forEach(declared, (file) => fileExists(path.join(client, file)), {
       concurrency: "unbounded",
     });

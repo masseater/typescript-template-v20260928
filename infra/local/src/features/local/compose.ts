@@ -7,7 +7,14 @@ import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
 class LocalServicesFailure extends Schema.TaggedError<LocalServicesFailure>()(
   "LocalServicesFailure",
-  { code: Schema.Literals(["local_action_unknown", "compose_command_failed"]) },
+  {
+    cause: Schema.optionalKey(Schema.Defect()),
+    code: Schema.Literals([
+      "local_action_unknown",
+      "compose_command_failed",
+      "bundled_compose_unreadable",
+    ]),
+  },
 ) {}
 
 const composeFile = new URL("../../../compose.yaml", import.meta.url).pathname;
@@ -34,8 +41,13 @@ const composeArguments = (
 
 const runCompose = Effect.fn("runCompose")(function* runCompose(composeArgs: readonly string[]) {
   const filesystem = yield* FileSystem.FileSystem;
-  const bundled = yield* filesystem.exists(bundledCompose).pipe(Effect.orElseSucceed(() => false));
-  const failed = new LocalServicesFailure({ code: "compose_command_failed" });
+  const bundled = yield* filesystem
+    .exists(bundledCompose)
+    .pipe(
+      Effect.mapError(
+        (cause) => new LocalServicesFailure({ cause, code: "bundled_compose_unreadable" }),
+      ),
+    );
   const command = bundled ? bundledCompose : "docker";
   const commandArgs = [...(bundled ? [] : ["compose"]), "-f", composeFile, ...composeArgs];
   const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
@@ -48,9 +60,13 @@ const runCompose = Effect.fn("runCompose")(function* runCompose(composeArgs: rea
         stdout: "inherit",
       }),
     )
-    .pipe(Effect.mapError(() => failed));
+    .pipe(
+      Effect.mapError(
+        (cause) => new LocalServicesFailure({ cause, code: "compose_command_failed" }),
+      ),
+    );
   if (exitCode !== 0) {
-    return yield* failed;
+    return yield* new LocalServicesFailure({ code: "compose_command_failed" });
   }
 });
 

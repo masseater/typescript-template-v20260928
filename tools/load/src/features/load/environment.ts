@@ -21,6 +21,7 @@ const oneMinuteLoadAverage = (): number => {
 };
 
 class EnvironmentUnusable extends Schema.TaggedError<EnvironmentUnusable>()("EnvironmentUnusable", {
+  cause: Schema.optionalKey(Schema.Defect()),
   reason: Schema.Literals([
     "build_missing",
     "file_io_failed",
@@ -35,12 +36,12 @@ const builtVariables = (app: Application): Effect.Effect<string, EnvironmentUnus
     const filesystem = yield* FileSystem.FileSystem;
     const paths = yield* Path.Path;
     const variablesPath = paths.join(repositoryRoot, "apps", app, "dist/server/.dev.vars");
-    if (!(yield* filesystem.exists(variablesPath).pipe(Effect.orElseSucceed(() => false)))) {
+    const fileIoFailed = (cause: unknown): EnvironmentUnusable =>
+      new EnvironmentUnusable({ cause, reason: "file_io_failed" });
+    if (!(yield* filesystem.exists(variablesPath).pipe(Effect.mapError(fileIoFailed)))) {
       return yield* new EnvironmentUnusable({ reason: "build_missing" });
     }
-    return yield* filesystem
-      .readFileString(variablesPath)
-      .pipe(Effect.mapError(() => new EnvironmentUnusable({ reason: "file_io_failed" })));
+    return yield* filesystem.readFileString(variablesPath).pipe(Effect.mapError(fileIoFailed));
   }).pipe(Effect.provide(NodeServices.layer));
 
 const appOrigin = /^APP_ORIGIN="(?<origin>[^"]*)"$/mu;

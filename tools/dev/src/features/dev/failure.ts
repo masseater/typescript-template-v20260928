@@ -1,6 +1,7 @@
 import { Schema } from "effect";
 
 class LocalCommandFailure extends Schema.TaggedError<LocalCommandFailure>()("LocalCommandFailure", {
+  cause: Schema.optionalKey(Schema.Defect()),
   reason: Schema.Literals([
     "command_unsupported",
     "origin_mode_invalid",
@@ -22,8 +23,8 @@ class LocalCommandFailure extends Schema.TaggedError<LocalCommandFailure>()("Loc
   ]),
 }) {}
 
-function failure(reason: LocalCommandFailure["reason"]): LocalCommandFailure {
-  return new LocalCommandFailure({ reason });
+function failure(reason: LocalCommandFailure["reason"], cause?: unknown): LocalCommandFailure {
+  return new LocalCommandFailure(cause === undefined ? { reason } : { cause, reason });
 }
 
 function describeError(error: unknown): string {

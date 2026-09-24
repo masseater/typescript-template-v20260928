@@ -14,8 +14,10 @@ function isAlreadyExists(error: PlatformError.PlatformError): boolean {
   return isSystemError(error, "AlreadyExists");
 }
 
-function mapFileError(): LocalCommandFailure {
-  return failure("file_io_failed");
+function mapFileError(
+  cause: PlatformError.PlatformError | PlatformError.BadArgument,
+): LocalCommandFailure {
+  return failure("file_io_failed", cause);
 }
 
 function withFileSystem<A, R = never>(

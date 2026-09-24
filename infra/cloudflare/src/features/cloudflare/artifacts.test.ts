@@ -178,6 +178,16 @@ it.effect("refuses to publish a build that never recorded what its maps were", (
   }).pipe(Effect.scoped),
 );
 
+it.effect("refuses to publish a build whose record of its maps is not a list of maps", () =>
+  Effect.gen(function* program() {
+    const { root } = yield* userBuild;
+    yield* writeFiles(sourceMapDirectories(root, "service-member").client, {
+      [SOURCE_MAP_MANIFEST]: "not json",
+    });
+    assert.strictEqual(yield* failureCode(root, "service-member"), "source_map_manifest_invalid");
+  }).pipe(Effect.scoped),
+);
+
 it.effect("publishes a build whose bundler emitted no map for a generated chunk", () =>
   Effect.gen(function* program() {
     const { client, root } = yield* userBuild;

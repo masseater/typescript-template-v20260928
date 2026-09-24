@@ -64,6 +64,22 @@ describe("replacing a private file", () => {
         expect(content).toBe("after\n");
       }).pipe(Effect.provide(layer)),
     ));
+
+  it("refuses to overwrite a file that others can read instead of treating it as changed", () =>
+    Effect.runPromise(
+      Effect.gen(function* program() {
+        expect.hasAssertions();
+        const location = yield* privateFile("exposed");
+        const path = yield* Path.Path;
+        const fs = yield* FileSystem.FileSystem;
+        const exposed = yield* path.fromFileUrl(location);
+        yield* fs.writeFileString(exposed, "before\n");
+        yield* fs.chmod(exposed, 0o644);
+        const failed = yield* replacePrivateFile(location, "after\n").pipe(Effect.flip);
+        expect(failed.reason).toBe("credentials_permissions_invalid");
+        expect(yield* fs.readFileString(exposed)).toBe("before\n");
+      }).pipe(Effect.provide(layer)),
+    ));
 });
 
 describe("the variables every runner shares", () => {

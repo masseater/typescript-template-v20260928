@@ -3,6 +3,7 @@ import { Effect, FileSystem, Option, Path, PlatformError, Schema } from "effect"
 import { isNotFound, layer } from "./platform.ts";
 
 class ArtifactFailure extends Schema.TaggedError<ArtifactFailure>()("ArtifactFailure", {
+  cause: Schema.optionalKey(Schema.Defect()),
   code: Schema.Literals([
     "artifact_io_failed",
     "artifact_symlink_forbidden",
@@ -20,6 +21,7 @@ class ArtifactFailure extends Schema.TaggedError<ArtifactFailure>()("ArtifactFai
     "artifact_staging_contaminated",
     "source_map_directory_invalid",
     "source_maps_missing",
+    "source_map_manifest_invalid",
     "source_map_symlink_forbidden",
     "budget_worker_artifact_empty",
     "error_worker_artifact_empty",
@@ -32,8 +34,8 @@ function fail(code: ArtifactFailure["code"]): Effect.Effect<never, ArtifactFailu
   return new ArtifactFailure({ code });
 }
 
-function ioFailed(): ArtifactFailure {
-  return new ArtifactFailure({ code: "artifact_io_failed" });
+function ioFailed(cause: unknown): ArtifactFailure {
+  return new ArtifactFailure({ cause, code: "artifact_io_failed" });
 }
 
 function isMissing(cause: unknown): boolean {

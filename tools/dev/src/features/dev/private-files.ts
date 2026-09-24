@@ -1,5 +1,5 @@
 import { modeAllowsGroupOrOther } from "@repo/cli";
-import { Effect, FileSystem, Path, PlatformError, Result } from "effect";
+import { Effect, FileSystem, PlatformError, Result } from "effect";
 
 import { failure } from "./failure.ts";
 import { isAlreadyExists, urlPath, withFileSystem } from "./platform.ts";
@@ -27,20 +27,18 @@ const assertOwnerOnly = Effect.fn("assertOwnerOnly")(function* assertOwnerOnly(
   return entry;
 });
 
-function unchangedPrivateFile(
+const unchangedPrivateFile = Effect.fn("unchangedPrivateFile")(function* unchangedPrivateFile(
   location: FileLocation,
   content: string,
-): Effect.Effect<boolean, never, FileSystem.FileSystem | Path.Path> {
-  return assertOwnerOnly(location).pipe(
-    Effect.flatMap(() =>
-      urlPath(location).pipe(
-        Effect.flatMap((path) => withFileSystem((fs) => fs.readFileString(path))),
-      ),
-    ),
-    Effect.map((existing) => existing === content),
-    Effect.orElseSucceed(() => false),
-  );
-}
+) {
+  const path = yield* urlPath(location);
+  if (!(yield* withFileSystem((fs) => fs.exists(path)))) {
+    return false;
+  }
+  yield* assertOwnerOnly(location);
+  const existing = yield* withFileSystem((fs) => fs.readFileString(path));
+  return existing === content;
+});
 
 const replacePrivateFile = Effect.fn("replacePrivateFile")(function* replacePrivateFile(
   location: FileLocation,
@@ -76,7 +74,7 @@ const writePrivateFile = Effect.fn("writePrivateFile")(function* writePrivateFil
   );
   if (Result.isFailure(written)) {
     if (!isAlreadyExists(written.failure)) {
-      return yield* failure("file_io_failed");
+      return yield* failure("file_io_failed", written.failure);
     }
     const existing = yield* withFileSystem((fs) => fs.readFileString(path));
     if (existing !== content) {
