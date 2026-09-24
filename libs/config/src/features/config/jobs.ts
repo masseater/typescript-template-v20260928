@@ -8,6 +8,26 @@ const jobsWorkflowClass = "Process";
 const jobsQueueName = "jobs";
 const jobsWorkflowName = "Process";
 
+/** @canonical-values config.workflow-instance-status */
+const workflowInstanceStatuses = [
+  "queued",
+  "running",
+  "paused",
+  "errored",
+  "terminated",
+  "complete",
+  "waiting",
+  "waitingForPause",
+  "rollingBack",
+  "unknown",
+] as const;
+
+const WorkflowInstanceState = Schema.Struct({
+  error: Schema.optional(Schema.NullOr(Schema.Struct({ message: Schema.String }))),
+  output: Schema.optional(Schema.Unknown),
+  status: Schema.Literals(workflowInstanceStatuses),
+});
+
 const JobPayload = Schema.Struct({
   jobId: Schema.String.check(Schema.isMinLength(1)),
   ownerId: Schema.String.check(Schema.isMinLength(1)),
@@ -32,11 +52,7 @@ const JobsBindings = Schema.Struct({
       readonly params?: JobPayload;
     }) => Promise<{ readonly id: string }>;
     readonly get: (id: string) => Promise<{
-      readonly status: () => Promise<{
-        readonly status: string;
-        readonly output?: unknown;
-        readonly error?: { readonly message: string } | null;
-      }>;
+      readonly status: () => Promise<unknown>;
     }>;
   }>("Workflow", ["create", "get"]),
 });
@@ -56,5 +72,6 @@ export {
   jobsWorkflowClass,
   jobsWorkflowName,
   readJobs,
+  WorkflowInstanceState,
 };
 export type { JobResult, JobsBindings };

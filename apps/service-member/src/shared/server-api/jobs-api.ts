@@ -1,5 +1,5 @@
 import { verifySession } from "@repo/auth";
-import { JobPayload, readJobs, httpStatus } from "@repo/config";
+import { JobPayload, WorkflowInstanceState, httpStatus, readJobs } from "@repo/config";
 import { sessionFailures } from "@repo/runtime/account";
 import { CreatedResource } from "@repo/runtime/contracts";
 import { createApi, readJsonBody } from "@repo/runtime/http";
@@ -16,10 +16,8 @@ const JobCreate = Schema.Struct({});
 const JobAccepted = CreatedResource;
 
 const JobStatusView = Schema.Struct({
+  ...WorkflowInstanceState.fields,
   id: Schema.String,
-  status: Schema.String,
-  output: Schema.optionalKey(Schema.Unknown),
-  error: Schema.optionalKey(Schema.NullOr(Schema.Struct({ message: Schema.String }))),
 });
 
 const failures = {
@@ -60,13 +58,8 @@ function jobsApi(api: ApiRoutes<AppServices>) {
               ownerId: user.id,
             }).pipe(Effect.mapError(() => ({ _tag: "InputInvalid" as const })));
             const jobs = yield* readJobs(env);
-            const status = yield* jobStatus(jobs, payload);
-            return {
-              id,
-              status: status.status,
-              ...(status.output === undefined ? {} : { output: status.output }),
-              ...(status.error === undefined ? {} : { error: status.error }),
-            };
+            const state = yield* jobStatus(jobs, payload);
+            return { ...state, id };
           }),
         failures,
       ),

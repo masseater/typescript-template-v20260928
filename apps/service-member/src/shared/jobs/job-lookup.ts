@@ -3,10 +3,11 @@ import {
   jobsQueueBinding,
   jobsWorkflowBinding,
   webCrypto,
+  WorkflowInstanceState,
   type JobPayload,
   type JobsBindings,
 } from "@repo/config";
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 
 import { JobLookupFailed } from "./job-lookup-failed.ts";
 import { JobNotFound } from "./job-not-found.ts";
@@ -32,7 +33,10 @@ const jobStatus = Effect.fn("jobs.status")(function* jobStatus(
         : new JobLookupFailed({ cause }),
     try: () => env[jobsWorkflowBinding].get(jobInstanceId(packet)),
   });
-  return yield* Effect.promise(() => runtimeInstance.status());
+  const reported = yield* Effect.promise(() => runtimeInstance.status());
+  return yield* Schema.decodeUnknownEffect(WorkflowInstanceState)(reported).pipe(
+    Effect.mapError((cause) => new JobLookupFailed({ cause })),
+  );
 });
 
 export { enqueueJob, jobStatus };

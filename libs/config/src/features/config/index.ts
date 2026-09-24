@@ -181,6 +181,7 @@ export {
   jobsWorkflowClass,
   jobsWorkflowName,
   readJobs,
+  WorkflowInstanceState,
 } from "./jobs.ts";
 export type { JobResult, JobsBindings } from "./jobs.ts";
 export { effectTsgoNoEmit } from "./effect-typecheck.ts";
