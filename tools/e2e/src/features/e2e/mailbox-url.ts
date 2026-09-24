@@ -1,62 +1,42 @@
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 
 import { failed, type JourneyFailure } from "./journey-failure.ts";
 import { deliveryTimeout, mailLinkPattern } from "./mail.ts";
 import { deadlineIn, until } from "./waiting.ts";
 
+const MailboxDeliveries = Schema.Array(
+  Schema.Struct({
+    link: Schema.String,
+    recipient: Schema.String,
+  }),
+);
+
 const linksInDelivery = (deliveryLink: string, linkPattern: Readonly<RegExp>): readonly string[] =>
   [...deliveryLink.matchAll(linkPattern)].map(([matchedLink]) => matchedLink);
-
-type MailboxDelivery = {
-  readonly link: string;
-  readonly recipient: string;
-};
-
-const isMailboxDelivery = (candidate: unknown): candidate is MailboxDelivery => {
-  return (
-    typeof candidate === "object" &&
-    candidate !== null &&
-    "link" in candidate &&
-    "recipient" in candidate &&
-    typeof candidate.link === "string" &&
-    typeof candidate.recipient === "string"
-  );
-};
-
-const parseMailboxDeliveries = (mailboxJson: unknown): readonly MailboxDelivery[] => {
-  if (!Array.isArray(mailboxJson)) {
-    return [];
-  }
-  return mailboxJson.filter(isMailboxDelivery);
-};
-
-const readMailboxDeliveries = (
-  mailboxHttpReply: Response,
-  recipient: string,
-): Effect.Effect<readonly MailboxDelivery[]> =>
-  Effect.tryPromise(() => mailboxHttpReply.json()).pipe(
-    Effect.map((mailboxJson) =>
-      parseMailboxDeliveries(mailboxJson).filter(
-        (mailboxDelivery) => mailboxDelivery.recipient === recipient,
-      ),
-    ),
-    Effect.orElseSucceed(() => []),
-  );
 
 const fetchMailboxDeliveries = (deliverySearch: {
   readonly deliveriesUrl: string;
   readonly fetchImpl: typeof fetch;
   readonly recipient: string;
-}): Effect.Effect<readonly MailboxDelivery[], JourneyFailure> =>
+}): Effect.Effect<typeof MailboxDeliveries.Type, JourneyFailure> =>
   Effect.gen(function* loadMailboxDeliveries() {
     const mailboxHttpReply = yield* Effect.tryPromise({
-      catch: (cause) => failed("VERIFY_VERIFICATION_MAIL_NOT_DELIVERED", cause),
+      catch: (cause) => failed("MAILBOX_UNREACHABLE", cause),
       try: (signal) => deliverySearch.fetchImpl(deliverySearch.deliveriesUrl, { signal }),
     });
     if (!mailboxHttpReply.ok) {
-      return [];
+      return yield* failed("MAILBOX_UNREACHABLE", `HTTP ${String(mailboxHttpReply.status)}`);
     }
-    return yield* readMailboxDeliveries(mailboxHttpReply, deliverySearch.recipient);
+    const mailboxJson = yield* Effect.tryPromise({
+      catch: (cause) => failed("MAILBOX_REPLY_INVALID", cause),
+      try: () => mailboxHttpReply.json(),
+    });
+    const mailboxDeliveries = yield* Schema.decodeUnknownEffect(MailboxDeliveries)(
+      mailboxJson,
+    ).pipe(Effect.mapError((cause) => failed("MAILBOX_REPLY_INVALID", cause)));
+    return mailboxDeliveries.filter(
+      (mailboxDelivery) => mailboxDelivery.recipient === deliverySearch.recipient,
+    );
   });
 
 const waitForMailboxLink = (linkSearch: {
@@ -76,7 +56,6 @@ const waitForMailboxLink = (linkSearch: {
             .flatMap((mailboxDelivery) => linksInDelivery(mailboxDelivery.link, mailLinkPattern))
             .find((matchedLink) => matchedLink.startsWith(linkSearch.prefix)),
         ),
-        Effect.orElseSucceed(() => undefined),
       ),
     deadline: deadlineIn(deliveryTimeout),
     reason: "VERIFY_VERIFICATION_MAIL_NOT_DELIVERED",

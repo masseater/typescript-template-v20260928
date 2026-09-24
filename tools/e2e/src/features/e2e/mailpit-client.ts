@@ -1,8 +1,16 @@
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 
 import { failed, type JourneyFailure } from "./journey-failure.ts";
 import { deliveryTimeout, mailLinkPattern } from "./mail.ts";
 import { deadlineIn, until } from "./waiting.ts";
+
+const MailpitInbox = Schema.Struct({
+  messages: Schema.Array(Schema.Struct({ ID: Schema.String })),
+});
+
+const MailpitMessage = Schema.Struct({
+  Text: Schema.String,
+});
 
 const findLink = (search: {
   readonly deliveries: readonly string[];
@@ -15,24 +23,34 @@ const findLink = (search: {
     .find((link) => link.startsWith(search.prefix));
 };
 
-const readMessage = (
-  fetchImpl: typeof fetch,
-  messageUrl: string,
-): Effect.Effect<string, JourneyFailure> =>
-  Effect.gen(function* loadMailpitMessage() {
+const fetchMailpitJson = <Decoded>(mailpitRequest: {
+  readonly fetchImpl: typeof fetch;
+  readonly invalidReason: string;
+  readonly schema: Schema.Decoder<Decoded>;
+  readonly unreachableReason: string;
+  readonly url: string;
+}): Effect.Effect<Decoded, JourneyFailure> =>
+  Effect.gen(function* loadMailpitJson() {
     const mailpitHttpReply = yield* Effect.tryPromise({
-      catch: (cause) => failed("MAILPIT_MESSAGE_UNAVAILABLE", cause),
-      try: (signal) => fetchImpl(messageUrl, { signal }),
+      catch: (cause) => failed(mailpitRequest.unreachableReason, cause),
+      try: (signal) => mailpitRequest.fetchImpl(mailpitRequest.url, { signal }),
     });
     if (!mailpitHttpReply.ok) {
-      return yield* failed("MAILPIT_MESSAGE_UNAVAILABLE");
+      return yield* failed(
+        mailpitRequest.unreachableReason,
+        `HTTP ${String(mailpitHttpReply.status)}`,
+      );
     }
-    const mailpitJson = (yield* Effect.tryPromise({
-      catch: (cause) => failed("MAILPIT_MESSAGE_UNAVAILABLE", cause),
+    const mailpitJson = yield* Effect.tryPromise({
+      catch: (cause) => failed(mailpitRequest.invalidReason, cause),
       try: () => mailpitHttpReply.json(),
-    })) as { Text?: string };
-    return mailpitJson.Text ?? "";
+    });
+    return yield* Schema.decodeUnknownEffect(mailpitRequest.schema)(mailpitJson).pipe(
+      Effect.mapError((cause) => failed(mailpitRequest.invalidReason, cause)),
+    );
   });
+
+const messageText = (mailpitMessage: typeof MailpitMessage.Type): string => mailpitMessage.Text;
 
 const searchInbox = (inboxSearch: {
   readonly fetchImpl: typeof fetch;
@@ -40,22 +58,21 @@ const searchInbox = (inboxSearch: {
   readonly searchUrl: string;
 }): Effect.Effect<readonly string[], JourneyFailure> =>
   Effect.gen(function* loadMailpitInbox() {
-    const mailpitHttpReply = yield* Effect.tryPromise({
-      catch: (cause) => failed("VERIFY_VERIFICATION_MAIL_NOT_DELIVERED", cause),
-      try: (signal) => inboxSearch.fetchImpl(inboxSearch.searchUrl, { signal }),
+    const mailpitInbox = yield* fetchMailpitJson({
+      fetchImpl: inboxSearch.fetchImpl,
+      invalidReason: "MAILPIT_REPLY_INVALID",
+      schema: MailpitInbox,
+      unreachableReason: "MAILPIT_UNREACHABLE",
+      url: inboxSearch.searchUrl,
     });
-    if (!mailpitHttpReply.ok) {
-      return [];
-    }
-    const mailpitJson = (yield* Effect.tryPromise({
-      catch: (cause) => failed("VERIFY_VERIFICATION_MAIL_NOT_DELIVERED", cause),
-      try: () => mailpitHttpReply.json(),
-    })) as {
-      messages?: readonly { ID: string }[];
-    };
-    const inboxRows = mailpitJson.messages ?? [];
-    return yield* Effect.forEach(inboxRows, (inboxRow) =>
-      readMessage(inboxSearch.fetchImpl, inboxSearch.messageUrl(inboxRow.ID)),
+    return yield* Effect.forEach(mailpitInbox.messages, (inboxRow) =>
+      fetchMailpitJson({
+        fetchImpl: inboxSearch.fetchImpl,
+        invalidReason: "MAILPIT_REPLY_INVALID",
+        schema: MailpitMessage,
+        unreachableReason: "MAILPIT_MESSAGE_UNAVAILABLE",
+        url: inboxSearch.messageUrl(inboxRow.ID),
+      }).pipe(Effect.map(messageText)),
     );
   });
 
@@ -79,7 +96,6 @@ const waitForMailpitLink = (linkSearch: {
             recipient: linkSearch.recipient,
           }),
         ),
-        Effect.orElseSucceed(() => undefined),
       ),
     deadline: deadlineIn(deliveryTimeout),
     reason: "VERIFY_VERIFICATION_MAIL_NOT_DELIVERED",
