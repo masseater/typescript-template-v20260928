@@ -26,11 +26,13 @@ const stepUp = (method: StrongAuthenticationMethod, code: string): Effect.Effect
 
 const requestEmailChange = ({
   code,
+  currentEmail,
   method,
   newEmail,
   showNotice,
 }: {
   readonly code: { readonly value: string; readonly handleChange: (next: string) => void };
+  readonly currentEmail: string;
   readonly method: StrongAuthenticationMethod;
   readonly newEmail: { readonly value: string; readonly handleChange: (next: string) => void };
   readonly showNotice: (notice: string) => void;
@@ -38,6 +40,9 @@ const requestEmailChange = ({
   Effect.gen(function* changeEmail() {
     if (newEmail.value === "") {
       return yield* Effect.die(new Error("新しいメールアドレスを入力してください。"));
+    }
+    if (newEmail.value.toLowerCase() === currentEmail) {
+      return yield* Effect.die(new Error("いまのメールアドレスと同じです。"));
     }
     yield* stepUp(method, code.value);
     requireSuccess(yield* authTask(() => authClient.changeEmail({ newEmail: newEmail.value })));
@@ -56,7 +61,17 @@ const EmailChangeForm = ({
   const { clearNotice, notice, showNotice } = useNotice();
   const confirmChange = (method: StrongAuthenticationMethod): void => {
     clearNotice();
-    action.run(() => Effect.runPromise(requestEmailChange({ code, method, newEmail, showNotice })));
+    action.run(() =>
+      Effect.runPromise(
+        requestEmailChange({
+          code,
+          currentEmail: session.user.email,
+          method,
+          newEmail,
+          showNotice,
+        }),
+      ),
+    );
   };
   const submit = (submitEvent: Readonly<Pick<SyntheticEvent, "preventDefault">>): void => {
     submitEvent.preventDefault();
