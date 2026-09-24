@@ -38,6 +38,10 @@ it.effect("structured console lines are decoded from the Local Explorer message 
     assert.strictEqual(withEvent({ message: getLine }).event, "unparsable");
     assert.isUndefined(withEvent({ message: unrelatedMessage }).event);
     assert.strictEqual(withEvent({ message: "{not-json" }).event, "unparsable");
+    const arrayLine = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(["[1]"]);
+    assert.strictEqual(withEvent({ message: arrayLine }).event, "unparsable");
+    const numberLine = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(["42"]);
+    assert.strictEqual(withEvent({ message: numberLine }).event, "unparsable");
   }),
 );
 
