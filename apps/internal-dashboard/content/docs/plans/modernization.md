@@ -14,7 +14,7 @@ TanStack Start、Elysia、Effect v4 をもとにし、Cloudflare 上で動かし
 | 置き換え前 | 置き換え先 | 置き換える理由 | 状況 |
 | --- | --- | --- | --- |
 | Pulumi | Alchemy v2 | Cloudflare のリソース定義と、そのリソースを使うアプリのコードを 1 つの Effect プログラムに書けます | 導入済み |
-| valibot、zod | Effect Schema | 検証とシリアライズのスキーマを Effect の型に揃えます | 一部。zod が fumadocs の要求する依存として wiki に残っています |
+| valibot、zod | Effect Schema | 検証とシリアライズのスキーマを Effect の型に揃えます | 導入済み |
 | Drizzle ORM 0.45 | Drizzle ORM v1 | `drizzle-orm/effect-schema` で DB スキーマから Effect Schema を作れます | 導入済み |
 
 ## 基盤

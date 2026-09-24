@@ -66,7 +66,7 @@ const effectStackVisitor = (inspection: LintContext): Visitor => {
       return;
     }
     if (
-      /^valibot(?:\/|$)/u.test(source) ||
+      /^(?:valibot|zod)(?:\/|$)/u.test(source) ||
       (/^elysia(?:\/|$)/u.test(source) && !elysiaFactory && !typeOnly)
     ) {
       reportViolation(inspection, node);

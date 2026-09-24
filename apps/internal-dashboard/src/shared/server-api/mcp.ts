@@ -1,14 +1,13 @@
 import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
 import { APPLICATION, readWikiBindings, wikiApiBinding } from "@repo/config";
-import { WikiRpcs, makeRpcClient } from "@repo/core-api";
+import { WikiRpcs, makeRpcClient, readWikiPage, searchWiki } from "@repo/core-api";
 import { reportFailure } from "@repo/observability";
 import { AppOrigin, secureResponse } from "@repo/runtime/http";
 import { env } from "cloudflare:workers";
-import { Cause, Effect } from "effect";
-import { z } from "zod";
+import { Cause, Effect, Schema } from "effect";
 
 import { authorizeMcpRequest } from "#shared/wiki/index.ts";
-import { registerDashboardTools } from "./mcp-dashboard.ts";
+import { EmptyInput, registerDashboardTools } from "./mcp-dashboard.ts";
 import { runtime } from "./runtime.ts";
 
 import type { WikiServices } from "#shared/wiki/index.ts";
@@ -21,6 +20,13 @@ type WikiClient = RpcClient.RpcClient<RpcGroup.Rpcs<typeof WikiRpcs>, RpcClientE
 type ToolResult = { content: { text: string; type: "text" }[]; isError?: boolean };
 
 const mcpVersion = "1.0.0";
+
+const SearchInput = Schema.toStandardJSONSchemaV1(
+  Schema.toStandardSchemaV1(searchWiki.payloadSchema),
+);
+const PageInput = Schema.toStandardJSONSchemaV1(
+  Schema.toStandardSchemaV1(readWikiPage.payloadSchema),
+);
 
 function text(content: string): ToolResult {
   return { content: [{ text: content, type: "text" }] };
@@ -49,7 +55,7 @@ function createServer(binding: ServiceFetcher, context: Context.Context<WikiServ
     "search",
     {
       description: "Search docs pages with a query",
-      inputSchema: z.object({ query: z.string() }),
+      inputSchema: SearchInput,
       title: "Search Docs",
     },
     ({ query }) =>
@@ -61,7 +67,7 @@ function createServer(binding: ServiceFetcher, context: Context.Context<WikiServ
     "list_pages",
     {
       description: "List all docs pages with their pathnames (URLs)",
-      inputSchema: z.object({}),
+      inputSchema: EmptyInput,
       title: "List Pages",
     },
     () => callWiki(binding, (wiki) => wiki.listWikiPages({}).pipe(Effect.map(text))),
@@ -70,7 +76,7 @@ function createServer(binding: ServiceFetcher, context: Context.Context<WikiServ
     "get_page",
     {
       description: "Get the Markdown content of a docs page by its pathname (URL)",
-      inputSchema: z.object({ url: z.string() }),
+      inputSchema: PageInput,
       title: "Get Page",
     },
     ({ url }) =>

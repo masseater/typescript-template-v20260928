@@ -33,4 +33,4 @@ const readWikiPage = Rpc.make("readWikiPage", {
 
 class WikiRpcs extends RpcGroup.make(searchWiki, listWikiPages, readWikiPage) {}
 
-export { WikiRpcs, WikiSearchHits };
+export { WikiRpcs, WikiSearchHits, readWikiPage, searchWiki };
