@@ -27,18 +27,18 @@ export const STAFF_PERMISSION = {
 export const accountPermissions = [...adminPermissions, STAFF_PERMISSION.editor] as const;
 export type AccountPermission = (typeof accountPermissions)[number];
 
-const levelIndex = (levels: readonly string[], held: string | null | undefined): number =>
+const levelIndex = (levels: readonly AccountPermission[], held: AccountPermission | null): number =>
   levels.findIndex((level) => level === held);
 
 export type AdminPermission = (typeof adminPermissions)[number];
 export const grantsAdminLevel = (
-  held: string | null | undefined,
+  held: AccountPermission | null,
   required: AdminPermission,
 ): boolean => levelIndex(adminPermissions, held) >= adminPermissions.indexOf(required);
 
 export type StaffPermission = (typeof staffPermissions)[number];
 export const grantsStaffLevel = (
-  held: string | null | undefined,
+  held: AccountPermission | null,
   required: StaffPermission,
 ): boolean => levelIndex(staffPermissions, held) >= staffPermissions.indexOf(required);
 

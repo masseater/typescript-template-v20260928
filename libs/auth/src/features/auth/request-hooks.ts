@@ -3,6 +3,7 @@ import {
   audienceRoles,
   loopbackHosts,
   type Application,
+  type Role,
 } from "@repo/config";
 import {
   hasEnrolledFactor,
@@ -193,7 +194,7 @@ const verifyChallengeAudience = Effect.fn("verifyChallengeAudience")(
 type SessionPolicyInput = {
   readonly audience: Application;
   readonly path: string;
-  readonly role: string;
+  readonly role: Role;
   readonly strong: boolean;
   readonly userId: string;
 };

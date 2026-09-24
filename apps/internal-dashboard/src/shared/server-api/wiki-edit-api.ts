@@ -1,5 +1,10 @@
 import { verifySession } from "@repo/auth";
-import { STAFF_PERMISSION, grantsStaffLevel, httpStatus } from "@repo/config";
+import {
+  STAFF_PERMISSION,
+  grantsStaffLevel,
+  httpStatus,
+  type AccountPermission,
+} from "@repo/config";
 import {
   WikiDraftConflict,
   discardWikiDraft,
@@ -75,7 +80,7 @@ const publishedSource = Effect.fn("publishedSource")(function* publishedSource(p
   return { markdown, revision: yield* gitBlobRevision(markdown) };
 });
 
-const canPublish = (user: Readonly<{ permission: string | null }>): boolean =>
+const canPublish = (user: Readonly<{ permission: AccountPermission | null }>): boolean =>
   grantsStaffLevel(user.permission, STAFF_PERMISSION.editor);
 
 const settledDraft = Effect.fn("settledWikiDraft")(function* settledDraft(
@@ -95,7 +100,7 @@ const settledDraft = Effect.fn("settledWikiDraft")(function* settledDraft(
 
 const openSource = Effect.fn("openSource")(function* openSource(
   path: string,
-  user: Readonly<{ permission: string | null }>,
+  user: Readonly<{ permission: AccountPermission | null }>,
 ) {
   const published = yield* publishedSource(path);
   const publisher = yield* WikiPublisher;

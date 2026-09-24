@@ -1,4 +1,11 @@
-import { ADMIN_PERMISSION, Email, ROLE, STAFF_PERMISSION, type Role } from "@repo/config";
+import {
+  ADMIN_PERMISSION,
+  Email,
+  ROLE,
+  STAFF_PERMISSION,
+  type AccountPermission,
+  type Role,
+} from "@repo/config";
 import { sql, type SQL } from "drizzle-orm";
 import { Clock, Effect, Schema, Struct } from "effect";
 
@@ -16,7 +23,7 @@ type BootstrapKind = typeof BootstrapKind.Type;
 const bootstrapRoles = {
   [BOOTSTRAP_KIND.admin]: { permission: ADMIN_PERMISSION.owner, role: ROLE.administrator },
   [BOOTSTRAP_KIND.staff]: { permission: STAFF_PERMISSION.editor, role: ROLE.staff },
-} as const satisfies Readonly<Record<BootstrapKind, { permission: string; role: Role }>>;
+} as const satisfies Readonly<Record<BootstrapKind, { permission: AccountPermission; role: Role }>>;
 
 const BootstrappedAdmin = Schema.Struct({
   ...Struct.pick(UserRow.fields, ["email", "id"]),

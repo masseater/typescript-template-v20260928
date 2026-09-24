@@ -1,4 +1,4 @@
-import { audienceRoles, type Application } from "@repo/config";
+import { audienceRoles, type Application, type Role } from "@repo/config";
 import { lookupSessionByToken } from "@repo/db";
 import { DateTime, Effect } from "effect";
 
@@ -42,7 +42,7 @@ const verifyPrivileged = Effect.fn("verifyPrivileged")(function* verifyPrivilege
 }: {
   readonly allowEnrollment: boolean;
   readonly audience: Application;
-  readonly role: string;
+  readonly role: Role;
   readonly strong: boolean;
 }) {
   if (role !== audienceRoles[audience]) {
