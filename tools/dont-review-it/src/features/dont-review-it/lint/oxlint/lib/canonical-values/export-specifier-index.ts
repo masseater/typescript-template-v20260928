@@ -16,11 +16,12 @@ import {
   validPackageExportTargetPattern,
   winningPackageExportSubpath,
 } from "./package-export-target.ts";
+import { readPackageManifest } from "./package-manifest-file.ts";
 import { EXPORTS_CONDITION_DEPTH_LIMIT, MANIFEST_FILE_NAME } from "./package-manifest.ts";
-import { readJsonFile } from "./read-json-file.ts";
 import { listRepositoryFiles } from "./source-files.ts";
 import { resolveTypeScriptSymbol } from "./typescript-symbol.ts";
 
+import type { PackageManifest } from "../../../../platform/package-manifest.ts";
 import type { CanonicalValuesImportRoute } from "./catalog.ts";
 
 const realPathIsInside = (parent: string, candidate: string): boolean => {
@@ -228,13 +229,12 @@ const packageSurfaces = ({
   });
 };
 
-type PackageManifest = Readonly<Record<string, unknown>> & { readonly name: string };
+type NamedPackageManifest = PackageManifest & { readonly name: string };
 
-const packageManifest = (packageDirectory: string): PackageManifest | null => {
-  const manifest = readJsonFile(path.join(packageDirectory, MANIFEST_FILE_NAME));
-  if (!isPlainObject(manifest)) return null;
-  const { name } = manifest;
-  return typeof name === "string" && name.length > 0 ? { ...manifest, name } : null;
+const packageManifest = (packageDirectory: string): NamedPackageManifest | null => {
+  const manifest = readPackageManifest(packageDirectory);
+  const name = manifest?.name ?? "";
+  return manifest === null || name === "" ? null : { ...manifest, name };
 };
 
 export const publicPackageEntries = (
@@ -244,7 +244,7 @@ export const publicPackageEntries = (
   if (manifest === null) return [];
   const packageName = manifest.name;
 
-  const exportsField = "exports" in manifest ? manifest.exports : undefined;
+  const exportsField = manifest.exports;
   return packageSurfaces({ exportsField, packageDirectory, packageName }).flatMap((surface) =>
     surface.sourceFiles.map((sourceFile) => ({ sourceFile, specifier: surface.specifier })),
   );

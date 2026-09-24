@@ -1,24 +1,20 @@
-import { isPlainObject } from "es-toolkit";
 import { describe, expect, it } from "vite-plus/test";
 
-import { field, workspaceManifests } from "./dependencies-test-fixture.ts";
+import { packageManifestFrom } from "../platform/package-manifest.ts";
+import { rootManifest, workspaceManifests } from "./dependencies-test-fixture.ts";
 import { scriptViolations, taskViolations } from "./scripts-test-fixture.ts";
 import { configuredDirectories, workspaceTasks } from "./tasks-test-fixture.ts";
 
 import type { WorkspaceManifest } from "./dependencies-test-fixture.ts";
 
 function packageNames(manifests: readonly WorkspaceManifest[]): string[] {
-  return manifests.flatMap(({ manifest }) => {
-    const name = field(manifest, "name");
-    return typeof name === "string" ? [name] : [];
-  });
+  return manifests.flatMap(({ manifest }) => (manifest.name === undefined ? [] : [manifest.name]));
 }
 
 function toolReferences({ file, manifest }: WorkspaceManifest, tools: readonly string[]): string[] {
-  const declared = ["dependencies", "devDependencies", "scripts"].flatMap((key) => {
-    const value = field(manifest, key);
-    return isPlainObject(value) ? Object.entries(value) : [];
-  });
+  const declared = (["dependencies", "devDependencies", "scripts"] as const).flatMap((key) =>
+    Object.entries(manifest[key] ?? {}),
+  );
   return declared
     .filter(([key, value]: readonly [string, unknown]) =>
       tools.some((tool) => key === tool || (typeof value === "string" && value.includes(tool))),
@@ -28,14 +24,6 @@ function toolReferences({ file, manifest }: WorkspaceManifest, tools: readonly s
 
 const repositoryTaskViolations = configuredDirectories.flatMap((directory) =>
   taskViolations(workspaceTasks[directory] ?? {}).map((violation) => `${directory}: ${violation}`),
-);
-
-const rootManifest: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../../../../../package.json",
-  {
-    eager: true,
-    import: "default",
-  },
 );
 
 const packageManagerCommands = [
@@ -116,10 +104,16 @@ describe("workspace script conventions", () => {
 
   it("rejects malformed script definitions", () => {
     expect.hasAssertions();
-    expect(() => scriptViolations({ scripts: { setup: false } })).toThrow(
-      "Script setup must be a string",
+    expect(() =>
+      packageManifestFrom({ declared: { scripts: { setup: false } }, source: "package.json" }),
+    ).toThrow(
+      'package.json does not match the package manifest schema: SchemaError(Expected string\n  at ["scripts"]["setup"])',
     );
-    expect(() => scriptViolations({ scripts: [] })).toThrow("scripts must be an object");
+    expect(() =>
+      packageManifestFrom({ declared: { scripts: [] }, source: "package.json" }),
+    ).toThrow(
+      'package.json does not match the package manifest schema: SchemaError(Expected object\n  at ["scripts"])',
+    );
     expect(() => scriptViolations({ scripts: { setup: "vp run 'broken" } })).toThrow(
       "unfinished shell quote",
     );
@@ -128,7 +122,7 @@ describe("workspace script conventions", () => {
   it("all repository workspace manifests run scripts through Vite+", () => {
     expect.assertions(1);
     const manifests = [
-      { area: ".", file: "package.json", manifest: rootManifest["../../../../../../package.json"] },
+      { area: ".", file: "package.json", manifest: rootManifest },
       ...workspaceManifests,
     ];
     const violations = manifests.flatMap(({ file, manifest }) =>

@@ -35,13 +35,15 @@ layer(NodeServices.layer)("setup-modules/export-specifier-index", (it) => {
       });
 
       yield* filesystem.writeFileString(paths.join(packageRoot, "package.json"), "[]");
-      return buildSetupExportSpecifierIndex(packageRoot);
+      return packageRoot;
     });
 
-    it.effect("indexes no source", () =>
+    it.effect("fails at the manifest instead of indexing nothing", () =>
       Effect.gen(function* program() {
-        const specifierIndex = yield* fixture;
-        expect(specifierIndex).toStrictEqual(new Map<string, string>());
+        const packageRoot = yield* fixture;
+        expect(() => buildSetupExportSpecifierIndex(packageRoot)).toThrow(
+          "package.json does not match the package manifest schema: SchemaError(Expected object)",
+        );
       }),
     );
   });

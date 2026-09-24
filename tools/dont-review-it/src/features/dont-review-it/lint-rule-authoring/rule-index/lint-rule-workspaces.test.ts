@@ -238,26 +238,25 @@ layer(NodeServices.layer)("lintRuleWorkspacesIn", (it) => {
   });
 
   describe("a manifest that is not an object", () => {
-    const workspacesFixture = Effect.gen(function* workspaces() {
+    const failureTagFixture = Effect.gen(function* failureTag() {
       const filesystem = yield* FileSystem.FileSystem;
       const paths = yield* Path.Path;
       const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "lint-rule-workspaces-" });
 
       yield* filesystem.makeDirectory(paths.join(root, "packages/scalar"), { recursive: true });
-      yield* filesystem.makeDirectory(paths.join(root, "packages/nothing"), { recursive: true });
       yield* filesystem.writeFileString(
         paths.join(root, "pnpm-workspace.yaml"),
         "packages:\n  - packages/*\n",
       );
       yield* filesystem.writeFileString(paths.join(root, "packages/scalar/package.json"), "42");
-      yield* filesystem.writeFileString(paths.join(root, "packages/nothing/package.json"), "null");
-      return yield* lintRuleWorkspacesIn(root);
+      const failure = yield* Effect.flip(lintRuleWorkspacesIn(root));
+      return failure._tag;
     });
 
-    it.effect("declares nothing", () =>
+    it.effect("is raised instead of being skipped", () =>
       Effect.gen(function* program() {
-        const workspaces = yield* workspacesFixture;
-        expect(workspaces).toStrictEqual([]);
+        const failureTag = yield* failureTagFixture;
+        expect(failureTag).toBe("SchemaError");
       }),
     );
   });
@@ -296,7 +295,6 @@ layer(NodeServices.layer)("lintRuleWorkspacesIn", (it) => {
       const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "lint-rule-workspaces-" });
 
       yield* filesystem.makeDirectory(paths.join(root, "packages/plain"), { recursive: true });
-      yield* filesystem.makeDirectory(paths.join(root, "packages/wrong"), { recursive: true });
       yield* filesystem.writeFileString(
         paths.join(root, "pnpm-workspace.yaml"),
         "packages:\n  - packages/*\n",
@@ -304,13 +302,6 @@ layer(NodeServices.layer)("lintRuleWorkspacesIn", (it) => {
       yield* filesystem.writeFileString(
         paths.join(root, "packages/plain/package.json"),
         yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({ name: "plain" }),
-      );
-      yield* filesystem.writeFileString(
-        paths.join(root, "packages/wrong/package.json"),
-        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
-          name: "wrong",
-          lintRules: "src/rules",
-        }),
       );
       return yield* lintRuleWorkspacesIn(root);
     });
@@ -324,13 +315,12 @@ layer(NodeServices.layer)("lintRuleWorkspacesIn", (it) => {
   });
 
   describe("declared directories holding an entry that is not a word", () => {
-    const workspacesFixture = Effect.gen(function* workspaces() {
+    const failureTagFixture = Effect.gen(function* failureTag() {
       const filesystem = yield* FileSystem.FileSystem;
       const paths = yield* Path.Path;
       const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "lint-rule-workspaces-" });
 
       yield* filesystem.makeDirectory(paths.join(root, "packages/mixed"), { recursive: true });
-      yield* filesystem.makeDirectory(paths.join(root, "packages/hollow"), { recursive: true });
       yield* filesystem.writeFileString(
         paths.join(root, "pnpm-workspace.yaml"),
         "packages:\n  - packages/*\n",
@@ -341,19 +331,14 @@ layer(NodeServices.layer)("lintRuleWorkspacesIn", (it) => {
           lintRules: [7, "src/rules"],
         }),
       );
-      yield* filesystem.writeFileString(
-        paths.join(root, "packages/hollow/package.json"),
-        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({ lintRules: [7] }),
-      );
-      return yield* lintRuleWorkspacesIn(root);
+      const failure = yield* Effect.flip(lintRuleWorkspacesIn(root));
+      return failure._tag;
     });
 
-    it.effect("drops that entry and keeps the workspace that has words left", () =>
+    it.effect("is raised instead of being dropped", () =>
       Effect.gen(function* program() {
-        const workspaces = yield* workspacesFixture;
-        expect(workspaces).toStrictEqual([
-          { workspaceDir: "packages/mixed", ruleDirectories: ["src/rules"] },
-        ]);
+        const failureTag = yield* failureTagFixture;
+        expect(failureTag).toBe("SchemaError");
       }),
     );
   });

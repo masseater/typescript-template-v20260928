@@ -1,4 +1,4 @@
-import { isPlainObject } from "es-toolkit";
+import type { PackageManifest } from "../../../../platform/package-manifest.ts";
 
 const ALIAS_PROTOCOL = "npm:";
 
@@ -40,23 +40,17 @@ export type DeclaredDependency = {
   readonly declaredVersion: string;
 };
 
-const sectionDependencies = (section: unknown): readonly DeclaredDependency[] => {
-  if (!isPlainObject(section)) return [];
-
-  return Object.entries(section).flatMap(([declaredName, declaredValue]) => {
-    if (typeof declaredValue !== "string") return [];
+const sectionDependencies = (
+  section: Readonly<Record<string, string>> | undefined,
+): readonly DeclaredDependency[] =>
+  Object.entries(section ?? {}).flatMap(([declaredName, declaredValue]) => {
     const packageName = packageNameOf({ declaredName, declaredVersion: declaredValue });
     return packageName === null ? [] : [{ packageName, declaredVersion: declaredValue }];
   });
-};
 
-const DEPENDENCY_SECTIONS: readonly string[] = [
-  "dependencies",
-  "devDependencies",
-  "optionalDependencies",
-];
+const DEPENDENCY_SECTIONS = ["dependencies", "devDependencies", "optionalDependencies"] as const;
 
-export const declaredDependenciesIn = (manifest: unknown): readonly DeclaredDependency[] =>
-  isPlainObject(manifest)
-    ? DEPENDENCY_SECTIONS.flatMap((section) => sectionDependencies(manifest[section]))
-    : [];
+export const declaredDependenciesIn = (
+  manifest: PackageManifest | null,
+): readonly DeclaredDependency[] =>
+  DEPENDENCY_SECTIONS.flatMap((section) => sectionDependencies(manifest?.[section]));

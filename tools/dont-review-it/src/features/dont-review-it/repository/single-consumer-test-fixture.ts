@@ -7,12 +7,13 @@ import { path } from "../platform/path.ts";
 import { posixPath } from "../platform/path.ts";
 import {
   declaredDependencies,
-  field,
-  rootManifests,
+  rootManifest,
   workspaceManifests,
   type WorkspaceManifest,
 } from "./dependencies-test-fixture.ts";
 import { commands, taskNames } from "./tasks-test-fixture.ts";
+
+import type { PackageManifest } from "../platform/package-manifest.ts";
 
 const areas = new Set(["apps", "libs", "infra", "tools"]);
 
@@ -397,35 +398,29 @@ const subpathTarget = (
   return { specifier: `${packageName}/${key.slice(2)}`, wildcard: false };
 };
 
-const exportKeys = (manifest: unknown): readonly string[] => {
-  const exportsField = field(manifest, "exports");
-  return isPlainObject(exportsField) ? Object.keys(exportsField) : [];
-};
+const exportKeys = (manifest: PackageManifest): readonly string[] =>
+  isPlainObject(manifest.exports) ? Object.keys(manifest.exports) : [];
 
-const declaredBins = (manifest: unknown): readonly string[] => {
-  const bin = field(manifest, "bin");
+const declaredBins = (manifest: PackageManifest): readonly string[] => {
+  const { bin, name } = manifest;
   if (typeof bin === "string") {
-    const name = field(manifest, "name");
-    return typeof name === "string" ? [name.replace(/^@[^/]+\//u, "")] : [];
+    return name === undefined ? [] : [name.replace(/^@[^/]+\//u, "")];
   }
-  return isPlainObject(bin) ? Object.keys(bin) : [];
+  return Object.keys(bin ?? {});
 };
 
 const rootScriptCommands = (workspaces: readonly WorkspaceManifest[]): readonly string[] =>
   workspaces
     .filter((workspace) => directoryOf(workspace.file) === "root")
     .flatMap((workspace) => {
-      const scripts = field(workspace.manifest, "scripts");
-      return isPlainObject(scripts)
-        ? Object.values(scripts).filter((command): command is string => typeof command === "string")
-        : [];
+      return Object.values(workspace.manifest.scripts ?? {});
     });
 
 const invokedWords = (rootCommands: readonly string[]): ReadonlySet<string> =>
   new Set(rootCommands.flatMap((command) => command.split(/[\s;&|()]+/u)));
 
 const runOnlyByRoot = (input: {
-  readonly manifest: unknown;
+  readonly manifest: PackageManifest;
   readonly consumers: readonly string[];
   readonly imported: readonly string[];
   readonly invoked: ReadonlySet<string>;
@@ -444,8 +439,8 @@ type CheckedWorkspace = {
 };
 
 const checkedWorkspace = (workspace: WorkspaceManifest): CheckedWorkspace | undefined => {
-  const name = field(workspace.manifest, "name");
-  if (typeof name !== "string" || (workspace.area !== "libs" && workspace.area !== "tools")) {
+  const { name } = workspace.manifest;
+  if (name === undefined || (workspace.area !== "libs" && workspace.area !== "tools")) {
     return undefined;
   }
   return { workspace, name, self: directoryOf(workspace.file) };
@@ -535,11 +530,7 @@ const singleConsumerFindings = (
 
 const repositoryWorkspaces = (): readonly WorkspaceManifest[] => [
   ...workspaceManifests,
-  ...Object.entries(rootManifests).map(([, manifest]) => ({
-    area: ".",
-    file: "package.json",
-    manifest,
-  })),
+  { area: ".", file: "package.json", manifest: rootManifest },
 ];
 
 const repositorySingleConsumerFindings: TreeScan<readonly Finding[]> = Effect.map(

@@ -2,19 +2,16 @@ import { isPlainObject, zip } from "es-toolkit";
 
 import { matchesGlobSegment } from "../../../../lint-rule-authoring/index.ts";
 import { path } from "../../../../platform/path.ts";
+import { readPackageManifest } from "../canonical-values/package-manifest-file.ts";
 import {
   EXPORTS_CONDITION_DEPTH_LIMIT,
   MANIFEST_FILE_NAME,
 } from "../canonical-values/package-manifest.ts";
-import { readJsonFile } from "../canonical-values/read-json-file.ts";
 import { isFile } from "../canonical-values/source-files.ts";
 import { segmentsOf } from "../path-segments.ts";
 import { toPosixPath } from "../posix-path.ts";
 
-const manifestOf = (packageDirectory: string): Readonly<Record<string, unknown>> | null => {
-  const read = readJsonFile(path.join(packageDirectory, MANIFEST_FILE_NAME));
-  return isPlainObject(read) ? read : null;
-};
+import type { PackageManifest } from "../../../../platform/package-manifest.ts";
 
 const RELATIVE_TARGET_PREFIX = "./";
 
@@ -43,18 +40,16 @@ const entriesUnder = (
   );
 };
 
-const runnableEntriesOf = (manifest: Readonly<Record<string, unknown>>): readonly DeclaredEntry[] =>
+const runnableEntriesOf = (manifest: PackageManifest): readonly DeclaredEntry[] =>
   entriesUnder(manifest.bin, { subpath: ".", depth: 0 });
 
-const importableEntriesOf = (
-  manifest: Readonly<Record<string, unknown>>,
-): readonly DeclaredEntry[] => [
+const importableEntriesOf = (manifest: PackageManifest): readonly DeclaredEntry[] => [
   ...entriesUnder(manifest.exports, { subpath: ".", depth: 0 }),
   ...entriesUnder(manifest.main, { subpath: ".", depth: 0 }),
 ];
 
 const declaredEntriesOf = (packageDirectory: string): readonly DeclaredEntry[] => {
-  const manifest = manifestOf(packageDirectory);
+  const manifest = readPackageManifest(packageDirectory);
   if (manifest === null) return [];
   return [...importableEntriesOf(manifest), ...runnableEntriesOf(manifest)];
 };
@@ -90,7 +85,7 @@ export const declaresPublicSubpath = ({
   readonly packageDirectory: string;
   readonly subpath: string;
 }): boolean => {
-  const manifest = manifestOf(packageDirectory);
+  const manifest = readPackageManifest(packageDirectory);
   if (manifest === null) return false;
 
   const declared = importableEntriesOf(manifest).map((listed) => listed.subpath);

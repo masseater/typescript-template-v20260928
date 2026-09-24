@@ -6,7 +6,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { parse } from "yaml";
 
 import { directoryEntries, filesUnder, type TreeFailure } from "../platform/directory-entries.ts";
-import { field, rootManifests } from "./dependencies-test-fixture.ts";
+import { rootManifest } from "./dependencies-test-fixture.ts";
 import { frozenOnDemandGateEntries, onDemandGateEntries } from "./on-demand-checks-test-fixture.ts";
 import {
   commands,
@@ -50,8 +50,8 @@ const gatedTask = /^(?:build|check|verify)(?::|$)/u;
 const minuteLongCommands = ["vp run", "vp test", "vp build", "vp pack"];
 const lifecycleWorkflows = new Set(["check.yml", "prerelease.yml"]);
 
-const engines = field(rootManifests["../../../../../../package.json"], "engines");
-const [, requiredNodeMajor = ""] = /^>=(?<major>\d+)\./u.exec(String(field(engines, "node"))) ?? [];
+const [, requiredNodeMajor = ""] =
+  /^>=(?<major>\d+)\./u.exec(rootManifest.engines?.node ?? "") ?? [];
 
 const hookStages = Object.entries(hooks).map(
   ([file, source]) => [file.replace(/^.*\/pre-/u, "pre"), source] as const,

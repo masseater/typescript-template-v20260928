@@ -10,9 +10,11 @@ import {
   type SourceText,
 } from "./single-consumer-test-fixture.ts";
 
+import type { PackageManifest } from "../platform/package-manifest.ts";
+
 const workspace = (
   file: string,
-  manifest: unknown,
+  manifest: PackageManifest,
   area = file.split("/")[0] ?? ".",
 ): WorkspaceManifest => ({
   area,

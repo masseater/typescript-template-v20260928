@@ -21,13 +21,15 @@ layer(NodeServices.layer)("publicEntryFilesOf", (it) => {
       });
 
       yield* filesystem.writeFileString(pathService.join(root, "package.json"), "[]");
-      return publicEntryFilesOf(root);
+      return root;
     });
 
-    it.effect("declares no public entry", () =>
+    it.effect("fails at the manifest instead of declaring no public entry", () =>
       Effect.gen(function* program() {
         const entryFilesOfAManifestThatIsNotAnObject = yield* fixture;
-        expect(entryFilesOfAManifestThatIsNotAnObject).toBe(null);
+        expect(() => publicEntryFilesOf(entryFilesOfAManifestThatIsNotAnObject)).toThrow(
+          "package.json does not match the package manifest schema: SchemaError(Expected object)",
+        );
       }),
     );
   });
@@ -222,13 +224,20 @@ layer(NodeServices.layer)("declaresPublicSubpath", (it) => {
       });
 
       yield* filesystem.writeFileString(pathService.join(root, "package.json"), "[]");
-      return declaresPublicSubpath({ packageDirectory: root, subpath: "." });
+      return root;
     });
 
-    it.effect("declares no subpath", () =>
+    it.effect("fails at the manifest instead of declaring no subpath", () =>
       Effect.gen(function* program() {
         const subpathDeclaredByAManifestThatIsNotAnObject = yield* fixture;
-        expect(subpathDeclaredByAManifestThatIsNotAnObject).toBe(false);
+        expect(() =>
+          declaresPublicSubpath({
+            packageDirectory: subpathDeclaredByAManifestThatIsNotAnObject,
+            subpath: ".",
+          }),
+        ).toThrow(
+          "package.json does not match the package manifest schema: SchemaError(Expected object)",
+        );
       }),
     );
   });

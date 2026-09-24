@@ -3,6 +3,8 @@ import { parse } from "shell-quote";
 
 import { launchers, packageManagers, scriptPolicy } from "./script-policy-test-fixture.ts";
 
+import type { PackageManifest } from "../platform/package-manifest.ts";
+
 const segmentOperators = new Set(["&&", "||", ";", "|", "&", "|&", ";;"]);
 
 interface QuoteState {
@@ -120,20 +122,10 @@ function commandViolations(name: string, command: string): string[] {
   ];
 }
 
-function scriptViolations(manifest: unknown): string[] {
-  if (!isPlainObject(manifest) || !("scripts" in manifest)) {
-    return [];
-  }
-  const scripts: unknown = manifest.scripts;
-  if (!isPlainObject(scripts)) {
-    throw new Error("package.json scripts must be an object");
-  }
-  return Object.entries(scripts).flatMap(([entryName, command]: readonly [string, unknown]) => {
-    if (typeof command !== "string") {
-      throw new TypeError(`Script ${entryName} must be a string`);
-    }
-    return commandViolations(entryName, command);
-  });
+function scriptViolations(manifest: PackageManifest): string[] {
+  return Object.entries(manifest.scripts ?? {}).flatMap(([entryName, command]) =>
+    commandViolations(entryName, command),
+  );
 }
 
 type Command = string | readonly string[];

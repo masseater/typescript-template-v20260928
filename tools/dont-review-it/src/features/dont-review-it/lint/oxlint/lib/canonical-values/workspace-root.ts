@@ -1,8 +1,5 @@
-import { isPlainObject } from "es-toolkit";
-
 import { path } from "../../../../platform/path.ts";
-import { MANIFEST_FILE_NAME } from "./package-manifest.ts";
-import { readJsonFile } from "./read-json-file.ts";
+import { readPackageManifest } from "./package-manifest-file.ts";
 import { isFile } from "./source-files.ts";
 
 const WORKSPACE_MANIFEST_FILE_NAMES: readonly string[] = [
@@ -10,12 +7,8 @@ const WORKSPACE_MANIFEST_FILE_NAMES: readonly string[] = [
   "pnpm-workspace.yml",
 ];
 
-const WORKSPACES_FIELD = "workspaces";
-
-const manifestDeclaresWorkspaces = (directory: string): boolean => {
-  const manifest = readJsonFile(path.join(directory, MANIFEST_FILE_NAME));
-  return isPlainObject(manifest) && WORKSPACES_FIELD in manifest;
-};
+const manifestDeclaresWorkspaces = (directory: string): boolean =>
+  readPackageManifest(directory)?.workspaces !== undefined;
 
 const isWorkspaceRoot = (directory: string): boolean =>
   WORKSPACE_MANIFEST_FILE_NAMES.some((spelled) => isFile(path.join(directory, spelled))) ||

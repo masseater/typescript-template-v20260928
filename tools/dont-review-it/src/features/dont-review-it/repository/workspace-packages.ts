@@ -6,21 +6,12 @@ import { parseSync } from "oxc-parser";
 import { packageNameOf } from "../lint/oxlint/lib/package-specifier.ts";
 import { directoryEntries } from "../platform/directory-entries.ts";
 import { textOrNull } from "../platform/file-system.ts";
-import { dependencyFields, workspaceRoots } from "./workspace-layout.ts";
+import { packageDependencyFields, PackageManifest } from "../platform/package-manifest.ts";
+import { workspaceRoots } from "./workspace-layout.ts";
 
 import type { WorkspacePackage } from "./pr-affected-scope.ts";
 
-const DeclaredDependencies = Schema.optionalKey(Schema.Record(Schema.String, Schema.String));
-
-const PackageManifest = Schema.fromJsonString(
-  Schema.Struct({
-    dependencies: DeclaredDependencies,
-    devDependencies: DeclaredDependencies,
-    name: Schema.optionalKey(Schema.String),
-    optionalDependencies: DeclaredDependencies,
-    peerDependencies: DeclaredDependencies,
-  }),
-);
+const PackageManifestText = Schema.fromJsonString(PackageManifest);
 
 class UnnamedWorkspace extends Schema.TaggedError<UnnamedWorkspace>()("UnnamedWorkspace", {
   directory: Schema.String,
@@ -30,8 +21,8 @@ class UnnamedWorkspace extends Schema.TaggedError<UnnamedWorkspace>()("UnnamedWo
   }
 }
 
-const dependencyNames = (manifest: typeof PackageManifest.Type): readonly string[] =>
-  dependencyFields.flatMap((field) => {
+const dependencyNames = (manifest: PackageManifest): readonly string[] =>
+  packageDependencyFields.flatMap((field) => {
     const declared = manifest[field];
     if (declared === undefined) {
       return [];
@@ -60,7 +51,7 @@ const workspacePackages = Effect.gen(function* workspacePackages() {
       return yield* Effect.forEach(directories, (entry) =>
         Effect.gen(function* workspacePackage() {
           const directory = `${root}/${entry.name}`;
-          const manifest = yield* Schema.decodeEffect(PackageManifest)(
+          const manifest = yield* Schema.decodeEffect(PackageManifestText)(
             yield* filesystem.readFileString(
               paths.join(repositoryRoot, root, entry.name, "package.json"),
             ),

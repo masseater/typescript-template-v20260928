@@ -61,7 +61,7 @@ layer(NodeServices.layer)("export specifier index", (it) => {
         prefix: "canonical-values-exports-",
       });
 
-      return yield* Effect.forEach([null, [], {}], (malformedManifest, manifestPosition) =>
+      return yield* Effect.forEach([null, {}], (malformedManifest, manifestPosition) =>
         Effect.gen(function* publicEntriesOfManifest() {
           const packageRoot = yield* writtenVocabularyPackage({
             repositoryRoot,
@@ -76,7 +76,30 @@ layer(NodeServices.layer)("export specifier index", (it) => {
     it.effect("publishes no entries", () =>
       Effect.gen(function* program() {
         const publicEntriesOfManifestsWithoutAName = yield* fixture;
-        expect(publicEntriesOfManifestsWithoutAName).toStrictEqual([[], [], []]);
+        expect(publicEntriesOfManifestsWithoutAName).toStrictEqual([[], []]);
+      }),
+    );
+  });
+
+  describe("a package manifest holding a list", () => {
+    const fixture = Effect.gen(function* packageRootOfAListManifest() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
+      });
+      return yield* writtenVocabularyPackage({
+        repositoryRoot,
+        malformedManifest: [],
+        manifestPosition: 0,
+      });
+    });
+
+    it.effect("fails at the manifest instead of publishing nothing", () =>
+      Effect.gen(function* program() {
+        const packageRootOfAListManifest = yield* fixture;
+        expect(() => publicPackageEntries(packageRootOfAListManifest)).toThrow(
+          "package.json does not match the package manifest schema: SchemaError(Expected object)",
+        );
       }),
     );
   });
@@ -89,7 +112,7 @@ layer(NodeServices.layer)("export specifier index", (it) => {
       });
 
       return yield* Effect.forEach(
-        [null, [], {}, { name: "" }, { name: 1 }],
+        [null, {}, { name: "" }],
         (malformedManifest, manifestPosition) =>
           Effect.gen(function* publicNameOfManifest() {
             const packageRoot = yield* writtenVocabularyPackage({
@@ -105,7 +128,30 @@ layer(NodeServices.layer)("export specifier index", (it) => {
     it.effect("is rejected on its own", () =>
       Effect.gen(function* program() {
         const publicNamesOfMalformedManifests = yield* fixture;
-        expect(publicNamesOfMalformedManifests).toStrictEqual([null, null, null, null, null]);
+        expect(publicNamesOfMalformedManifests).toStrictEqual([null, null, null]);
+      }),
+    );
+  });
+
+  describe("reading a package name that is not text", () => {
+    const fixture = Effect.gen(function* packageRootOfANumberName() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
+      });
+      return yield* writtenVocabularyPackage({
+        repositoryRoot,
+        malformedManifest: { name: 1 },
+        manifestPosition: 0,
+      });
+    });
+
+    it.effect("fails at the manifest instead of reading no name", () =>
+      Effect.gen(function* program() {
+        const packageRootOfANumberName = yield* fixture;
+        expect(() => publicPackageName(packageRootOfANumberName)).toThrow(
+          'package.json does not match the package manifest schema: SchemaError(Expected string\n  at ["name"])',
+        );
       }),
     );
   });

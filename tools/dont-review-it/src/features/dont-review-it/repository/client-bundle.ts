@@ -8,6 +8,7 @@ import { Console, Effect, FileSystem, Path, Schema } from "effect";
 import { build } from "vite-plus";
 
 import { packageNameOf } from "../lint/oxlint/lib/package-specifier.ts";
+import { DependencySpecifiers, PackageManifest } from "../platform/package-manifest.ts";
 import { denialReason } from "./client-bundle-denial.ts";
 
 const probeModules: Readonly<Record<BuildTarget, string>> = {
@@ -132,9 +133,7 @@ const serverOnlyProblems = (
     ),
   );
 
-const Manifest = Schema.Struct({
-  dependencies: Schema.Record(Schema.String, Schema.String),
-});
+const Manifest = Schema.Struct({ ...PackageManifest.fields, dependencies: DependencySpecifiers });
 
 const expectedDenials = (application: BuildTarget) =>
   Effect.gen(function* expectedDenials() {

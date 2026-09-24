@@ -1,10 +1,13 @@
 import { secretsFile, secretsFileConfigured } from "@repo/infra-cloudflare/deployment";
 import { Effect, FileSystem, Option, Path, PlatformError, Schema } from "effect";
 
+import { PackageManifest } from "../platform/package-manifest.ts";
 import { failureCodeOf, isMissingPath } from "../platform/path-failure.ts";
 import { deploymentValues, type DeploymentValue } from "./secrets.ts";
 
-const Manifest = Schema.fromJsonString(Schema.Struct({ name: Schema.String }));
+const Manifest = Schema.fromJsonString(
+  Schema.Struct({ ...PackageManifest.fields, name: Schema.String }),
+);
 
 interface DeploymentCredentials {
   readonly source: "absent" | "file";

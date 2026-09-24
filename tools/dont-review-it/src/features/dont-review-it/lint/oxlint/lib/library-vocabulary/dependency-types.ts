@@ -1,12 +1,11 @@
 import { isPlainObject, sortBy } from "es-toolkit";
 
 import { path } from "../../../../platform/path.ts";
-import {
-  EXPORTS_CONDITION_DEPTH_LIMIT,
-  MANIFEST_FILE_NAME,
-} from "../canonical-values/package-manifest.ts";
-import { readJsonFile } from "../canonical-values/read-json-file.ts";
+import { readPackageManifest } from "../canonical-values/package-manifest-file.ts";
+import { EXPORTS_CONDITION_DEPTH_LIMIT } from "../canonical-values/package-manifest.ts";
 import { isFile } from "../canonical-values/source-files.ts";
+
+import type { PackageManifest } from "../../../../platform/package-manifest.ts";
 
 export type DependencyTypeEntry = {
   readonly packageName: string;
@@ -17,7 +16,7 @@ const WORKSPACE_PROTOCOL = "workspace:";
 
 const NODE_MODULES_DIRECTORY_NAME = "node_modules";
 
-const SPECIFIER_FIELDS = ["dependencies", "devDependencies", "peerDependencies"];
+const SPECIFIER_FIELDS = ["dependencies", "devDependencies", "peerDependencies"] as const;
 
 const ROOT_SUBPATH = ".";
 
@@ -56,20 +55,15 @@ const anyConditionIn = (held: unknown, depth: number): string | null => {
   return null;
 };
 
-const stringFieldOf = (manifest: Record<string, unknown>, field: string): string | null => {
-  const declared = manifest[field];
-  return typeof declared === "string" ? declared : null;
-};
-
-const entryPathsOf = (manifest: Record<string, unknown>): readonly string[] => {
+const entryPathsOf = (manifest: PackageManifest): readonly string[] => {
   const rootExports = rootExportsOf(manifest.exports);
   return [
     typesConditionIn(rootExports, 0),
     anyConditionIn(rootExports, 0),
-    stringFieldOf(manifest, TYPES_CONDITION),
-    stringFieldOf(manifest, "typings"),
-    stringFieldOf(manifest, "main"),
-  ].filter((filePath): filePath is string => filePath !== null);
+    manifest.types,
+    manifest.typings,
+    manifest.main,
+  ].filter((filePath): filePath is string => filePath !== null && filePath !== undefined);
 };
 
 const DECLARATIONS_SUFFIX_PATTERN = /\.[cm]?tsx?$/u;
@@ -83,8 +77,8 @@ const declarationsCandidateFor = (entryPath: string): string | null => {
 };
 
 const declarationsOf = (dependencyDirectory: string): string | null => {
-  const manifest = readJsonFile(path.join(dependencyDirectory, MANIFEST_FILE_NAME));
-  if (!isPlainObject(manifest)) return null;
+  const manifest = readPackageManifest(dependencyDirectory);
+  if (manifest === null) return null;
   for (const entryPath of entryPathsOf(manifest)) {
     const candidate = declarationsCandidateFor(entryPath);
     if (candidate === null) continue;
@@ -95,18 +89,15 @@ const declarationsOf = (dependencyDirectory: string): string | null => {
 };
 
 export const dependencyTypeEntries = (packageDirectory: string): readonly DependencyTypeEntry[] => {
-  const manifest = readJsonFile(path.join(packageDirectory, MANIFEST_FILE_NAME));
-  if (!isPlainObject(manifest)) return [];
+  const manifest = readPackageManifest(packageDirectory);
+  if (manifest === null) return [];
 
-  const specifiers: Readonly<Record<string, unknown>> = Object.fromEntries(
-    SPECIFIER_FIELDS.flatMap((field) => {
-      const declared: unknown = manifest[field];
-      return isPlainObject(declared) ? Object.entries(declared) : [];
-    }),
+  const specifiers: Readonly<Record<string, string>> = Object.fromEntries(
+    SPECIFIER_FIELDS.flatMap((field) => Object.entries(manifest[field] ?? {})),
   );
 
   const listedEntries = Object.entries(specifiers).flatMap(([packageName, range]) => {
-    if (typeof range === "string" && range.startsWith(WORKSPACE_PROTOCOL)) return [];
+    if (range.startsWith(WORKSPACE_PROTOCOL)) return [];
     const declarationsPath = declarationsOf(
       path.join(packageDirectory, NODE_MODULES_DIRECTORY_NAME, packageName),
     );

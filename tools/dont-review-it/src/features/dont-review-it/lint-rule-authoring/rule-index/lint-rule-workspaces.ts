@@ -3,6 +3,7 @@ import { attempt, isPlainObject } from "es-toolkit";
 import { parse } from "yaml";
 
 import { textOrNull } from "../../platform/file-system.ts";
+import { PackageManifest } from "../../platform/package-manifest.ts";
 import { path } from "../../platform/path.ts";
 import { directoriesMatching } from "../../platform/workspace-patterns.ts";
 
@@ -57,8 +58,6 @@ const declaredWorkspaceDirs = (
     return expanded.flat();
   });
 
-const RULE_DIRECTORIES_FIELD = "lintRules";
-
 const ruleDirectoriesDeclaredAt = ({
   repositoryRoot,
   workspaceDir,
@@ -70,17 +69,10 @@ const ruleDirectoriesDeclaredAt = ({
     const manifestText = yield* textOrNull(path.join(repositoryRoot, workspaceDir, "package.json"));
     if (manifestText === null) return [];
 
-    const manifest = yield* Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown))(
+    const manifest = yield* Schema.decodeEffect(Schema.fromJsonString(PackageManifest))(
       manifestText,
     );
-    if (!isPlainObject(manifest)) return [];
-
-    const declared: unknown = manifest[RULE_DIRECTORIES_FIELD];
-    if (!Array.isArray(declared)) return [];
-
-    return declared.filter(
-      (ruleDirectory): ruleDirectory is string => typeof ruleDirectory === "string",
-    );
+    return manifest.lintRules ?? [];
   });
 
 export const lintRuleWorkspacesIn = (

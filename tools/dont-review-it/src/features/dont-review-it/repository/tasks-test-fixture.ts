@@ -1,10 +1,9 @@
-import { isPlainObject } from "es-toolkit";
-
-import { field, rootManifests, workspaceManifests } from "./dependencies-test-fixture.ts";
+import { rootManifest, workspaceManifests } from "./dependencies-test-fixture.ts";
 import { directoryOfGlobKey } from "./repository-path-test-fixture.ts";
 
 import type { Tasks } from "@repo/vite-config";
 import type { ConfigEnv, UserConfig, UserConfigFnObject } from "vite-plus";
+import type { PackageManifest } from "../platform/package-manifest.ts";
 
 const configModules: Readonly<Record<string, UserConfig | UserConfigFnObject>> = import.meta.glob(
   [
@@ -16,13 +15,12 @@ const configModules: Readonly<Record<string, UserConfig | UserConfigFnObject>> =
 
 const serveEnv: ConfigEnv = { command: "serve", mode: "development" };
 
-function scriptsOf(manifest: unknown): Readonly<Record<string, unknown>> {
-  const scripts = field(manifest, "scripts");
-  return isPlainObject(scripts) ? { ...scripts } : {};
+function scriptsOf(manifest: PackageManifest): Readonly<Record<string, unknown>> {
+  return { ...manifest.scripts };
 }
 
 const workspaceScripts: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
-  ".": scriptsOf(rootManifests["../../../../../../package.json"]),
+  ".": scriptsOf(rootManifest),
   ...Object.fromEntries(
     workspaceManifests.map(({ file, manifest }) => [
       file.replace(/\/package\.json$/u, ""),
@@ -33,15 +31,15 @@ const workspaceScripts: Readonly<Record<string, Readonly<Record<string, unknown>
 
 const workspaceNames: Readonly<Record<string, string>> = Object.fromEntries(
   workspaceManifests.flatMap(({ file, manifest }) => {
-    const name = field(manifest, "name");
-    return typeof name === "string" ? [[file.replace(/\/package\.json$/u, ""), name]] : [];
+    const { name } = manifest;
+    return name === undefined ? [] : [[file.replace(/\/package\.json$/u, ""), name]];
   }),
 );
 
-const rootName = field(rootManifests["../../../../../../package.json"], "name");
+const rootName = rootManifest.name;
 
 const packageDirectories: Readonly<Record<string, string>> = Object.fromEntries([
-  ...(typeof rootName === "string" ? [[rootName, "."] as const] : []),
+  ...(rootName === undefined ? [] : [[rootName, "."] as const]),
   ...Object.entries(workspaceNames).map(([directory, name]) => [name, directory] as const),
 ]);
 

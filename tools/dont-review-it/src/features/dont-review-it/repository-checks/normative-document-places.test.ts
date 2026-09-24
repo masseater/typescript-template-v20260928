@@ -31,10 +31,12 @@ layer(NodeServices.layer)("normativeDocumentPlacesIn", (it) => {
   });
 
   describe("a manifest that is not an object", () => {
-    it.effect("reads it as no declaration", () =>
+    it.effect("fails as a manifest that could not be decoded", () =>
       Effect.gen(function* program() {
-        const places = yield* normativeDocumentPlacesIn(yield* repositoryWithManifest("[]"));
-        expect(places).toStrictEqual(WITHOUT_A_DECLARATION);
+        const failure = yield* Effect.flip(
+          normativeDocumentPlacesIn(yield* repositoryWithManifest("[]")),
+        );
+        expect(failure._tag).toBe("SchemaError");
       }),
     );
   });

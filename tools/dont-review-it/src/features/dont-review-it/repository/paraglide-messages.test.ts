@@ -3,7 +3,7 @@ import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, FileSystem, Path, Schema } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
-import { field, workspaceManifests } from "./dependencies-test-fixture.ts";
+import { workspaceManifests } from "./dependencies-test-fixture.ts";
 
 const localizedApps = ["service-member", "service-admin"] as const;
 const locales = ["ja", "en"] as const;
@@ -66,8 +66,6 @@ describe("paraglide message catalogs", () => {
     if (workspace === undefined) {
       return;
     }
-    expect(field(field(workspace.manifest, "dependencies"), "@inlang/paraglide-js")).toBe(
-      "catalog:",
-    );
+    expect(workspace.manifest.dependencies?.["@inlang/paraglide-js"]).toBe("catalog:");
   });
 });

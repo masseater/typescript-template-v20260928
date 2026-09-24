@@ -1,11 +1,11 @@
 import { groupBy, isPlainObject, uniq, uniqBy } from "es-toolkit";
 
 import { path } from "../../../../platform/path.ts";
+import { readPackageManifest } from "../canonical-values/package-manifest-file.ts";
 import {
   EXPORTS_CONDITION_DEPTH_LIMIT,
   MANIFEST_FILE_NAME,
 } from "../canonical-values/package-manifest.ts";
-import { readJsonFile } from "../canonical-values/read-json-file.ts";
 import { isFile, readTextFile } from "../canonical-values/source-files.ts";
 
 const subpathTargetPairsOf = (
@@ -55,10 +55,9 @@ const exportSpecifierOf = (packageName: string, subpath: string): string =>
 const manifestSurfaceOf = (
   packageDirectory: string,
 ): { readonly packageName: string; readonly exportsField: unknown } | null => {
-  const manifest = readJsonFile(path.join(packageDirectory, MANIFEST_FILE_NAME));
-  if (!isPlainObject(manifest)) return null;
-  const packageName: unknown = manifest.name;
-  if (typeof packageName !== "string" || packageName.length === 0) return null;
+  const manifest = readPackageManifest(packageDirectory);
+  const packageName = manifest?.name ?? "";
+  if (manifest === null || packageName === "") return null;
   return { packageName, exportsField: manifest.exports };
 };
 

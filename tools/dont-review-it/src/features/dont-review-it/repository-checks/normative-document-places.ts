@@ -1,7 +1,7 @@
 import { Effect, FileSystem, type PlatformError, Schema } from "effect";
-import { isPlainObject } from "es-toolkit";
 
 import { textOrNull, unlessMissing } from "../platform/file-system.ts";
+import { PackageManifest } from "../platform/package-manifest.ts";
 import { isNotALink } from "../platform/path-failure.ts";
 import { path } from "../platform/path.ts";
 
@@ -26,15 +26,11 @@ const declaredIn = (
     const MANIFEST_FILE = "package.json";
     const manifestText = yield* textOrNull(path.join(repositoryRoot, MANIFEST_FILE));
 
-    const manifest: unknown =
-      manifestText === null
-        ? null
-        : yield* Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown))(manifestText);
-    if (!isPlainObject(manifest)) return null;
-
-    const DECLARATION_FIELD = "normativeDocuments";
-    const declared: unknown = manifest[DECLARATION_FIELD];
-    return isPlainObject(declared) ? declared : null;
+    if (manifestText === null) return null;
+    const manifest = yield* Schema.decodeEffect(Schema.fromJsonString(PackageManifest))(
+      manifestText,
+    );
+    return manifest.normativeDocuments ?? null;
   });
 
 export const normativeDocumentPlacesIn = (

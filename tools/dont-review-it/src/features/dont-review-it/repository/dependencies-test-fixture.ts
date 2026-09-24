@@ -1,13 +1,17 @@
 import { isPlainObject } from "es-toolkit";
 
+import {
+  packageDependencyFields,
+  packageManifestFrom,
+  type PackageManifest,
+} from "../platform/package-manifest.ts";
 import { repositoryRelative } from "./repository-path-test-fixture.ts";
 import { replacementFor, replacementMessage } from "./retired-packages.ts";
-import { dependencyFields } from "./workspace-layout.ts";
 
 interface WorkspaceManifest {
   readonly area: string;
   readonly file: string;
-  readonly manifest: unknown;
+  readonly manifest: PackageManifest;
 }
 
 const field = (declared: unknown, propertyName: string): unknown =>
@@ -15,13 +19,18 @@ const field = (declared: unknown, propertyName: string): unknown =>
     ? Object.getOwnPropertyDescriptor(declared, propertyName)?.value
     : undefined;
 
-const rootManifests: Readonly<Record<string, unknown>> = import.meta.glob(
+const rootManifestModules: Readonly<Record<string, unknown>> = import.meta.glob(
   "../../../../../../package.json",
   {
     eager: true,
     import: "default",
   },
 );
+
+const rootManifest: PackageManifest = packageManifestFrom({
+  declared: rootManifestModules["../../../../../../package.json"],
+  source: "package.json",
+});
 
 const manifestModules: Readonly<Record<string, unknown>> = import.meta.glob(
   "../../../../../../{apps,libs,infra,tools}/*/package.json",
@@ -32,22 +41,19 @@ const workspaceManifests: readonly WorkspaceManifest[] = Object.entries(manifest
   ([key, manifest]: readonly [string, unknown]) => {
     const file = repositoryRelative(key);
     const [area = ""] = file.split("/");
-    return { area, file, manifest };
+    return { area, file, manifest: packageManifestFrom({ declared: manifest, source: file }) };
   },
 );
 
 const applicationNames = (workspaces: readonly WorkspaceManifest[]): string[] => {
   return workspaces.flatMap(({ area, manifest }) => {
-    const name = field(manifest, "name");
-    return area === "apps" && typeof name === "string" ? [name] : [];
+    const { name } = manifest;
+    return area === "apps" && name !== undefined ? [name] : [];
   });
 };
 
-const declaredDependencies = (manifest: unknown): string[] => {
-  return dependencyFields.flatMap((key) => {
-    const value = field(manifest, key);
-    return isPlainObject(value) ? Object.keys(value) : [];
-  });
+const declaredDependencies = (manifest: PackageManifest): string[] => {
+  return packageDependencyFields.flatMap((key) => Object.keys(manifest[key] ?? {}));
 };
 
 const applicationDependencyViolations = (workspaces: readonly WorkspaceManifest[]): string[] => {
@@ -92,11 +98,7 @@ const developmentOnlyDependencyViolations = (
     if (file === "libs/db-local/package.json") {
       return [];
     }
-    const dependencies = field(manifest, "dependencies");
-    if (!isPlainObject(dependencies)) {
-      return [];
-    }
-    return Object.keys(dependencies)
+    return Object.keys(manifest.dependencies ?? {})
       .filter((dependency) => dependency in developmentOnlyPackages)
       .map(
         (dependency) =>
@@ -113,14 +115,11 @@ const libraryMixedSurfaceViolations = (workspaces: readonly WorkspaceManifest[])
     if (file === "libs/db-local/package.json") {
       return [];
     }
-    const bin = field(manifest, "bin");
-    const exportsField = field(manifest, "exports");
-    if (bin === undefined || exportsField === undefined) {
+    if (manifest.bin === undefined || manifest.exports === undefined) {
       return [];
     }
-    const name = field(manifest, "name");
     return [
-      `${file}: ${typeof name === "string" ? name : file} は取り込み面（exports）とコマンド面（bin）を同時に宣言しています。コマンド入口は tools/ 側の所有パッケージへ移してください。`,
+      `${file}: ${manifest.name ?? file} は取り込み面（exports）とコマンド面（bin）を同時に宣言しています。コマンド入口は tools/ 側の所有パッケージへ移してください。`,
     ];
   });
 };
@@ -144,7 +143,7 @@ export {
   field,
   libraryMixedSurfaceViolations,
   retiredDependencyViolations,
-  rootManifests,
+  rootManifest,
   rootOnlyDependencyViolations,
   rootOnlyPackages,
   workspaceManifests,

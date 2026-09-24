@@ -1,20 +1,11 @@
-import { isPlainObject } from "es-toolkit";
 import { describe, expect, it } from "vite-plus/test";
 
 import { stringEntriesOf } from "../dependency-catalog/record-fields.ts";
-import { field } from "./dependencies-test-fixture.ts";
+import { field, rootManifest } from "./dependencies-test-fixture.ts";
 import { commands, configuredDirectories, reachable } from "./tasks-test-fixture.ts";
 import { linkWrapperFiles } from "./ui-lint-settings.ts";
 
 import type { ReactDoctorConfig } from "react-doctor/api";
-
-const rootManifests: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../../../../../package.json",
-  {
-    eager: true,
-    import: "default",
-  },
-);
 
 const workspaceConfigs: Readonly<Record<string, Readonly<ReactDoctorConfig>>> = import.meta.glob(
   "../../../../../../{apps,libs}/*/doctor.config.json",
@@ -39,7 +30,6 @@ const manifests: Readonly<Record<string, unknown>> = import.meta.glob(
   },
 );
 
-const scripts = field(rootManifests["../../../../../../package.json"], "scripts");
 const runStep = /^\s*- run: (?<command>.+)$/gmu;
 
 const workflowRuns = (): string[] => {
@@ -49,7 +39,7 @@ const workflowRuns = (): string[] => {
 };
 
 const scriptCommands = (): string[] => {
-  return isPlainObject(scripts) ? Object.values(scripts).map(String) : [];
+  return Object.values(rootManifest.scripts ?? {});
 };
 
 const suppressedFiles = (): string[] => {
