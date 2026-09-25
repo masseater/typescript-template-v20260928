@@ -1,15 +1,15 @@
 import { FlagshipServerProvider, type FlagshipBinding } from "@cloudflare/flagship/server";
 import { OpenFeature, TypedInMemoryProvider } from "@openfeature/server-sdk";
 import { ConfigurationInvalid } from "@repo/config";
-import { Context, Effect, Layer, Ref } from "effect";
-
 import {
   booleanForVariation,
   flagDefinitions,
   flagDefinitionFor,
   variationForBoolean,
   type FlagKey,
-} from "./definitions.ts";
+} from "@repo/feature-flags/definitions";
+import { Context, Effect, Layer, Ref } from "effect";
+
 import { evaluationFromDetails, failClosedEnabled, type FlagEvaluation } from "./evaluation.ts";
 import { FlagshipWriteFailed } from "./flagship-write.ts";
 
@@ -30,7 +30,7 @@ type FeatureFlagsService = Readonly<{
 }>;
 
 class FeatureFlags extends Context.Service<FeatureFlags, FeatureFlagsService>()(
-  "@repo/feature-flags/FeatureFlags",
+  "#shared/feature-flags/FeatureFlags",
 ) {}
 
 const memoryConfiguration = Object.fromEntries(

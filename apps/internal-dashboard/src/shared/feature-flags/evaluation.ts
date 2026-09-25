@@ -1,6 +1,5 @@
 import { StandardResolutionReasons } from "@openfeature/server-sdk";
-
-import { FLAG_EVALUATION_KIND, type FlagEvaluationKind } from "./definitions.ts";
+import { FLAG_EVALUATION_KIND, type FlagEvaluationKind } from "@repo/feature-flags/definitions";
 
 export type FlagEvaluation = Readonly<{
   enabled: boolean;

@@ -1,16 +1,11 @@
 import { assert, describe, it } from "@effect/vitest";
 import { ErrorCode, StandardResolutionReasons } from "@openfeature/server-sdk";
+import { FLAG_EVALUATION_KIND } from "@repo/feature-flags/definitions";
 import { Effect, Layer } from "effect";
 
-import {
-  editorsOnly,
-  evaluationFromDetails,
-  failClosedEnabled,
-  FLAG_EVALUATION_KIND,
-  FlagEditorAccess,
-  configuredFeatureFlagsLayer,
-  memoryFeatureFlagsLayer,
-} from "./index.ts";
+import { evaluationFromDetails, failClosedEnabled } from "./evaluation.ts";
+import { editorsOnly, FlagEditorAccess } from "./flag-editor-access.ts";
+import { configuredFeatureFlagsLayer, memoryFeatureFlagsLayer } from "./service.ts";
 
 const viewerOnlyEditors = Layer.mergeAll(
   memoryFeatureFlagsLayer,
