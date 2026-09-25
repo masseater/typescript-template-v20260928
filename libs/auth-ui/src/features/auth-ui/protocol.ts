@@ -1,4 +1,5 @@
 import { accountPermissions, roles } from "@repo/config";
+import { ApiFailed } from "@repo/runtime/client";
 import { Predicate, Result, Schema } from "effect";
 
 const SessionView = Schema.Struct({
@@ -19,38 +20,9 @@ const decodeJson = <Contract extends Schema.Top & { readonly DecodingServices: n
 ): Contract["Type"] => {
   const decoded = Schema.decodeUnknownResult(contract)(input);
   if (Result.isFailure(decoded)) {
-    throw new Error("サーバーの応答形式が不正です。");
+    throw new ApiFailed({ cause: decoded.failure, reason: "response_invalid" });
   }
   return decoded.success;
-};
-
-const errorMessage = (failure: unknown): string => {
-  return failure instanceof Error
-    ? failure.message
-    : "操作に失敗しました。もう一度お試しください。";
-};
-
-const failureReasons: Readonly<Record<string, string>> = {
-  "Email is the same": "いまのメールアドレスと同じです。",
-  EMAIL_NOT_VERIFIED: "メールアドレスが未確認です。確認メールのリンクを開いてください。",
-  INVALID_BACKUP_CODE: "バックアップコードが違います。",
-  INVALID_CODE: "確認コードが違います。",
-  INVALID_EMAIL_OR_PASSWORD: "メールアドレスかパスワードが違います。",
-  STRONG_AUTH_REQUIRED: "認証アプリかパスキーで確認してから、もう一度お試しください。",
-};
-
-const authFailureMessage = (
-  authFailure: Readonly<{ code?: string | undefined; message?: string | undefined }>,
-): string => {
-  const { code, message } = authFailure;
-  const known = failureReasons[code ?? message ?? ""];
-  if (known !== undefined) {
-    return known;
-  }
-  if (code === undefined) {
-    return message ?? "認証サーバーが失敗理由のコードを返しませんでした。";
-  }
-  return message ?? `認証サーバーが未知の失敗コードを返しました: ${code}`;
 };
 
 const requireSuccess = <TData>(
@@ -60,10 +32,15 @@ const requireSuccess = <TData>(
   }>,
 ): NonNullable<TData> => {
   if (authEnvelope.error) {
-    throw new Error(authFailureMessage(authEnvelope.error));
+    const { code, message } = authEnvelope.error;
+    throw new ApiFailed({
+      ...(code === undefined ? {} : { code }),
+      ...(message === undefined ? {} : { detail: message }),
+      reason: "rejected",
+    });
   }
   if (authEnvelope.data === null || authEnvelope.data === undefined) {
-    throw new Error("認証サーバーから結果が返りませんでした。");
+    throw new ApiFailed({ reason: "response_empty" });
   }
   return authEnvelope.data;
 };
@@ -109,7 +86,6 @@ const passkeyUVOptions = (
 export {
   SessionView,
   decodeJson,
-  errorMessage,
   isPasskeyOptionsPath,
   passkeyUVOptions,
   requireSecureContext,

@@ -1,4 +1,4 @@
-import { Button, STATUS_VARIANT, StatusMessage } from "@repo/ui";
+import { Button, STATUS_VARIANT, StatusMessage, failureText } from "@repo/ui";
 
 import { useClientName } from "#pages/consent/model/client-name.ts";
 import { ConsentActions } from "./consent-actions.tsx";
@@ -13,7 +13,9 @@ function ConsentClient({ clientId }: Readonly<{ clientId: string }>): ReactEleme
   if (clientName.isError) {
     return (
       <div className="flex flex-col items-start gap-2">
-        <StatusMessage variant={STATUS_VARIANT.failure}>{clientName.error.message}</StatusMessage>
+        <StatusMessage variant={STATUS_VARIANT.failure}>
+          {failureText(clientName.error)}
+        </StatusMessage>
         <Button onClick={retry} type="button" variant="secondary">
           再試行
         </Button>

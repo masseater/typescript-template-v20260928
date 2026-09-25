@@ -1,4 +1,3 @@
-import { errorMessage } from "@repo/auth-ui";
 import { apiData } from "@repo/runtime/client";
 import { formatWarekiDate } from "@repo/ui";
 
@@ -39,9 +38,6 @@ function listUsers(query: Readonly<Record<string, string>>): Promise<ListedUsers
           }),
         ),
       };
-    })
-    .catch((failure: unknown) => {
-      throw new Error(errorMessage(failure));
     });
 }
 

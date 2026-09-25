@@ -1,3 +1,4 @@
+import { failureText } from "@repo/ui";
 import { useQuery } from "@tanstack/react-query";
 import { DateTime } from "effect";
 
@@ -28,7 +29,15 @@ function HomePage(): ReactElement {
       : presentFeed(feed.data, (updatedAt) =>
           updatedAtLabel.format(DateTime.toDate(DateTime.makeUnsafe(updatedAt))),
         );
-  return <HomeFeed state={homeState(feed.error?.message, entries, feed.isPending)} />;
+  return (
+    <HomeFeed
+      state={homeState(
+        feed.error === null ? undefined : failureText(feed.error),
+        entries,
+        feed.isPending,
+      )}
+    />
+  );
 }
 
 export { HomePage };

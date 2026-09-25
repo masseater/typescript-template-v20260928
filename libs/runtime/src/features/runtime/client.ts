@@ -2,6 +2,7 @@ import { treaty } from "@elysia/eden";
 import { httpStatus } from "@repo/config";
 import { Result, Schema } from "effect";
 
+import { ApiFailed } from "./api-failed.ts";
 import { ErrorBody } from "./contracts.ts";
 
 import type { AnyElysia } from "elysia";
@@ -20,31 +21,31 @@ const decodeJson = <Contract extends Decodable>(
 ): Contract["Type"] => {
   const decoded = Schema.decodeUnknownResult(contract)(input);
   if (Result.isFailure(decoded)) {
-    throw new Error("サーバーの応答形式が不正です。");
+    throw new ApiFailed({ cause: decoded.failure, reason: "response_invalid" });
   }
   return decoded.success;
 };
-const failureMessage = (
+const rejection = (
   answered: Readonly<Pick<Response, "headers" | "status">>,
   requestBody: unknown,
-): string => {
+): ApiFailed => {
   const failure = Schema.decodeUnknownResult(ErrorBody)(requestBody);
-  const logMessage = Result.isSuccess(failure)
-    ? failure.success.error
-    : `リクエストに失敗しました（HTTP ${answered.status}）。`;
   const requestId = answered.headers.get("x-request-id") ?? "";
-  return requestId === "" ? logMessage : `${logMessage} リクエスト ID: ${requestId}`;
+  return new ApiFailed({
+    ...(Result.isSuccess(failure) ? { detail: failure.success.error } : {}),
+    reason: "rejected",
+    ...(requestId === "" ? {} : { requestId }),
+    status: answered.status,
+  });
 };
 const apiData = <Contract extends Decodable>(
   contract: Contract,
   answered: ApiReply,
 ): Contract["Type"] => {
   if (answered.error !== null) {
-    throw new Error(
-      failureMessage(
-        { headers: answered.response.headers, status: answered.error.status },
-        answered.error.value,
-      ),
+    throw rejection(
+      { headers: answered.response.headers, status: answered.error.status },
+      answered.error.value,
     );
   }
   return decodeJson(contract, answered.data);
@@ -80,6 +81,7 @@ const apiClient = <App extends AnyElysia>(): ReturnType<typeof treaty<App>> => {
   });
 };
 export {
+  ApiFailed,
   absent,
   apiClient,
   apiData,
@@ -87,6 +89,6 @@ export {
   apiDataOrNoneFor,
   apiServerClient,
   decodeJson,
-  failureMessage,
+  rejection,
 };
 export type { ApiReply };

@@ -1,3 +1,4 @@
+import { failureText } from "@repo/ui";
 import { useQuery } from "@tanstack/react-query";
 
 import { loadBrowserSession, provideSessionLoader, sessionOptions } from "./api/session.ts";
@@ -11,7 +12,7 @@ const useSession = (): {
 } => {
   const session = useQuery(sessionOptions);
   return {
-    error: session.error?.message,
+    error: session.error === null ? undefined : failureText(session.error),
     loading: session.isPending,
     session: session.data ?? undefined,
   };

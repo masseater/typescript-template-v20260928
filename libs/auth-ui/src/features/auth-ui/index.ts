@@ -21,7 +21,7 @@ export { useSessionUser } from "./session-user";
 export type { SessionUser } from "./session-user";
 export { useSignOut } from "./use-sign-out";
 export { loadBrowserSession, provideSessionLoader, sessionOptions } from "./api/session";
-export { errorMessage, requireSuccess, SessionView } from "./protocol";
+export { requireSuccess, SessionView } from "./protocol";
 export { loginPath, redirectTarget } from "./login-redirect";
 export { authClient } from "./client";
 export { sessionQueryClient } from "./api/session-query-client";

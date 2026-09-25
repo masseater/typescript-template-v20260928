@@ -1,5 +1,4 @@
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
-import { errorMessage } from "@repo/auth-ui";
 import { apiData } from "@repo/runtime/client";
 import { formatWarekiDate, requestAtom, type RequestResult } from "@repo/ui";
 
@@ -25,9 +24,6 @@ function listStaff(): Promise<readonly ListedStaff[]> {
         ...member,
         registeredOn: formatWarekiDate(createdAt),
       }));
-    })
-    .catch((failure: unknown) => {
-      throw new Error(errorMessage(failure));
     });
 }
 

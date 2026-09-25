@@ -1,5 +1,5 @@
 import { submitConsent } from "@repo/auth-ui";
-import { Button, FormColumn } from "@repo/ui";
+import { Button, FormColumn, failureText } from "@repo/ui";
 import { useState } from "react";
 
 import { productName } from "#shared/config/index.ts";
@@ -15,7 +15,7 @@ function ConsentActions({
     setPending(true);
     onError("");
     void submitConsent({ accept }).catch((error: unknown) => {
-      onError(error instanceof Error ? error.message : String(error));
+      onError(failureText(error));
       setPending(false);
     });
   }

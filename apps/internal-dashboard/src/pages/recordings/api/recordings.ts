@@ -1,11 +1,5 @@
 import { browserHttp } from "@repo/auth-ui";
-import {
-  absent,
-  apiData,
-  apiDataOrNoneFor,
-  decodeJson,
-  failureMessage,
-} from "@repo/runtime/client";
+import { absent, apiData, apiDataOrNoneFor, decodeJson, rejection } from "@repo/runtime/client";
 import { CreatedResource } from "@repo/runtime/contracts";
 import { notFound } from "@tanstack/react-router";
 import { Effect } from "effect";
@@ -58,12 +52,7 @@ function uploadRecording(title: string, audio: Readonly<File>): Promise<string> 
       const answered = yield* response.json;
       if (response.status < 200 || response.status >= 300) {
         return yield* Effect.die(
-          new Error(
-            failureMessage(
-              { headers: new Headers(response.headers), status: response.status },
-              answered,
-            ),
-          ),
+          rejection({ headers: new Headers(response.headers), status: response.status }, answered),
         );
       }
       return decodeJson(CreatedResource, answered).id;

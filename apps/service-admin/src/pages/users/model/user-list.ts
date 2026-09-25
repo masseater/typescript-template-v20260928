@@ -1,3 +1,4 @@
+import { failureText } from "@repo/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { userListKey, userListOptions } from "../api/list-users.ts";
@@ -22,7 +23,7 @@ function useUserList(search: UsersSearch): Readonly<{ list: UserListState; reloa
   return {
     list: {
       data: list.data,
-      error: list.isError ? list.error.message : undefined,
+      error: list.isError ? failureText(list.error) : undefined,
     },
     reload,
   };

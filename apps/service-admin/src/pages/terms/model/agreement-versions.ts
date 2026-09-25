@@ -1,5 +1,4 @@
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
-import { errorMessage } from "@repo/auth-ui";
 import { apiData } from "@repo/runtime/client";
 import { requestAtom, type RequestResult } from "@repo/ui";
 import { Atom } from "effect/unstable/reactivity";
@@ -18,19 +17,13 @@ interface Loaded<Value> {
 function fetchVersions(): Promise<VersionList> {
   return adminClient()
     .agreements.get()
-    .then((response) => apiData(AgreementVersionList, response))
-    .catch((failure: unknown) => {
-      throw new Error(errorMessage(failure));
-    });
+    .then((response) => apiData(AgreementVersionList, response));
 }
 
 function fetchVersion(version: string): Promise<VersionDetail> {
   return adminClient()
     .agreements.version.get({ query: { version } })
-    .then((response) => apiData(AgreementVersionDetail, response))
-    .catch((failure: unknown) => {
-      throw new Error(errorMessage(failure));
-    });
+    .then((response) => apiData(AgreementVersionDetail, response));
 }
 
 const versionListAtom = requestAtom(fetchVersions);

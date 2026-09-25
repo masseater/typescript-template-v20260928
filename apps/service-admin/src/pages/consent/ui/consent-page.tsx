@@ -1,5 +1,6 @@
 import { OAuthClientView } from "@repo/auth-ui/consent";
 import { decodeJson } from "@repo/runtime/client";
+import { failureText } from "@repo/ui";
 import { getRouteApi } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
@@ -31,10 +32,6 @@ function loadClientName(clientId: string): Promise<string | undefined> {
   });
 }
 
-function messageOf(cause: unknown): string {
-  return cause instanceof Error ? cause.message : String(cause);
-}
-
 function useClientName(
   clientId: string | undefined,
   onError: (message: string) => void,
@@ -51,7 +48,7 @@ function useClientName(
         })
         .catch((error: unknown) => {
           if (state.active) {
-            onError(messageOf(error));
+            onError(failureText(error));
           }
         });
     }
