@@ -6,6 +6,22 @@ import { type Invitation } from "./invite-preview.ts";
 
 const useAccepted = localState(false);
 
+const unavailableMessage = (
+  invitation: Exclude<Invitation, Readonly<{ status: "available" }>>,
+): string => {
+  switch (invitation.status) {
+    case "closed": {
+      return "招待が無効か、有効期限が切れています。招待した人に再送を依頼してください。";
+    }
+    case "failed": {
+      return `招待を確認できませんでした（HTTP ${invitation.responseStatus}）。時間をおいて再度お試しください。`;
+    }
+    case "unreachable": {
+      return "サーバーに接続できず、招待を確認できませんでした。通信環境を確かめて再度お試しください。";
+    }
+  }
+};
+
 const InviteAcceptance = ({
   endpoint,
   invitation,
@@ -22,8 +38,12 @@ const InviteAcceptance = ({
       </FormColumn>
     );
   }
-  if (invitation.status === "unavailable") {
-    return <StatusMessage variant={STATUS_VARIANT.failure}>{invitation.message}</StatusMessage>;
+  if (invitation.status !== "available") {
+    return (
+      <StatusMessage variant={STATUS_VARIANT.failure}>
+        {unavailableMessage(invitation)}
+      </StatusMessage>
+    );
   }
   const markAccepted = (): void => {
     setAccepted(true);

@@ -1,69 +1,61 @@
 import { httpStatus } from "@repo/config";
-import { ErrorBody, InvitePreview } from "@repo/runtime/contracts";
-import { Effect, Option, Result, Schema } from "effect";
+import { InvitePreview } from "@repo/runtime/contracts";
+import { Effect } from "effect";
 import { FetchHttpClient, HttpClient, type HttpClientResponse } from "effect/unstable/http";
 
 import { browserHttp } from "./browser-http.ts";
+import { InvitePreviewFailed } from "./invite-preview-failed.ts";
+import { InvitePreviewUnreachable } from "./invite-preview-unreachable.ts";
 import { decodeJson } from "./protocol.ts";
 
 type Invitation =
   | Readonly<{ email: string; status: "available" }>
-  | Readonly<{ message: string; status: "unavailable" }>;
-
-const unavailable = (unavailableDetail: string): Invitation => ({
-  message: unavailableDetail,
-  status: "unavailable",
-});
-
-const available = (email: string): Invitation => ({ email, status: "available" });
-
-type ServedInvitation = Readonly<Pick<HttpClientResponse.HttpClientResponse, "json" | "status">>;
-
-const readFailureMessage = (served: ServedInvitation, fallback: string): Effect.Effect<string> =>
-  Effect.gen(function* decodeFailureMessage() {
-    const failureBody = yield* served.json.pipe(Effect.orElseSucceed(() => ({ error: fallback })));
-    const decoded = Schema.decodeUnknownResult(ErrorBody)(failureBody);
-    return Result.isSuccess(decoded) ? decoded.success.error : fallback;
-  });
+  | Readonly<{ status: "closed" }>
+  | Readonly<{ responseStatus: number; status: "failed" }>
+  | Readonly<{ status: "unreachable" }>;
 
 const readInvitation = (
-  served: ServedInvitation,
-  closedMessage: string,
-): Effect.Effect<Invitation> =>
+  served: Readonly<Pick<HttpClientResponse.HttpClientResponse, "json" | "status">>,
+): Effect.Effect<Invitation, InvitePreviewFailed> =>
   Effect.gen(function* decodeInvitation() {
     if (served.status === httpStatus.notFound) {
-      return unavailable(closedMessage);
+      return { status: "closed" } as const;
     }
     if (served.status < 200 || served.status >= 300) {
-      const failureDetail = yield* readFailureMessage(served, closedMessage);
-      return unavailable(failureDetail);
+      return yield* new InvitePreviewFailed({ status: served.status });
     }
     const servedInvite = yield* served.json.pipe(Effect.orDie);
-    return available(decodeJson(InvitePreview, servedInvite).email);
+    return { email: decodeJson(InvitePreview, servedInvite).email, status: "available" } as const;
   });
 
-const loadInvitation = (endpoint: string, token: string): Effect.Effect<Invitation> =>
+const loadInvitation = (
+  previewLocation: URL,
+): Effect.Effect<Invitation, InvitePreviewFailed | InvitePreviewUnreachable> =>
   Effect.gen(function* previewInvitationToken() {
-    const closedMessage =
-      "招待が無効か、有効期限が切れています。招待した人に再送を依頼してください。";
-    const previewLocation = new URL(endpoint, globalThis.location.origin);
-    previewLocation.searchParams.set("token", token);
     const served = yield* HttpClient.get(previewLocation.toString()).pipe(
       Effect.provide(browserHttp),
       Effect.provideService(FetchHttpClient.RequestInit, {
         cache: "no-store",
         credentials: "same-origin",
       }),
-      Effect.option,
+      Effect.mapError((cause) => new InvitePreviewUnreachable({ cause })),
     );
-    if (Option.isNone(served)) {
-      return unavailable(closedMessage);
-    }
-    return yield* readInvitation(served.value, closedMessage);
+    return yield* readInvitation(served);
   });
 
-const previewInvitation = (endpoint: string, token: string): Promise<Invitation> =>
-  Effect.runPromise(loadInvitation(endpoint, token));
+const previewInvitation = (endpoint: string, token: string): Promise<Invitation> => {
+  const previewLocation = new URL(endpoint, globalThis.location.origin);
+  previewLocation.searchParams.set("token", token);
+  return Effect.runPromise(
+    loadInvitation(previewLocation).pipe(
+      Effect.catchTags({
+        InvitePreviewFailed: (failed) =>
+          Effect.succeed({ responseStatus: failed.status, status: "failed" } as const),
+        InvitePreviewUnreachable: () => Effect.succeed({ status: "unreachable" } as const),
+      }),
+    ),
+  );
+};
 
-export { previewInvitation, readFailureMessage };
-export type { Invitation, ServedInvitation };
+export { loadInvitation, previewInvitation, readInvitation };
+export type { Invitation };

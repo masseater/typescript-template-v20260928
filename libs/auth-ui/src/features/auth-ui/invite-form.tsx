@@ -1,11 +1,20 @@
-import { maximumNameLength, maximumPasswordLength } from "@repo/runtime/contracts";
+import { ErrorBody, maximumNameLength, maximumPasswordLength } from "@repo/runtime/contracts";
 import { ActionStatus, Button, Field, FormColumn, useAction, useTextInput } from "@repo/ui";
-import { Effect } from "effect";
-import { HttpBody, HttpClient } from "effect/unstable/http";
+import { Effect, Result, Schema } from "effect";
+import { HttpBody, HttpClient, type HttpClientResponse } from "effect/unstable/http";
 import { type ReactElement, type SyntheticEvent } from "react";
 
 import { browserHttp } from "./browser-http.ts";
-import { readFailureMessage } from "./invite-preview.ts";
+
+const readFailureMessage = (
+  served: Readonly<Pick<HttpClientResponse.HttpClientResponse, "json">>,
+  fallback: string,
+): Effect.Effect<string> =>
+  Effect.gen(function* decodeFailureMessage() {
+    const failureBody = yield* served.json.pipe(Effect.orElseSucceed(() => ({ error: fallback })));
+    const decoded = Schema.decodeUnknownResult(ErrorBody)(failureBody);
+    return Result.isSuccess(decoded) ? decoded.success.error : fallback;
+  });
 
 const postAcceptance = (
   endpoint: string,
