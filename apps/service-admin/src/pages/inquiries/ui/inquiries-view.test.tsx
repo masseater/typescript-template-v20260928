@@ -88,7 +88,7 @@ describe("inquiry list", () => {
 
   it("names the member who asked", () => {
     expect(rendered({ inquiries: [inquiry], pendingCount: 1 })).toContain(
-      '<td class="p-2">山田</td>',
+      '<td data-slot="table-cell" class="px-2 py-1.5 align-middle leading-tight whitespace-nowrap">山田</td>',
     );
   });
 });

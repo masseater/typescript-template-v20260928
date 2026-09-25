@@ -40,7 +40,7 @@ describe("overview", () => {
 
   it("shows the recent trend rows", () => {
     expect(rendered(undefined, overview)).toContain(
-      '<td class="p-2">2026-04-01</td><td class="p-2">40</td>',
+      '<td data-slot="table-cell" class="px-2 py-1.5 align-middle leading-tight whitespace-nowrap">2026-04-01</td><td data-slot="table-cell" class="px-2 py-1.5 align-middle leading-tight whitespace-nowrap">40</td>',
     );
   });
 

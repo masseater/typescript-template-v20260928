@@ -71,6 +71,8 @@ describe("audit log", () => {
   });
 
   it("lists each event target", () => {
-    expect(rendered(undefined, auditPage)).toContain('<td class="p-2">member-board</td>');
+    expect(rendered(undefined, auditPage)).toContain(
+      '<td data-slot="table-cell" class="px-2 py-1.5 align-middle leading-tight whitespace-nowrap">member-board</td>',
+    );
   });
 });

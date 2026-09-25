@@ -1,5 +1,5 @@
 import { inquiryStatusLabels, inquiryStatuses } from "@repo/config";
-import { Heading } from "@repo/ui";
+import { Heading, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@repo/ui";
 
 import type { StaffInquiryCountsView } from "#shared/contracts/index.ts";
 import type { ReactElement } from "react";
@@ -24,30 +24,26 @@ function InquiryCounts({ counts }: Readonly<{ counts: StaffInquiryCountsView }>)
           <Heading as="h2" size="section">
             直近 30 日の推移
           </Heading>
-          <table aria-label="直近 30 日の推移" className="w-full border-collapse text-left text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="p-2">日付</th>
+          <Table label="直近 30 日の推移">
+            <TableHeader>
+              <TableRow>
+                <TableHead>日付</TableHead>
                 {inquiryStatuses.map((status) => (
-                  <th key={status} className="p-2">
-                    {inquiryStatusLabels[status]}
-                  </th>
+                  <TableHead key={status}>{inquiryStatusLabels[status]}</TableHead>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {counts.trend.map((row) => (
-                <tr key={row.day} className="border-b border-border">
-                  <td className="p-2">{row.day}</td>
+                <TableRow key={row.day}>
+                  <TableCell>{row.day}</TableCell>
                   {inquiryStatuses.map((status) => (
-                    <td key={status} className="p-2">
-                      {row[status]}
-                    </td>
+                    <TableCell key={status}>{row[status]}</TableCell>
                   ))}
-                </tr>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </section>
       )}
     </>

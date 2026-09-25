@@ -1,7 +1,17 @@
-import { Heading, Page, STATUS_VARIANT, StatusMessage } from "@repo/ui";
+import {
+  Heading,
+  Page,
+  STATUS_VARIANT,
+  StatusMessage,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@repo/ui";
 
 import { metricLabel } from "#pages/overview/model/metric-label.ts";
-import { DataTable } from "#shared/ui/data-table.tsx";
 
 import type { StaffOverviewView } from "#shared/contracts/index.ts";
 import type { ReactElement } from "react";
@@ -35,16 +45,22 @@ function OverviewView({
           <Heading as="h2" size="section">
             会員数の直近推移
           </Heading>
-          <DataTable
-            columns={["日付", "会員数"]}
-            label="会員数の直近推移"
-            rows={overview.trend.map((row) => (
-              <tr key={row.bucket} className="border-b border-border">
-                <td className="p-2">{row.bucket}</td>
-                <td className="p-2">{row.value}</td>
-              </tr>
-            ))}
-          />
+          <Table label="会員数の直近推移">
+            <TableHeader>
+              <TableRow>
+                <TableHead>日付</TableHead>
+                <TableHead>会員数</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {overview.trend.map((row) => (
+                <TableRow key={row.bucket}>
+                  <TableCell>{row.bucket}</TableCell>
+                  <TableCell>{row.value}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </section>
       )}
       {overview !== undefined && overview.trend.length === 0 && (

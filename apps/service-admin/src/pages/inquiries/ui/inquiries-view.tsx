@@ -4,6 +4,12 @@ import {
   Page,
   STATUS_VARIANT,
   StatusMessage,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
   formatWarekiDateTime,
 } from "@repo/ui";
 
@@ -53,32 +59,32 @@ function InquiriesView({
         </StatusMessage>
       )}
       {inquiries !== undefined && inquiries.length > 0 && (
-        <table aria-label="問い合わせの一覧" className="w-full border-collapse text-left text-sm">
-          <thead>
-            <tr className="border-b border-border">
-              <th className="p-2">件名</th>
-              <th className="p-2">経路</th>
-              <th className="p-2">状態</th>
-              <th className="p-2">相手</th>
-              <th className="p-2">最終更新</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table label="問い合わせの一覧">
+          <TableHeader>
+            <TableRow>
+              <TableHead>件名</TableHead>
+              <TableHead>経路</TableHead>
+              <TableHead>状態</TableHead>
+              <TableHead>相手</TableHead>
+              <TableHead>最終更新</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {inquiries.map((inquiry) => (
-              <tr key={inquiry.id} className="border-b border-border">
-                <td className="p-2">
+              <TableRow key={inquiry.id}>
+                <TableCell>
                   <NavigationLink to="/inquiries/$id" params={{ id: inquiry.id }} variant="item">
                     {inquiry.subject}
                   </NavigationLink>
-                </td>
-                <td className="p-2">会員</td>
-                <td className="p-2">{inquiryStatusLabels[inquiry.status]}</td>
-                <td className="p-2">{inquiry.memberName}</td>
-                <td className="p-2">{formatWarekiDateTime(inquiry.updatedAt.getTime())}</td>
-              </tr>
+                </TableCell>
+                <TableCell>会員</TableCell>
+                <TableCell>{inquiryStatusLabels[inquiry.status]}</TableCell>
+                <TableCell>{inquiry.memberName}</TableCell>
+                <TableCell>{formatWarekiDateTime(inquiry.updatedAt.getTime())}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       )}
     </Page>
   );

@@ -6,10 +6,14 @@ import {
   Page,
   STATUS_VARIANT,
   StatusMessage,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
   formatWarekiDateTime,
 } from "@repo/ui";
-
-import { DataTable } from "#shared/ui/data-table.tsx";
 
 import type { AuditFilterForm } from "#pages/audit/model/audit-filter.ts";
 import type { StaffAuditPageView } from "#shared/contracts/index.ts";
@@ -66,18 +70,26 @@ function AuditView({
             一覧
           </Heading>
           <p className="text-sm text-muted-foreground">全 {page.total} 件</p>
-          <DataTable
-            columns={["日時", "操作", "操作者 ID", "対象 ID"]}
-            label="監査ログ一覧"
-            rows={page.events.map((event) => (
-              <tr key={event.id} className="border-b border-border">
-                <td className="p-2">{formatWarekiDateTime(event.createdAt.getTime())}</td>
-                <td className="p-2">{event.action}</td>
-                <td className="p-2">{event.actorId}</td>
-                <td className="p-2">{event.targetId}</td>
-              </tr>
-            ))}
-          />
+          <Table label="監査ログ一覧">
+            <TableHeader>
+              <TableRow>
+                <TableHead>日時</TableHead>
+                <TableHead>操作</TableHead>
+                <TableHead>操作者 ID</TableHead>
+                <TableHead>対象 ID</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {page.events.map((event) => (
+                <TableRow key={event.id}>
+                  <TableCell>{formatWarekiDateTime(event.createdAt.getTime())}</TableCell>
+                  <TableCell>{event.action}</TableCell>
+                  <TableCell>{event.actorId}</TableCell>
+                  <TableCell>{event.targetId}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </section>
       )}
     </Page>
