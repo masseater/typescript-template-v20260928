@@ -1,4 +1,5 @@
-import { Effect, Option, Schema } from "effect";
+import { DatabaseFailure } from "@repo/db";
+import { Effect, Schema } from "effect";
 
 import { Sheet } from "#shared/interview/sheet.ts";
 import { ProfileLayout } from "./schema.ts";
@@ -11,21 +12,10 @@ const StoredSheet = Schema.Struct({
   sheet: Sheet,
 });
 
-const decodeStored = Schema.decodeUnknownOption(StoredSheet);
-const decodeLegacy = Schema.decodeUnknownOption(Sheet);
+const decodeStored = Schema.decodeUnknownEffect(StoredSheet);
 
-function readSavedSheet(
-  saved: unknown,
-): Readonly<{ layout?: ProfileLayoutData; sheet: SheetData }> {
-  const stored = Option.getOrUndefined(decodeStored(saved));
-  if (stored !== undefined) {
-    return stored;
-  }
-  const legacy = Option.getOrUndefined(decodeLegacy(saved));
-  if (legacy !== undefined) {
-    return { sheet: legacy };
-  }
-  return { sheet: {} };
+function readSavedSheet(saved: unknown): Effect.Effect<typeof StoredSheet.Type, DatabaseFailure> {
+  return decodeStored(saved).pipe(Effect.mapError((cause) => new DatabaseFailure({ cause })));
 }
 
 const encodeStored = Schema.encodeEffect(StoredSheet);

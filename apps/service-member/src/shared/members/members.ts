@@ -17,7 +17,7 @@ import {
 import { DateTime, Effect } from "effect";
 
 import { photoVersion } from "#shared/photo/index.ts";
-import { baselineProfileLayout, interviewProfileLayout } from "#shared/profile-layout/default.ts";
+import { baselineProfileLayout } from "#shared/profile-layout/default.ts";
 import { readSavedSheet } from "#shared/profile-layout/saved-sheet.ts";
 
 import type { SheetData } from "#shared/interview/sheet.ts";
@@ -93,11 +93,8 @@ function profilePresentation(
     if (interview?.savedSheet === null || interview?.savedSheet === undefined) {
       return emptyPresentation;
     }
-    const saved = readSavedSheet(interview.savedSheet);
-    return {
-      profileLayout: saved.layout ?? interviewProfileLayout,
-      sheet: saved.sheet,
-    };
+    const saved = yield* readSavedSheet(interview.savedSheet);
+    return { profileLayout: saved.layout, sheet: saved.sheet };
   });
 }
 

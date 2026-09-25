@@ -146,9 +146,12 @@ it.effect("saving keeps the sheet and is refused while questions remain", () =>
     yield* takeTurn("member", { kind: "finish" });
     const saved = yield* saveInterview("member");
     assert.strictEqual(saved.phase, "history_consent");
-    assert.deepStrictEqual(readSavedSheet((yield* findInterview("member"))?.savedSheet).sheet, {
-      nickname: "たろう",
-    });
+    assert.deepStrictEqual(
+      (yield* readSavedSheet((yield* findInterview("member"))?.savedSheet)).sheet,
+      {
+        nickname: "たろう",
+      },
+    );
   }).pipe(Effect.provide(withoutModel)),
 );
 
@@ -173,13 +176,19 @@ it.effect("a correction after saving keeps the saved sheet until it is saved aga
     yield* saveInterview("member");
     const corrected = yield* takeTurn("member", { kind: "text", text: "呼び名はジロウ" });
     assert.strictEqual(corrected.phase, "summary");
-    assert.deepStrictEqual(readSavedSheet((yield* findInterview("member"))?.savedSheet).sheet, {
-      nickname: "たろう",
-    });
+    assert.deepStrictEqual(
+      (yield* readSavedSheet((yield* findInterview("member"))?.savedSheet)).sheet,
+      {
+        nickname: "たろう",
+      },
+    );
     yield* saveInterview("member");
-    assert.deepStrictEqual(readSavedSheet((yield* findInterview("member"))?.savedSheet).sheet, {
-      nickname: "ジロウ",
-    });
+    assert.deepStrictEqual(
+      (yield* readSavedSheet((yield* findInterview("member"))?.savedSheet)).sheet,
+      {
+        nickname: "ジロウ",
+      },
+    );
   }).pipe(Effect.provide(withoutModel)),
 );
 
@@ -193,9 +202,12 @@ it.effect("a stored conversation that no longer matches the schema starts over",
     yield* runStatement("UPDATE interview SET state = ? WHERE user_id = ?", outdated, "member");
     const opened = yield* openInterview("member");
     assert.deepStrictEqual(opened.messages, [greeting]);
-    assert.deepStrictEqual(readSavedSheet((yield* findInterview("member"))?.savedSheet).sheet, {
-      nickname: "たろう",
-    });
+    assert.deepStrictEqual(
+      (yield* readSavedSheet((yield* findInterview("member"))?.savedSheet)).sheet,
+      {
+        nickname: "たろう",
+      },
+    );
   }).pipe(Effect.provide(withoutModel)),
 );
 
@@ -224,9 +236,9 @@ it.effect("saving stores a model-assembled layout with the sheet", () =>
     yield* takeTurn("member", { kind: "text", text: "たろう" });
     yield* takeTurn("member", { kind: "finish" });
     yield* saveInterview("member");
-    const saved = readSavedSheet((yield* findInterview("member"))?.savedSheet);
+    const saved = yield* readSavedSheet((yield* findInterview("member"))?.savedSheet);
     assert.deepStrictEqual(
-      saved.layout?.blocks.map((block) => block.kind),
+      saved.layout.blocks.map((block) => block.kind),
       ["identity", "sheet-nickname", "actions"],
     );
   }).pipe(

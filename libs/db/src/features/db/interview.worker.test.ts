@@ -1,8 +1,10 @@
+import { applyD1Migrations } from "cloudflare:test";
+import { env } from "cloudflare:workers";
 import { Effect, Layer } from "effect";
 import { TestClock } from "effect/testing";
 import { describe, expect, test } from "vite-plus/test";
 
-import { TestDatabase, runStatement } from "./database-test-fixture.ts";
+import { EmptyTestDatabase, TestDatabase, runStatement } from "./database-test-fixture.ts";
 import { countInterviewTurn, findInterview, startInterview, storeInterview } from "./interview.ts";
 
 const LIMIT = 2;
@@ -130,6 +132,56 @@ describe("interview turn limits", () => {
     expect(turnLimitTags).toStrictEqual({
       missingTag: "InterviewLimitReached",
       refusedTag: "InterviewLimitReached",
+    });
+  });
+});
+
+describe("a saved sheet stored before the layout was saved with it", () => {
+  const it = test.extend("migratedSheet", () =>
+    Effect.runPromise(
+      Effect.gen(function* program() {
+        const layoutMigrations = env.D1_MIGRATIONS.filter((migration) =>
+          migration.name.includes("interview_saved_sheet_layout"),
+        );
+        const earlierMigrations = env.D1_MIGRATIONS.filter(
+          (migration) => !layoutMigrations.includes(migration),
+        );
+        yield* Effect.promise(() => applyD1Migrations(env.DB, earlierMigrations));
+        yield* runStatement(
+          "INSERT INTO user (id, name, email, email_verified, created_at, updated_at) VALUES (?, ?, ?, 1, 0, 0)",
+          "member",
+          "member",
+          "member@example.com",
+        );
+        yield* runStatement(
+          "INSERT INTO interview (user_id, day, state, saved_sheet, updated_at) VALUES (?, ?, ?, ?, 0)",
+          "member",
+          "2026-01-01",
+          "{}",
+          '{"nickname":"たろう"}',
+        );
+        yield* Effect.promise(() => applyD1Migrations(env.DB, layoutMigrations));
+        return (yield* findInterview("member"))?.savedSheet;
+      }).pipe(Effect.provide(EmptyTestDatabase)),
+    ));
+
+  it("is migrated to the stored sheet with the interview layout", ({ migratedSheet }) => {
+    expect(migratedSheet).toStrictEqual({
+      layout: {
+        blocks: [
+          { kind: "identity" },
+          { kind: "biography" },
+          { kind: "sheet-nickname" },
+          { kind: "sheet-occupation" },
+          { kind: "sheet-interests" },
+          { kind: "sheet-area" },
+          { kind: "sheet-message" },
+          { kind: "social-links" },
+          { kind: "joined" },
+          { kind: "actions" },
+        ],
+      },
+      sheet: { nickname: "たろう" },
     });
   });
 });
