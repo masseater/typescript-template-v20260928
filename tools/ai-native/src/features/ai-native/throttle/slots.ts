@@ -91,14 +91,16 @@ export const removeWaiter = (waiterPath: string): Effect.Effect<void, Error> =>
 
 const OWNED_BY_ANOTHER_USER_CODES: ReadonlySet<string> = new Set(["EPERM"]);
 
-const isAlive = (pid: number): boolean => {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (failure) {
-    return failedWithCode(failure, OWNED_BY_ANOTHER_USER_CODES);
-  }
-};
+const isAlive = (pid: number): Effect.Effect<boolean> =>
+  Effect.try({
+    try: () => process.kill(pid, 0),
+    catch: (refusal) => failedWithCode(refusal, OWNED_BY_ANOTHER_USER_CODES),
+  }).pipe(
+    Effect.match({
+      onFailure: (ownedByAnotherUser) => ownedByAnotherUser,
+      onSuccess: () => true,
+    }),
+  );
 
 const UNREADABLE_ENTRY_CODES: ReadonlySet<string> = new Set(["ENOENT", "ENOTDIR", "EISDIR"]);
 
@@ -113,10 +115,9 @@ const recordedPid = (waiterPath: string): Effect.Effect<number | null, Error> =>
 
 const survives = (waiterPath: string): Effect.Effect<boolean, Error> =>
   recordedPid(waiterPath).pipe(
-    Effect.flatMap((pid) =>
-      pid !== null && isAlive(pid)
-        ? Effect.succeed(true)
-        : removeWaiter(waiterPath).pipe(Effect.as(false)),
+    Effect.flatMap((pid) => (pid === null ? Effect.succeed(false) : isAlive(pid))),
+    Effect.flatMap((alive) =>
+      alive ? Effect.succeed(true) : removeWaiter(waiterPath).pipe(Effect.as(false)),
     ),
   );
 

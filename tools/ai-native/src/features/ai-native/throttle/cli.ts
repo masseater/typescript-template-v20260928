@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+import { exitWith, firstUserArgumentIndex } from "@repo/cli";
+import { Effect } from "effect";
+
 import { runThrottle } from "./run-throttle.ts";
 
-process.exitCode = await runThrottle(process.argv.slice(2));
+await Effect.runPromise(
+  Effect.promise(() => runThrottle(process.argv.slice(firstUserArgumentIndex))).pipe(
+    Effect.flatMap(exitWith),
+  ),
+);

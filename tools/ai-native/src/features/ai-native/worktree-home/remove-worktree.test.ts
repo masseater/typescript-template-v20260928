@@ -52,9 +52,9 @@ describe("removeWorktree", () => {
     .extend("theDirtyRemovalFailure", ({ theCheckout }) =>
       Effect.runPromise(
         removeWorktree(joinPath(parentPath(theCheckout), "dirty")).pipe(
-          Effect.flip,
-          Effect.orElseSucceed(() => {
-            throw new Error("removeWorktree removed a worktree with uncommitted work");
+          Effect.matchEffect({
+            onFailure: (refusal) => Effect.succeed(refusal),
+            onSuccess: () => Effect.die("removeWorktree removed a worktree with uncommitted work"),
           }),
         ),
       ),

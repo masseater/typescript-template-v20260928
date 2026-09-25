@@ -1,3 +1,4 @@
+import { cliStderr } from "@repo/cli";
 import { Effect } from "effect";
 
 import { baseName, epochMillis } from "../host.ts";
@@ -38,22 +39,22 @@ const reportProgress = (
     const line = `throttle: waiting ${waiting.indexOf(held.entryName) + 1}/${waiting.length}`;
     if (configuration.interactive) {
       const elapsedSec = Math.floor((epochMillis() - held.startedAt) / 1000);
-      process.stderr.write(`\r\u001B[K${line} ${elapsedSec}s`);
+      cliStderr.write(`\r\u001B[K${line} ${elapsedSec}s`);
       return held.lastPrinted;
     }
     const fingerprint = yield* slotStateFingerprint(configuration.slotDir, configuration.limit);
     const printKey = `${line}|${fingerprint}`;
-    if (printKey !== held.lastPrinted) process.stderr.write(`${line}\n`);
+    if (printKey !== held.lastPrinted) cliStderr.write(`${line}\n`);
     return printKey;
   });
 
 const closeProgressLine = (configuration: WaitConfiguration): void => {
-  if (configuration.interactive) process.stderr.write("\n");
+  if (configuration.interactive) cliStderr.write("\n");
 };
 
 const budgetExhausted = (configuration: WaitConfiguration): "budget-exhausted" => {
   closeProgressLine(configuration);
-  process.stderr.write(
+  cliStderr.write(
     `throttle: gave up: every slot stayed held for the whole ${configuration.waitBudgetMs}ms wait budget\n`,
   );
   return "budget-exhausted";

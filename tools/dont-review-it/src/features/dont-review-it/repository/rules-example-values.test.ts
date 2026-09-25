@@ -72,6 +72,11 @@ const forbidden = [
     'export const mail = "ops@private-host.net";',
   ],
   [
+    "real-looking-scp-origin",
+    "infra/cloudflare/src/features/cloudflare/probe-test-fixture.ts",
+    'export const origin = "git@private-host.net:acme/widgets.git";',
+  ],
+  [
     "real-looking-secret",
     "infra/cloudflare/src/features/cloudflare/probe-test-fixture.ts",
     'export const authSecret = "Pr0beZ9xQ2mL7bN4hJ6sD8gW1yC5e3";',
@@ -160,6 +165,14 @@ const allowed = [
   [
     "infra/cloudflare/src/features/cloudflare/probe-test-fixture.ts",
     'export const mail = "billing@example.com";',
+  ],
+  [
+    "infra/cloudflare/src/features/cloudflare/probe-test-fixture.ts",
+    'export const origin = "git@git.example:acme/widgets.git";',
+  ],
+  [
+    "infra/cloudflare/src/features/cloudflare/probe-test-fixture.ts",
+    'export const origin = "ssh://git@git.example:22/acme/widgets";',
   ],
 ] as const;
 

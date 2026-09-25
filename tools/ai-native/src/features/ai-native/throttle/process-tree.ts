@@ -2,6 +2,7 @@ import { Effect } from "effect";
 import { attempt } from "es-toolkit";
 
 import { runCaptured } from "../child-process.ts";
+import { failedWithCode } from "./failure-codes.ts";
 
 const combinedFailure = (primary: Error, fallback: Error | null): Error =>
   fallback === null
@@ -69,8 +70,10 @@ const treeSignalFailure = (input: {
     ? runWindowsTaskkill(input.pid, input.dependencies.executeTaskkill)
     : Effect.sync(() => input.dependencies.signalProcess(-input.pid, input.signal));
 
+const MISSING_PROCESS_CODES: ReadonlySet<string> = new Set(["ESRCH"]);
+
 const processIsMissing = (failure: Error): boolean =>
-  (failure as NodeJS.ErrnoException).code === "ESRCH";
+  failedWithCode(failure, MISSING_PROCESS_CODES);
 
 const shutdownCompleted = (input: {
   platform: NodeJS.Platform;

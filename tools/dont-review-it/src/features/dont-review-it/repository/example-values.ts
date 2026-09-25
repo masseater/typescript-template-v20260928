@@ -99,7 +99,8 @@ const looksLikeHostname = (written: string): boolean => {
 
 const isExampleValue = (written: string): boolean => {
   if (emailShape.test(written)) {
-    return isExampleHost(written.slice(written.lastIndexOf("@") + 1));
+    const [host = ""] = written.slice(written.lastIndexOf("@") + 1).split(/[:/]/u);
+    return isExampleHost(host);
   }
   if (uuidShape.test(written)) {
     return syntheticUuid.test(written);
