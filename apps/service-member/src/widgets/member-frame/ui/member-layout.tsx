@@ -8,9 +8,8 @@ const route = getRouteApi("/_member");
 
 function MemberLayout(): ReactElement {
   const { session } = route.useRouteContext();
-  const navBadges = route.useLoaderData();
   return (
-    <MemberFrame navBadges={navBadges} user={session.user}>
+    <MemberFrame user={session.user}>
       <Outlet />
     </MemberFrame>
   );

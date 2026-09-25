@@ -1,7 +1,9 @@
 import type { ReactElement } from "react";
 
+type DestinationBadgeValue = number | "failed";
+
 type AppFrameDestination = Readonly<{
-  badge?: number;
+  badge?: DestinationBadgeValue;
   exact?: boolean;
   icon: ReactElement;
   label: string;
@@ -14,4 +16,4 @@ type AppFrameSection = Readonly<{
   label: string;
 }>;
 
-export type { AppFrameDestination, AppFrameSection };
+export type { AppFrameDestination, AppFrameSection, DestinationBadgeValue };

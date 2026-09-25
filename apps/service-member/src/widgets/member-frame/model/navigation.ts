@@ -12,37 +12,39 @@ import { m } from "#shared/i18n/index.ts";
 import type { NavBadges } from "#shared/contracts/index.ts";
 import type { LucideIcon } from "lucide-react";
 
+type NavBadge = number | "failed";
+
 type MemberNavItem = Readonly<
   | {
-      badge?: number;
+      badge?: NavBadge;
       icon: LucideIcon;
       id: "board";
       label: string;
       to: "/board";
     }
   | {
-      badge?: number;
+      badge?: NavBadge;
       icon: LucideIcon;
       id: "home";
       label: string;
       to: "/home";
     }
   | {
-      badge?: number;
+      badge?: NavBadge;
       icon: LucideIcon;
       id: "messages";
       label: string;
       to: "/messages";
     }
   | {
-      badge?: number;
+      badge?: NavBadge;
       icon: LucideIcon;
       id: "notifications";
       label: string;
       to: "/notifications";
     }
   | {
-      badge?: number;
+      badge?: NavBadge;
       icon: LucideIcon;
       id: "profile";
       label: string;
@@ -50,7 +52,7 @@ type MemberNavItem = Readonly<
       to: "/users/$id";
     }
   | {
-      badge?: number;
+      badge?: NavBadge;
       icon: LucideIcon;
       id: "search";
       label: string;
@@ -61,12 +63,10 @@ type MemberNavItem = Readonly<
 
 const memberHasPaidPlan = false;
 
-const emptyNavBadges: NavBadges = { notifications: 0 };
-
 function memberNavItems(
   paid: boolean,
   profileId: string,
-  badges: NavBadges = emptyNavBadges,
+  badges?: NavBadges | "failed",
 ): readonly MemberNavItem[] {
   return [
     { icon: HomeIcon, id: "home", label: m.nav_home(), to: "/home" },
@@ -93,7 +93,7 @@ function memberNavItems(
       to: "/messages",
     },
     {
-      badge: badges.notifications,
+      badge: badges === "failed" ? badges : (badges?.notifications ?? 0),
       icon: BellIcon,
       id: "notifications",
       label: m.title_notifications(),

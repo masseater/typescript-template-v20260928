@@ -1,26 +1,13 @@
-import { Page, STATUS_VARIANT, StatusMessage } from "@repo/ui";
+import { Page, StatusMessage } from "@repo/ui";
+import { useSuspenseQuery } from "@tanstack/react-query";
 
-import { useRecoveryOffer } from "#pages/recovery/model/recovery-offer.ts";
+import { recoveryOfferOptions } from "#pages/recovery/api/recovery.ts";
 import { RecoveryChoice } from "#pages/recovery/ui/recovery-choice.tsx";
 
 import type { ReactElement } from "react";
 
 function SettingsRecoveryPage(): ReactElement {
-  const { error, offer, reload } = useRecoveryOffer();
-  if (error !== undefined) {
-    return (
-      <Page title="データの復旧">
-        <StatusMessage variant={STATUS_VARIANT.failure}>{error}</StatusMessage>
-      </Page>
-    );
-  }
-  if (offer === undefined) {
-    return (
-      <Page title="データの復旧">
-        <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
-      </Page>
-    );
-  }
+  const { data: offer } = useSuspenseQuery(recoveryOfferOptions);
   if (!offer.available) {
     return (
       <Page title="データの復旧">
@@ -28,7 +15,7 @@ function SettingsRecoveryPage(): ReactElement {
       </Page>
     );
   }
-  return <RecoveryChoice previousName={offer.previousName} onDecided={reload} />;
+  return <RecoveryChoice previousName={offer.previousName} onDecided={() => undefined} />;
 }
 
 export { SettingsRecoveryPage };

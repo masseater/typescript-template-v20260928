@@ -1,5 +1,6 @@
 import { RegistryProvider } from "@effect/atom-react";
 import { ROLE } from "@repo/config/identity";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   createMemoryHistory,
   createRootRoute,
@@ -13,6 +14,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vite-plus/test";
 
 import { overwriteGetLocale, type Locale } from "#paraglide/runtime.js";
+import { navBadgesOptions } from "../api/badges.ts";
 import { MemberFrame } from "./member-frame.tsx";
 
 import type { SessionView } from "@repo/auth-ui";
@@ -35,20 +37,48 @@ const destinations = [
   { label: "通知", path: "/notifications" },
 ] as const;
 
-function markup(locale: Locale, path: string): Promise<string> {
+type BadgeSource = "empty" | "failed" | "unread";
+
+const failedBadges = (queries: QueryClient): Promise<void> =>
+  queries
+    .query({
+      ...navBadgesOptions,
+      queryFn: () => Promise.reject(new Error("件数の取得に失敗しました。")),
+    })
+    .then(
+      () => undefined,
+      () => undefined,
+    );
+
+const seededBadges = (source: BadgeSource): Promise<QueryClient> => {
+  const queries = new QueryClient();
+  if (source === "failed") {
+    return failedBadges(queries).then(() => queries);
+  }
+  if (source === "unread") {
+    queries.setQueryData(navBadgesOptions.queryKey, { notifications: 3 });
+  }
+  return Promise.resolve(queries);
+};
+
+function markup(locale: Locale, path: string, source: BadgeSource = "empty"): Promise<string> {
   return Effect.runPromise(
     Effect.gen(function* loadFrame() {
       overwriteGetLocale(() => locale);
+      const queries = yield* Effect.promise(() => seededBadges(source));
       const rootRoute = createRootRoute({
         component: () =>
           createElement(
-            RegistryProvider,
-            null,
-            createElement(MemberFrame, {
-              children: createElement("p", null, "本文"),
-              navBadges: { notifications: 0 },
-              user: member,
-            }),
+            QueryClientProvider,
+            { client: queries },
+            createElement(
+              RegistryProvider,
+              null,
+              createElement(MemberFrame, {
+                children: createElement("p", null, "本文"),
+                user: member,
+              }),
+            ),
           ),
       });
       const router = createRouter({
@@ -111,7 +141,31 @@ describe("member navigation", () => {
   const it = test
     .extend("theFrame", () => markup("ja", "/home"))
     .extend("theProfileFrame", () => markup("ja", "/users/member-1"))
-    .extend("theEnglishFrame", () => markup("en", "/home"));
+    .extend("theEnglishFrame", () => markup("en", "/home"))
+    .extend("theUnreadFrame", () => markup("ja", "/home", "unread"))
+    .extend("theFailedBadgeFrame", () => markup("ja", "/home", "failed"));
+
+  it("draws the frame and its destinations while the badge count is still unknown", ({
+    theFrame,
+  }) => {
+    expect.hasAssertions();
+    expect(theFrame).toContain("本文");
+    expect(theFrame).not.toContain("件数を取得できませんでした");
+  });
+
+  it("shows the unread notification count", ({ theUnreadFrame }) => {
+    expect.hasAssertions();
+    expect(theUnreadFrame).toContain(">3<");
+  });
+
+  it("marks only the badge when the count failed to load", ({ theFailedBadgeFrame }) => {
+    expect.hasAssertions();
+    expect(theFailedBadgeFrame).toContain("本文");
+    expect(theFailedBadgeFrame).toContain("件数を取得できませんでした");
+    for (const destination of destinations) {
+      expect(theFailedBadgeFrame).toContain(`href="${destination.path}"`);
+    }
+  });
 
   it("lists the primary destinations on the compact rail", ({ theFrame }) => {
     expect.hasAssertions();
