@@ -1,10 +1,7 @@
+import { packageDependencyFields } from "@repo/config/workspace-members";
 import { isPlainObject } from "es-toolkit";
 
-import {
-  packageDependencyFields,
-  packageManifestFrom,
-  type PackageManifest,
-} from "../platform/package-manifest.ts";
+import { packageManifestFrom, type PackageManifest } from "../platform/package-manifest.ts";
 import { repositoryRelative } from "./repository-path-test-fixture.ts";
 import { replacementFor, replacementMessage } from "./retired-packages.ts";
 

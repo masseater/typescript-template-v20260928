@@ -1,13 +1,9 @@
+import { dependencyFieldSchemas } from "@repo/config/workspace-members";
 import { Cause, Exit, Schema } from "effect";
-
-export const DependencySpecifiers = Schema.Record(Schema.String, Schema.String);
 
 export const PackageManifest = Schema.Struct({
   name: Schema.optionalKey(Schema.String),
-  dependencies: Schema.optionalKey(DependencySpecifiers),
-  devDependencies: Schema.optionalKey(DependencySpecifiers),
-  optionalDependencies: Schema.optionalKey(DependencySpecifiers),
-  peerDependencies: Schema.optionalKey(DependencySpecifiers),
+  ...dependencyFieldSchemas,
   exports: Schema.optionalKey(Schema.Unknown),
   main: Schema.optionalKey(Schema.String),
   types: Schema.optionalKey(Schema.String),
@@ -23,13 +19,6 @@ export const PackageManifest = Schema.Struct({
 });
 
 export type PackageManifest = typeof PackageManifest.Type;
-
-export const packageDependencyFields = [
-  "dependencies",
-  "devDependencies",
-  "optionalDependencies",
-  "peerDependencies",
-] as const satisfies readonly (keyof PackageManifest)[];
 
 const decodeManifest = Schema.decodeUnknownExit(PackageManifest);
 

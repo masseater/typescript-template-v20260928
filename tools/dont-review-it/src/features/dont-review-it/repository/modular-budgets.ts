@@ -1,21 +1,15 @@
 import { architectureKindOf, modularBudgets } from "@repo/config";
 
-const workspacePathOf = (cwd: string): string | undefined =>
-  ["apps", "libs", "tools", "infra"]
-    .map((area) => {
-      const index = cwd.lastIndexOf(`/${area}/`);
-      if (index < 0) {
-        return undefined;
-      }
-      const [root, name] = cwd.slice(index + 1).split("/");
-      return root !== undefined && name !== undefined ? `${root}/${name}` : undefined;
-    })
-    .find((value) => value !== undefined);
-
-const isModularWorkspace = (cwd: string): boolean => {
-  const workspacePath = workspacePathOf(cwd);
-  return workspacePath !== undefined && architectureKindOf(workspacePath) === "modular";
-};
+const isModularWorkspace = ({
+  memberDirectories,
+  workspacePath,
+}: {
+  readonly memberDirectories: readonly string[];
+  readonly workspacePath: string;
+}): boolean =>
+  workspacePath !== "." &&
+  memberDirectories.includes(workspacePath) &&
+  architectureKindOf(workspacePath) === "modular";
 
 const isPublicApiIndex = (fileName: string): boolean =>
   /^index(?:-test-fixture)?\.[cm]?[jt]sx?$/u.test(fileName);

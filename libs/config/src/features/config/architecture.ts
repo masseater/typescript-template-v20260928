@@ -15,15 +15,9 @@ export const architectureKinds = ["fsd", "modular"] as const;
 export type ArchitectureKind = (typeof architectureKinds)[number];
 
 export const fsdPackages = buildTargets;
-const fsdPackageSet: ReadonlySet<string> = new Set(fsdPackages);
+const fsdWorkspacePaths: ReadonlySet<string> = new Set(
+  fsdPackages.map((buildTarget) => `apps/${buildTarget}`),
+);
 
-export const architectureKindOf = (workspacePath: string): ArchitectureKind | undefined => {
-  const matched = /^(?<area>apps|libs|tools|infra)\/(?<name>[^/]+)$/u.exec(workspacePath)?.groups;
-  if (matched === undefined) {
-    return undefined;
-  }
-  if (matched["area"] === "apps" && fsdPackageSet.has(matched["name"] ?? "")) {
-    return "fsd";
-  }
-  return "modular";
-};
+export const architectureKindOf = (workspacePath: string): ArchitectureKind =>
+  fsdWorkspacePaths.has(workspacePath) ? "fsd" : "modular";

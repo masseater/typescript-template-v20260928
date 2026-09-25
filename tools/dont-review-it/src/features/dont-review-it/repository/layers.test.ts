@@ -10,9 +10,7 @@ import { commands, workspaceDirectories } from "./tasks-test-fixture.ts";
 
 const source = "export const value = 1;\n";
 
-const packagesWithSrc = workspaceDirectories.filter((directory) =>
-  /^(?:apps|libs|tools|infra)\/[^/]+$/u.test(directory),
-);
+const packagesWithSrc = workspaceDirectories.filter((directory) => directory !== ".");
 
 describe("architecture coverage", () => {
   it("assigns every workspace package to FSD or Modular", () => {

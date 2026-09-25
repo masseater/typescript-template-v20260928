@@ -1,8 +1,8 @@
+import { workspaceMembers } from "@repo/config/workspace-members";
 import { Effect, type FileSystem, Path } from "effect";
 
 import { directoryEntries, type TreeFailure } from "../platform/directory-entries.ts";
 import { pathExists } from "../platform/file-system.ts";
-import { workspaceRoots } from "./workspace-layout.ts";
 
 const skippedDirectoryNames = new Set([
   ".git",
@@ -40,13 +40,13 @@ const tsconfigFilesUnder = (root: string, directory: string): ProjectDiscovery<r
     return nested.flat();
   });
 
-const typecheckProjects = (root: string): ProjectDiscovery<readonly string[]> =>
+const typecheckProjects = (root: string) =>
   Effect.gen(function* typecheckProjects() {
     const paths = yield* Path.Path;
-    const nested = yield* Effect.forEach(workspaceRoots, (group) =>
-      Effect.flatMap(pathExists(paths.join(root, group)), (present) =>
-        present ? tsconfigFilesUnder(root, group) : Effect.succeed([]),
-      ),
+    const members = yield* workspaceMembers(root);
+    const nested = yield* Effect.forEach(
+      members.filter((member) => member.directory !== "."),
+      (member) => tsconfigFilesUnder(root, member.directory),
     );
     const candidates = ["tsconfig.json", ...nested.flat()];
     const present = yield* Effect.filter(candidates, (project) =>

@@ -8,18 +8,11 @@ type AffectedTests =
   | { readonly kind: "all" }
   | { readonly directories: readonly string[]; readonly kind: "subset" };
 
-const workspaceDirectory = /^(?<directory>(?:apps|libs|infra|tools)\/[^/]+)\//u;
-
 const packageOf = (
   file: string,
   packages: readonly WorkspacePackage[],
-): WorkspacePackage | undefined => {
-  const directory = workspaceDirectory.exec(file)?.groups?.["directory"];
-  if (directory === undefined) {
-    return undefined;
-  }
-  return packages.find((workspace) => workspace.directory === directory);
-};
+): WorkspacePackage | undefined =>
+  packages.find((workspace) => file.startsWith(`${workspace.directory}/`));
 
 const withDependents = (
   selected: ReadonlySet<string>,
@@ -84,7 +77,10 @@ const shardDirectories = (
     .toSorted();
 };
 
-const rootText = /^(?!(?:apps|libs|infra|tools)\/)(?:.+\.md|\.textlint[^/]*)$/u;
+const rootTextFile = /^(?:.+\.md|\.textlint[^/]*)$/u;
+
+const isRootText = (file: string, packages: readonly WorkspacePackage[]): boolean =>
+  rootTextFile.test(file) && packageOf(file, packages) === undefined;
 
 const hookFilters = (
   files: readonly string[],
@@ -93,7 +89,7 @@ const hookFilters = (
   if (files.length === 0) {
     return [];
   }
-  const readByWorkspaces = files.filter((file) => !rootText.test(file));
+  const readByWorkspaces = files.filter((file) => !isRootText(file, packages));
   if (readByWorkspaces.length === 0) {
     return ["-w"];
   }

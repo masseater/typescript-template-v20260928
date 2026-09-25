@@ -39,7 +39,7 @@ const shardOutput = (
       const workspace = packages.find((item) => item.directory === directory);
       if (
         workspace === undefined ||
-        !/^(?:apps|libs|infra|tools)\/[\w-]+$/u.test(directory) ||
+        !/^[\w-]+\/[\w-]+$/u.test(directory) ||
         !/^@repo\/[\w-]+$/u.test(workspace.name)
       ) {
         return Effect.fail(new NotAWorkspaceFilter({ directory }));

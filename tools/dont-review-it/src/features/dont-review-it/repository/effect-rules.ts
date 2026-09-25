@@ -7,6 +7,7 @@ import {
   type NodeOf,
 } from "./lint-context.ts";
 import { origins, propertyName, staticText, type Origin } from "./references.ts";
+import { workspaceParentPattern } from "./workspace-parents.ts";
 
 import type { Visitor } from "vite-plus/lint/plugins";
 
@@ -101,9 +102,11 @@ const effectStackVisitor = (inspection: LintContext): Visitor => {
   };
 };
 
+const workspaceSourcePath = new RegExp(String.raw`/(?:${workspaceParentPattern})/[^/]+/src/`, "u");
+
 const isEffectScope = (inspected: string): boolean => {
   return (
-    /\/(?:apps|libs|infra|tools)\/[^/]+\/src\//u.test(inspected) &&
+    workspaceSourcePath.test(inspected) &&
     !/\/libs\/(?:ui|auth-ui)\/|\/libs\/runtime\/src\/features\/runtime\/client\.ts$|\.tsx$/u.test(
       inspected,
     )

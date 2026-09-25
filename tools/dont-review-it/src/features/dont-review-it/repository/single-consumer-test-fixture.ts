@@ -12,10 +12,11 @@ import {
   type WorkspaceManifest,
 } from "./dependencies-test-fixture.ts";
 import { commands, taskNames } from "./tasks-test-fixture.ts";
+import { workspaceParents } from "./workspace-parents.ts";
 
 import type { PackageManifest } from "../platform/package-manifest.ts";
 
-const areas = new Set(["apps", "libs", "infra", "tools"]);
+const areas: ReadonlySet<string> = new Set(workspaceParents);
 
 const skippedNames = new Set(["node_modules", "dist", "coverage", "storybook-static"]);
 
@@ -289,7 +290,7 @@ const repositorySources = (root: string): TreeScan<readonly SourceText[]> =>
   Effect.gen(function* repositorySources() {
     const filesystem = yield* FileSystem.FileSystem;
     const paths = yield* Path.Path;
-    const nested = yield* Effect.forEach(["apps", "libs", "infra", "tools"], (area) =>
+    const nested = yield* Effect.forEach(workspaceParents, (area) =>
       listedSources(paths.join(root, area), root),
     );
     const topEntries = yield* directoryEntries(root);

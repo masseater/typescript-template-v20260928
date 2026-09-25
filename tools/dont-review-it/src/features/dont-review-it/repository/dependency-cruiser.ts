@@ -7,6 +7,7 @@ import {
   workerTestPattern,
   workerTestSuffix,
 } from "./test-runtime.ts";
+import { workspaceParentPattern } from "./workspace-parents.ts";
 
 import type { IConfiguration } from "dependency-cruiser";
 
@@ -66,7 +67,7 @@ const configuration = {
     {
       comment:
         "非公開のファイルへ相対パスで踏み込んでいます。相手のパッケージが exports で公開している入口を使ってください。",
-      from: { path: "^(apps|libs|infra|tools)/([^/]+)/" },
+      from: { path: `^(${workspaceParentPattern})/([^/]+)/` },
       name: "no-package-escape",
       severity: "error",
       to: {
@@ -104,7 +105,7 @@ const configuration = {
     {
       comment:
         "テスト専用の入口です。テストとフィクスチャからだけ使い、アプリの実装へ持ち込まないでください。",
-      from: { path: "^(?:apps|libs|infra|tools)/", pathNot: developmentModule },
+      from: { path: `^(?:${workspaceParentPattern})/`, pathNot: developmentModule },
       name: "no-testing-entry-outside-tests",
       severity: "error",
       to: { path: testingEntry },
@@ -188,7 +189,7 @@ const configuration = {
       extensions: [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".d.ts"],
       mainFields: ["module", "main", "types", "typings"],
     },
-    exclude: { path: [String.raw`^(?:apps|libs|infra|tools)/[^/]+/(?:\.(?!storybook)|dist/)`] },
+    exclude: { path: [String.raw`^(?:${workspaceParentPattern})/[^/]+/(?:\.(?!storybook)|dist/)`] },
     parser: "swc",
   },
 } satisfies IConfiguration;

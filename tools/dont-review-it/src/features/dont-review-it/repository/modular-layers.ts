@@ -1,17 +1,21 @@
 import { architectureKindOf, modularLayers } from "@repo/config";
 
 import { reportViolation, type LintContext, type Node } from "./lint-context.ts";
+import { workspaceParentPattern } from "./workspace-parents.ts";
 
 import type { Visitor } from "vite-plus/lint/plugins";
 
 const modularLayerSet: ReadonlySet<string> = new Set(modularLayers);
 
+const workspaceSourcePath = new RegExp(
+  String.raw`/(?<area>${workspaceParentPattern})/(?<name>[^/]+)/src/(?<inside>.+)$`,
+  "u",
+);
+
 const workspaceSource = (
   inspected: string,
 ): { readonly inside: string; readonly workspacePath: string } | undefined => {
-  const matched = /\/(?<area>apps|libs|tools|infra)\/(?<name>[^/]+)\/src\/(?<inside>.+)$/u.exec(
-    inspected,
-  )?.groups;
+  const matched = workspaceSourcePath.exec(inspected)?.groups;
   if (
     matched?.["area"] === undefined ||
     matched["name"] === undefined ||

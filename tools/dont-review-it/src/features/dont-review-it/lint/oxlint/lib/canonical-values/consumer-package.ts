@@ -1,6 +1,6 @@
+import { packageDependencyFields } from "@repo/config/workspace-members";
 import { memoize } from "es-toolkit";
 
-import { packageDependencyFields } from "../../../../platform/package-manifest.ts";
 import { path } from "../../../../platform/path.ts";
 import { readPackageManifest } from "./package-manifest-file.ts";
 import { nearestPackageDirectory } from "./source-files.ts";

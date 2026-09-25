@@ -3,12 +3,13 @@ import * as NodeServices from "@effect/platform-node/NodeServices";
 import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { type BuildTarget, BuildTargetName } from "@repo/config";
 import { repositoryRoot } from "@repo/config/repository-root";
+import { dependencyFieldSchemas } from "@repo/config/workspace-members";
 import { serverOnlyMarkers } from "@repo/vite-config";
 import { Console, Effect, FileSystem, Path, Schema } from "effect";
 import { build } from "vite-plus";
 
 import { packageNameOf } from "../lint/oxlint/lib/package-specifier.ts";
-import { DependencySpecifiers, PackageManifest } from "../platform/package-manifest.ts";
+import { PackageManifest } from "../platform/package-manifest.ts";
 import { denialReason } from "./client-bundle-denial.ts";
 
 const probeModules: Readonly<Record<BuildTarget, string>> = {
@@ -133,7 +134,10 @@ const serverOnlyProblems = (
     ),
   );
 
-const Manifest = Schema.Struct({ ...PackageManifest.fields, dependencies: DependencySpecifiers });
+const Manifest = Schema.Struct({
+  ...PackageManifest.fields,
+  dependencies: dependencyFieldSchemas.dependencies.schema,
+});
 
 const expectedDenials = (application: BuildTarget) =>
   Effect.gen(function* expectedDenials() {

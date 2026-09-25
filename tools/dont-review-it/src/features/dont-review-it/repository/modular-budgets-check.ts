@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { causeRecord, markFailed, runCli } from "@repo/cli";
+import { repositoryRoot } from "@repo/config/repository-root";
+import { workspaceMembers } from "@repo/config/workspace-members";
 import { Console, Effect, FileSystem, Path, Schema } from "effect";
 import { sum } from "es-toolkit";
 
@@ -76,8 +78,16 @@ const budgetFindings = (srcRoot: string): TreeScan<readonly string[]> =>
   });
 
 const modularPackage = Effect.gen(function* modularPackage() {
-  const cwd = process.cwd().replaceAll("\\", "/");
-  if (!isModularWorkspace(cwd)) {
+  const paths = yield* Path.Path;
+  const cwd = process.cwd();
+  const workspacePath = paths.relative(repositoryRoot, cwd).split(paths.sep).join("/") || ".";
+  const members = yield* workspaceMembers(repositoryRoot);
+  if (
+    !isModularWorkspace({
+      memberDirectories: members.map((member) => member.directory),
+      workspacePath,
+    })
+  ) {
     return yield* new NotAModularPackage({ cwd });
   }
   return cwd;

@@ -10,14 +10,20 @@ import {
 
 describe("modular budgets", () => {
   it.for([
-    ["/repo/tools/dont-review-it", true],
-    ["/repo/tools/dont-review-it/src", true],
-    ["/home/apps/repo/libs/ui", true],
-    ["/repo/apps/internal-dashboard", false],
-    ["/repo", false],
-  ] as const)("classifies %s as modular: %s", ([cwd, modular]) => {
+    ["tools/dont-review-it", true],
+    ["libs/ui", true],
+    ["tools/dont-review-it/src", false],
+    ["libs/unlisted", false],
+    ["apps/internal-dashboard", false],
+    [".", false],
+  ] as const)("classifies %s as modular: %s", ([workspacePath, modular]) => {
     expect.hasAssertions();
-    expect(isModularWorkspace(cwd)).toBe(modular);
+    expect(
+      isModularWorkspace({
+        memberDirectories: [".", "apps/internal-dashboard", "libs/ui", "tools/dont-review-it"],
+        workspacePath,
+      }),
+    ).toBe(modular);
   });
 
   it("accepts layers within budget", () => {
