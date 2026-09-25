@@ -9,17 +9,19 @@ import {
   waitUntilResponds,
 } from "@repo/config";
 import { localDatabaseVariable } from "@repo/config/local-database-path";
-import { repositoryRoot } from "@repo/config/repository-root";
-import { Cause, Console, Effect, FileSystem, Path, Result, Schema } from "effect";
-import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
+import { migrateLocalDatabase } from "@repo/db-local/platform";
+import { Cause, Console, Effect, FileSystem, Result, Schema } from "effect";
 import { createServer } from "vite-plus";
 
 import { describeError } from "./failure.ts";
 import { layer } from "./platform.ts";
-import { descendantPids, killQuietly, processRows } from "./process-tree.ts";
+import { descendantPids, killQuietly, readProcessTable } from "./process-tree.ts";
+
+import type { ChildProcessSpawner } from "effect/unstable/process";
 
 class DevStartFailure extends Schema.TaggedError<DevStartFailure>()("DevStartFailure", {
   reason: Schema.String,
+  cause: Schema.optional(Schema.Defect()),
 }) {}
 
 const Application = Schema.Literals(applications);
@@ -35,49 +37,9 @@ function workspaceName(): string {
   return separator === -1 ? cwd : cwd.slice(separator + 1);
 }
 
-function migrateDatabase(
-  vp: string,
-): Effect.Effect<void, DevStartFailure, ChildProcessSpawner.ChildProcessSpawner> {
-  return Effect.gen(function* migrate() {
-    const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
-    const handle = yield* spawner
-      .spawn(
-        ChildProcess.make(vp, ["run", "--filter", "@repo/db-local", "db:migrate:local"], {
-          cwd: repositoryRoot,
-          extendEnv: true,
-          stderr: "inherit",
-          stdin: "ignore",
-          stdout: "inherit",
-        }),
-      )
-      .pipe(
-        Effect.mapError(
-          (error) =>
-            new DevStartFailure({
-              reason: `failed to prepare database: ${describeError(error)}`,
-            }),
-        ),
-      );
-    const exitCode = yield* handle.exitCode.pipe(
-      Effect.mapError(
-        (error) =>
-          new DevStartFailure({
-            reason: `failed to prepare database: ${describeError(error)}`,
-          }),
-      ),
-    );
-    if (exitCode !== 0) {
-      return yield* new DevStartFailure({
-        reason: "failed to prepare database: migration failed",
-      });
-    }
-  }).pipe(Effect.scoped);
-}
-
 const isolatedDatabase = Effect.acquireRelease(
   Effect.gen(function* prepareDatabase() {
     const fs = yield* FileSystem.FileSystem;
-    const path = yield* Path.Path;
     const directory = yield* fs.makeTempDirectory({ prefix: databasePrefix }).pipe(
       Effect.mapError(
         (error) =>
@@ -87,7 +49,15 @@ const isolatedDatabase = Effect.acquireRelease(
       ),
     );
     processEnvironment[localDatabaseVariable] = directory;
-    yield* migrateDatabase(path.join(repositoryRoot, "node_modules/.bin/vp"));
+    yield* migrateLocalDatabase.pipe(
+      Effect.mapError(
+        (error) =>
+          new DevStartFailure({
+            cause: error,
+            reason: `failed to prepare database: ${error._tag === "RemoteFailure" ? error.code : describeError(error)}`,
+          }),
+      ),
+    );
     return directory;
   }),
   (directory) =>
@@ -157,33 +127,20 @@ const stopDescendants: Effect.Effect<
   void,
   DevStartFailure,
   ChildProcessSpawner.ChildProcessSpawner
-> = Effect.gen(function* stopDescendantsProgram() {
-  const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
-  const table = yield* spawner
-    .string(
-      ChildProcess.make("ps", ["-ax", "-o", "pid=", "-o", "ppid="], {
-        stderr: "ignore",
-        stdin: "ignore",
-        stdout: "pipe",
-      }),
-    )
-    .pipe(
-      Effect.mapError(
-        (error) =>
-          new DevStartFailure({ reason: `failed to list processes: ${describeError(error)}` }),
-      ),
-    );
-  for (const pid of descendantPids(process.pid, processRows(table))) {
-    killQuietly(pid);
-  }
-});
+> = readProcessTable().pipe(
+  Effect.mapError(
+    (unreadable) =>
+      new DevStartFailure({ reason: `failed to list processes: ${unreadable.reason}` }),
+  ),
+  Effect.map((rows) => {
+    for (const pid of descendantPids(process.pid, rows)) {
+      killQuietly(pid);
+    }
+  }),
+);
 
 const leave = stopDescendants.pipe(
-  Effect.catch(() =>
-    Effect.sync(() => {
-      process.exitCode = 1;
-    }),
-  ),
+  Effect.catchTag("DevStartFailure", (failure) => reportFailed(startFailed(failure))),
   Effect.andThen(
     Effect.sync(() => {
       process.exit(process.exitCode ?? 0);
@@ -193,6 +150,12 @@ const leave = stopDescendants.pipe(
 
 function failed(app: string, ...reasons: readonly string[]): Readonly<Record<string, unknown>> {
   return { app, event: "quality.dev_start", ok: false, reasons };
+}
+
+function startFailed(failure: DevStartFailure): Readonly<Record<string, unknown>> {
+  return failure.cause === undefined
+    ? failed(workspaceName(), failure.reason)
+    : { ...failed(workspaceName(), failure.reason), cause: Cause.pretty(Cause.die(failure.cause)) };
 }
 
 function report(app: string, reasons: readonly string[]): Effect.Effect<void> {
@@ -226,9 +189,7 @@ const program = Effect.gen(function* program() {
 
 runCli(
   program.pipe(
-    Effect.catchTag("DevStartFailure", (failure) =>
-      reportFailed(failed(workspaceName(), failure.reason)),
-    ),
+    Effect.catchTag("DevStartFailure", (failure) => reportFailed(startFailed(failure))),
     Effect.andThen(() => leave),
     Effect.provide(layer),
   ),

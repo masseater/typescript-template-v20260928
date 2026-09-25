@@ -19,15 +19,21 @@ class LocalCommandFailure extends Schema.TaggedError<LocalCommandFailure>()("Loc
     "ci_runner_service_invalid",
     "operator_credentials_stale",
     "operator_provision_failed",
+    "database_migration_failed",
   ]),
+  cause: Schema.optional(Schema.Defect()),
 }) {}
 
 function failure(reason: LocalCommandFailure["reason"]): LocalCommandFailure {
   return new LocalCommandFailure({ reason });
 }
 
+function databaseMigrationFailed(cause: unknown): LocalCommandFailure {
+  return new LocalCommandFailure({ cause, reason: "database_migration_failed" });
+}
+
 function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-export { LocalCommandFailure, describeError, failure };
+export { LocalCommandFailure, databaseMigrationFailed, describeError, failure };

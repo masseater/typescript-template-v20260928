@@ -1,19 +1,47 @@
-import { Effect } from "effect";
+import { Effect, Result } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import { describe, expect, it } from "vite-plus/test";
 
 import { layer } from "./platform.ts";
-import { descendantPids, killQuietly, processRows } from "./process-tree.ts";
+import { descendantPids, killQuietly, processRows, readProcessTable } from "./process-tree.ts";
 
 const idleScript = "setInterval(() => undefined, 1000);";
 
 describe("reading the process table", () => {
-  it("pairs each process with its parent and skips rows that are not processes", () => {
-    expect(processRows("  PID  PPID\n  12     1\n  30    12\n   0     0\nnoise\n")).toStrictEqual([
-      [1, 12],
-      [12, 30],
-    ]);
+  it("pairs each process with its parent and skips the kernel's process 0", () => {
+    expect(processRows("  12     1\n  30    12\n   0     0\n")).toStrictEqual(
+      Result.succeed([
+        [1, 12],
+        [12, 30],
+      ]),
+    );
   });
+
+  it("refuses a table with a row that is not a process", () => {
+    expect(processRows("  PID  PPID\n  12     1\n")).toStrictEqual(
+      Result.fail("unreadable process table row:   PID  PPID"),
+    );
+  });
+
+  it("finds this test's own process in the live table", () =>
+    Effect.runPromise(
+      readProcessTable().pipe(
+        Effect.map((rows) => {
+          expect(rows).toContainEqual([process.ppid, process.pid]);
+        }),
+        Effect.provide(layer),
+      ),
+    ));
+
+  it("fails with what ps printed when ps rejects its arguments", () =>
+    Effect.runPromise(
+      Effect.flip(readProcessTable(["-o", "no-such-column="])).pipe(
+        Effect.map((unreadable) => {
+          expect(unreadable.reason).toMatch(/^ps exited with [1-9]\d*: \S/u);
+        }),
+        Effect.provide(layer),
+      ),
+    ));
 });
 
 describe("walking the descendants of a process", () => {

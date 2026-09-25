@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 import { causeRecord, firstUserArgumentIndex, runCli } from "@repo/cli";
 import { ADMIN_PERMISSION } from "@repo/config/identity";
+import { migrateLocalDatabase } from "@repo/db-local/platform";
 import { Console, Effect } from "effect";
 
 import { connection, logs, start, status, stop } from "./applications.ts";
 import { authenticate } from "./authenticate.ts";
 import { browser, browserCommand } from "./browser.ts";
 import { ciRunner } from "./ci-runner.ts";
-import { failure } from "./failure.ts";
-import { application, root, run } from "./local-environment.ts";
+import { databaseMigrationFailed, failure } from "./failure.ts";
+import { application } from "./local-environment.ts";
 import { ensureOperators, operatorExists } from "./operator-account.ts";
 import { layer } from "./platform.ts";
 import { setup } from "./setup.ts";
@@ -22,7 +23,7 @@ type Command = Effect.Effect<unknown, LocalCommandFailure, DevServices>;
 
 const operator = Effect.fn(ADMIN_PERMISSION.operator)(function* operator(_args: readonly string[]) {
   if (!(yield* operatorExists())) {
-    yield* run("vp", ["run", "--filter", "@repo/db-local", "db:migrate:local"], { cwd: root });
+    yield* migrateLocalDatabase.pipe(Effect.mapError(databaseMigrationFailed));
   }
   yield* ensureOperators();
   return { event: "local.operator_ready", ok: true as const, secretsPrinted: false as const };
