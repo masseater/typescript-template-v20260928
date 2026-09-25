@@ -10,14 +10,13 @@ import {
 import { query, schema } from "@repo/db";
 import { TestDatabase, runStatement } from "@repo/db/testing";
 import { recordingSink } from "@repo/observability/testing";
-import { appLayer } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes } from "@repo/runtime/http";
 import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
 import { DateTime, Effect, Layer, Schema } from "effect";
 
 import { memberApi } from "./member-api.ts";
-import { memberRequirementLayer } from "./member-requirement-layer.ts";
+import { memberLayer } from "./member-requirement-layer.ts";
 
 const { planSubscription, user } = schema;
 const reporting = { log: recordingSink().sink, service: APPLICATION.user } as const;
@@ -91,11 +90,7 @@ function request(
 
 it.effect("lets API keys read allowed resources and rejects writes", () => {
   const environment = appEnvironment();
-  const base = Layer.orDie(appLayer({ audience: APPLICATION.user, env: environment, routes }));
-  const services = Layer.mergeAll(
-    base,
-    Layer.orDie(memberRequirementLayer(environment)).pipe(Layer.provide(base)),
-  );
+  const services = Layer.orDie(memberLayer(environment, routes));
   const app = memberApi(
     apiRoutes(
       workerRuntime(() => services),

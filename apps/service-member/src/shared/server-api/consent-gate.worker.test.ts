@@ -4,7 +4,6 @@ import { AgreementRequired, pendingAgreementKinds, requireCurrentAgreements } fr
 import { createAgreementDraft, publishAgreementVersion } from "@repo/db/admin";
 import { TestDatabase, runStatement } from "@repo/db/testing";
 import { recordingSink } from "@repo/observability/testing";
-import { appLayer } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes } from "@repo/runtime/http";
 import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
@@ -13,7 +12,7 @@ import { TestClock } from "effect/testing";
 
 import { AgreementsView } from "#shared/contracts/index.ts";
 import { memberApi } from "./member-api.ts";
-import { memberRequirementLayer } from "./member-requirement-layer.ts";
+import { memberLayer } from "./member-requirement-layer.ts";
 
 const routes = { "/api/profile": "profile" };
 const reporting = { log: recordingSink().sink, service: APPLICATION.user } as const;
@@ -30,11 +29,7 @@ const ConsentRequiredBody = Schema.Struct({
 function memberApp() {
   const environment = appEnvironment();
   const runtime = workerRuntime(() => {
-    const base = Layer.orDie(appLayer({ audience: APPLICATION.user, env: environment, routes }));
-    return Layer.mergeAll(
-      base,
-      Layer.orDie(memberRequirementLayer(environment)).pipe(Layer.provide(base)),
-    );
+    return Layer.orDie(memberLayer(environment, routes));
   });
   return { app: memberApi(apiRoutes(runtime, reporting)), runtime };
 }

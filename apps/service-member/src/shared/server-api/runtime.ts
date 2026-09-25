@@ -1,19 +1,13 @@
 import { APPLICATION } from "@repo/config";
-import { appLayer } from "@repo/runtime/bindings";
 import { workerRuntime } from "@repo/runtime/worker";
 import { env } from "cloudflare:workers";
-import { Layer } from "effect";
 
 import { routes } from "#shared/telemetry/index.ts";
-import { memberRequirementLayer } from "./member-requirement-layer.ts";
+import { memberLayer } from "./member-requirement-layer.ts";
 
 import type { Reporting } from "@repo/observability";
 
-const service = APPLICATION.user;
-const reporting: Reporting = { service };
-const runtime = workerRuntime(() => {
-  const base = appLayer({ env: env, audience: service, routes: routes });
-  return Layer.mergeAll(base, memberRequirementLayer(env).pipe(Layer.provide(base)));
-});
+const reporting: Reporting = { service: APPLICATION.user };
+const runtime = workerRuntime(() => memberLayer(env, routes));
 
 export { reporting, runtime };

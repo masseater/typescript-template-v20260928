@@ -16,7 +16,6 @@ import {
   stripeApiVersion,
 } from "@repo/config";
 import { recordingSink } from "@repo/observability/testing";
-import { appLayer } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes } from "@repo/runtime/http";
 import { appEnvironment } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
@@ -26,7 +25,7 @@ import { describe, expect } from "vite-plus/test";
 
 import { AgreementsView, InvoiceList, QuoteList } from "#shared/contracts/index.ts";
 import { memberApi } from "./member-api.ts";
-import { memberRequirementLayer } from "./member-requirement-layer.ts";
+import { memberLayer } from "./member-requirement-layer.ts";
 
 import type { BrowserClient } from "@repo/auth/testing";
 
@@ -66,11 +65,7 @@ function billingApp() {
     STRIPE_WEBHOOK_SECRET: webhookSecret,
   });
   const runtime = workerRuntime(() => {
-    const base = Layer.orDie(appLayer({ audience: APPLICATION.user, env: environment, routes }));
-    return Layer.mergeAll(
-      base,
-      Layer.orDie(memberRequirementLayer(environment)).pipe(Layer.provide(base)),
-    );
+    return Layer.orDie(memberLayer(environment, routes));
   });
   const api = apiRoutes(runtime, reporting);
   return memberApi(api);
