@@ -1,4 +1,4 @@
-import { architectureKindOf, modularBudgets } from "@repo/config";
+import { architectureKindOf, modularBudgets } from "./architecture.ts";
 
 const workspacePathOf = (cwd: string): string | undefined =>
   ["apps", "libs", "tools", "infra"]

@@ -1,5 +1,4 @@
-import { architectureKindOf, modularLayers } from "@repo/config";
-
+import { architectureKindOf, modularLayers } from "./architecture.ts";
 import { reportViolation, type LintContext, type Node } from "./lint-context.ts";
 
 import type { Visitor } from "vite-plus/lint/plugins";

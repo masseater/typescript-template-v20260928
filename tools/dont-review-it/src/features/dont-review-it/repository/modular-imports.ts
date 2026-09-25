@@ -1,5 +1,4 @@
-import { architectureKindOf } from "@repo/config";
-
+import { architectureKindOf } from "./architecture.ts";
 import {
   filename,
   importVisitor,

@@ -1,6 +1,6 @@
-import { modularBudgets } from "@repo/config";
 import { describe, expect, it } from "vite-plus/test";
 
+import { modularBudgets } from "./architecture.ts";
 import {
   featureFindings,
   isModularWorkspace,
