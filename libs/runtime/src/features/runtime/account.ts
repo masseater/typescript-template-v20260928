@@ -40,6 +40,7 @@ const sessionFailures = {
   ...unavailable,
   AdminMfaRequired: forbidden,
   AdminRequired: forbidden,
+  ConfigurationInvalid: "unexpected",
   SessionInvalid: forbidden,
   SessionRequired: { message: "ログインしてください。", status: httpStatus.unauthorized },
 } as const satisfies FailureTable<Effect.Error<ReturnType<typeof verifySession>>>;

@@ -1,11 +1,11 @@
+import { ConfigurationInvalid } from "@repo/config";
 import { getSessionCookie } from "better-auth/cookies";
 import { getCryptoKey } from "better-auth/crypto";
-import { Effect } from "effect";
+import { Effect, Encoding, Result } from "effect";
+
+import { AuthFailure } from "./auth-failure.ts";
 
 const signatureLength = 44;
-
-const signatureBytesOf = (signature: string): ArrayBuffer =>
-  Uint8Array.from(atob(signature), (character) => character.charCodeAt(0)).buffer;
 
 const verifySignedToken = Effect.fn("verifySignedToken")(function* verifySignedToken({
   secret,
@@ -16,20 +16,24 @@ const verifySignedToken = Effect.fn("verifySignedToken")(function* verifySignedT
   readonly signature: string;
   readonly tokenValue: string;
 }) {
-  const cryptoKey = yield* Effect.tryPromise(() => getCryptoKey(secret)).pipe(
-    Effect.orElseSucceed(() => null),
-  );
-  if (cryptoKey === null) {
+  const signatureBytes = Encoding.decodeBase64(signature);
+  if (Result.isFailure(signatureBytes)) {
     return false;
   }
-  return yield* Effect.tryPromise(() =>
-    crypto.subtle.verify(
-      "HMAC",
-      cryptoKey,
-      signatureBytesOf(signature),
-      new TextEncoder().encode(tokenValue),
-    ),
-  ).pipe(Effect.orElseSucceed(() => false));
+  const cryptoKey = yield* Effect.tryPromise({
+    try: () => getCryptoKey(secret),
+    catch: (cause) => new ConfigurationInvalid({ cause, reason: "AUTH_SECRET" }),
+  });
+  return yield* Effect.tryPromise({
+    try: () =>
+      crypto.subtle.verify(
+        "HMAC",
+        cryptoKey,
+        Uint8Array.from(signatureBytes.success),
+        new TextEncoder().encode(tokenValue),
+      ),
+    catch: (cause) => new AuthFailure({ cause }),
+  });
 });
 
 const sessionTokenFrom = Effect.fn("sessionTokenFrom")(function* sessionTokenFrom({

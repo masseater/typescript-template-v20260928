@@ -1,4 +1,4 @@
-import { audienceRoles, type Application } from "@repo/config";
+import { ConfigurationInvalid, audienceRoles, type Application } from "@repo/config";
 import { lookupSessionByToken } from "@repo/db";
 import { DateTime, Effect } from "effect";
 
@@ -12,10 +12,13 @@ import { sessionTokenFrom } from "./session-token.ts";
 
 const readLiveSession = Effect.fn("readLiveSession")(function* readLiveSession(headers: Headers) {
   const { audience, instance } = yield* Auth;
-  const cookiePrefix = instance.options.advanced?.cookiePrefix;
   const secret = instance.options.secret;
-  if (typeof cookiePrefix !== "string" || typeof secret !== "string") {
-    return yield* new SessionRequired();
+  if (typeof secret !== "string") {
+    return yield* new ConfigurationInvalid({ reason: "AUTH_SECRET" });
+  }
+  const cookiePrefix = instance.options.advanced?.cookiePrefix;
+  if (typeof cookiePrefix !== "string") {
+    return yield* new ConfigurationInvalid({ reason: "advanced.cookiePrefix" });
   }
   const token = yield* sessionTokenFrom({ cookiePrefix, headers, secret });
   if (token === undefined) {

@@ -2,7 +2,7 @@ import { Schema } from "effect";
 
 class ConfigurationInvalid extends Schema.TaggedError<ConfigurationInvalid>()(
   "ConfigurationInvalid",
-  { reason: Schema.String },
+  { cause: Schema.optionalKey(Schema.Defect()), reason: Schema.String },
 ) {}
 
 export { ConfigurationInvalid };
