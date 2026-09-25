@@ -175,26 +175,31 @@ const threadPage = Effect.fn("threadPage")(function* threadPage(
   page: OffsetPage,
   hideBlocked: boolean,
 ) {
-  const messages = yield* query((database) =>
-    database
-      .select({
-        body: directMessage.body,
-        createdAt: directMessage.createdAt,
-        id: directMessage.id,
-        senderId: directMessage.senderId,
-        senderName: directMessage.senderName,
-      })
-      .from(directMessage)
-      .where(visibleInThread(viewerId, conversationId, hideBlocked))
-      .orderBy(directMessage.createdAt, directMessage.id)
-      .limit(page.limit)
-      .offset(page.offset),
-  );
-  const [total] = yield* query((database) =>
-    database
-      .select({ count: count() })
-      .from(directMessage)
-      .where(visibleInThread(viewerId, conversationId, hideBlocked)),
+  const [messages, [total]] = yield* Effect.all(
+    [
+      query((database) =>
+        database
+          .select({
+            body: directMessage.body,
+            createdAt: directMessage.createdAt,
+            id: directMessage.id,
+            senderId: directMessage.senderId,
+            senderName: directMessage.senderName,
+          })
+          .from(directMessage)
+          .where(visibleInThread(viewerId, conversationId, hideBlocked))
+          .orderBy(directMessage.createdAt, directMessage.id)
+          .limit(page.limit)
+          .offset(page.offset),
+      ),
+      query((database) =>
+        database
+          .select({ count: count() })
+          .from(directMessage)
+          .where(visibleInThread(viewerId, conversationId, hideBlocked)),
+      ),
+    ],
+    { concurrency: "unbounded" },
   );
   return {
     messages: messages.map((message) => shownMessage(viewerId, message)),
@@ -322,13 +327,8 @@ const unreadCountFor = Effect.fn("unreadCountFor")(function* unreadCountFor(
   return row?.unread ?? 0;
 });
 
-const listGroupConversations = Effect.fn("listGroupConversations")(function* listGroupConversations(
-  viewerId: string,
-  page: OffsetPage,
-) {
-  yield* requireMessagingMember(viewerId);
-  const summaries: ConversationSummary[] = [];
-  for (const membership of yield* memberships(viewerId)) {
+const groupConversationSummary = Effect.fn("groupConversationSummary")(
+  function* groupConversationSummary(viewerId: string, conversationId: string) {
     const [thread] = yield* query((database) =>
       database
         .select({
@@ -337,34 +337,50 @@ const listGroupConversations = Effect.fn("listGroupConversations")(function* lis
         })
         .from(conversation)
         .where(
-          and(
-            eq(conversation.id, membership.conversationId),
-            eq(conversation.kind, groupConversationKind),
-          ),
+          and(eq(conversation.id, conversationId), eq(conversation.kind, groupConversationKind)),
         )
         .limit(1),
     );
     if (thread === undefined) {
-      continue;
+      return undefined;
     }
     const target = yield* groupTargetOf(thread.id);
     const [lastMessage] = yield* query((database) =>
       database
         .select({ body: directMessage.body })
         .from(directMessage)
-        .where(visibleInThread(viewerId, membership.conversationId, true))
+        .where(visibleInThread(viewerId, conversationId, true))
         .orderBy(desc(directMessage.createdAt), desc(directMessage.id))
         .limit(1),
     );
-    const unreadCount = yield* unreadCountFor(viewerId, membership.conversationId, true);
-    summaries.push({
+    const unreadCount = yield* unreadCountFor(viewerId, conversationId, true);
+    return {
       group: target.group,
       id: thread.id,
       kind: groupConversationKind,
       lastMessageAt: thread.lastMessageAt.getTime(),
       lastMessagePreview: lastMessage?.body ?? "",
       unreadCount,
-    });
+    } satisfies ConversationSummary;
+  },
+);
+
+const listGroupConversations = Effect.fn("listGroupConversations")(function* listGroupConversations(
+  viewerId: string,
+  page: OffsetPage,
+) {
+  yield* requireMessagingMember(viewerId);
+  const settled = yield* Effect.forEach(
+    yield* memberships(viewerId),
+    (membership) => Effect.result(groupConversationSummary(viewerId, membership.conversationId)),
+    { concurrency: "unbounded" },
+  );
+  const summaries: ConversationSummary[] = [];
+  for (const summary of settled) {
+    const found = yield* Effect.fromResult(summary);
+    if (found !== undefined) {
+      summaries.push(found);
+    }
   }
   summaries.sort((left, right) => right.lastMessageAt - left.lastMessageAt);
   return {
@@ -433,6 +449,42 @@ const sendGroupMessage = Effect.fn("sendGroupMessage")(function* sendGroupMessag
   return yield* insertMessage(sender.id, sender.name, conversationId, body);
 });
 
+const directConversationSummary = Effect.fn("directConversationSummary")(
+  function* directConversationSummary(viewerId: string, conversationId: string) {
+    const peer = yield* peerOf(viewerId, conversationId);
+    const [thread] = yield* query((database) =>
+      database
+        .select({
+          id: conversation.id,
+          lastMessageAt: conversation.lastMessageAt,
+        })
+        .from(conversation)
+        .where(eq(conversation.id, conversationId))
+        .limit(1),
+    );
+    if (thread === undefined) {
+      return undefined;
+    }
+    const [lastMessage] = yield* query((database) =>
+      database
+        .select({ body: directMessage.body })
+        .from(directMessage)
+        .where(eq(directMessage.conversationId, conversationId))
+        .orderBy(desc(directMessage.createdAt), desc(directMessage.id))
+        .limit(1),
+    );
+    const unreadCount = yield* unreadCountFor(viewerId, conversationId, false);
+    return {
+      id: thread.id,
+      kind: directConversationKind,
+      lastMessageAt: thread.lastMessageAt.getTime(),
+      lastMessagePreview: firstLine(lastMessage?.body ?? ""),
+      peer,
+      unreadCount,
+    } satisfies DirectConversationSummary;
+  },
+);
+
 const listDirectConversations = Effect.fn("listDirectConversations")(
   function* listDirectConversations(viewerId: string, page: OffsetPage) {
     yield* requireMessagingMember(viewerId);
@@ -450,39 +502,17 @@ const listDirectConversations = Effect.fn("listDirectConversations")(
         .where(eq(conversationParticipant.memberId, viewerId))
         .orderBy(desc(conversation.lastMessageAt), desc(conversation.id)),
     );
+    const settled = yield* Effect.forEach(
+      memberships,
+      (membership) => Effect.result(directConversationSummary(viewerId, membership.conversationId)),
+      { concurrency: "unbounded" },
+    );
     const summaries: DirectConversationSummary[] = [];
-    for (const membership of memberships) {
-      const peer = yield* peerOf(viewerId, membership.conversationId);
-      const [thread] = yield* query((database) =>
-        database
-          .select({
-            id: conversation.id,
-            lastMessageAt: conversation.lastMessageAt,
-          })
-          .from(conversation)
-          .where(eq(conversation.id, membership.conversationId))
-          .limit(1),
-      );
-      if (thread === undefined) {
-        continue;
+    for (const summary of settled) {
+      const found = yield* Effect.fromResult(summary);
+      if (found !== undefined) {
+        summaries.push(found);
       }
-      const [lastMessage] = yield* query((database) =>
-        database
-          .select({ body: directMessage.body })
-          .from(directMessage)
-          .where(eq(directMessage.conversationId, membership.conversationId))
-          .orderBy(desc(directMessage.createdAt), desc(directMessage.id))
-          .limit(1),
-      );
-      const unreadCount = yield* unreadCountFor(viewerId, membership.conversationId, false);
-      summaries.push({
-        id: thread.id,
-        kind: directConversationKind,
-        lastMessageAt: thread.lastMessageAt.getTime(),
-        lastMessagePreview: firstLine(lastMessage?.body ?? ""),
-        peer,
-        unreadCount,
-      });
     }
     return {
       conversations: summaries.slice(page.offset, page.offset + page.limit),
@@ -492,8 +522,13 @@ const listDirectConversations = Effect.fn("listDirectConversations")(
 );
 
 const listInbox = Effect.fn("listInbox")(function* listInbox(viewerId: string, page: OffsetPage) {
-  const directs = yield* listDirectConversations(viewerId, { limit: 1_000_000, offset: 0 });
-  const groups = yield* listGroupConversations(viewerId, { limit: 1_000_000, offset: 0 });
+  const everything = { limit: 1_000_000, offset: 0 };
+  const [directResult, groupResult] = yield* Effect.all(
+    [listDirectConversations(viewerId, everything), listGroupConversations(viewerId, everything)],
+    { concurrency: "unbounded", mode: "result" },
+  );
+  const directs = yield* Effect.fromResult(directResult);
+  const groups = yield* Effect.fromResult(groupResult);
   const conversations = [...directs.conversations, ...groups.conversations].sort(
     (left, right) => right.lastMessageAt - left.lastMessageAt || right.id.localeCompare(left.id),
   );
@@ -650,29 +685,32 @@ const markConversationRead = Effect.fn("markConversationRead")(function* markCon
   );
 });
 
-const totalUnreadCount = Effect.fn("totalUnreadCount")(function* totalUnreadCount(
-  viewerId: string,
-) {
-  yield* requireMessagingMember(viewerId);
-  let unread = 0;
-  for (const membership of yield* memberships(viewerId)) {
+const conversationUnreadCount = Effect.fn("conversationUnreadCount")(
+  function* conversationUnreadCount(viewerId: string, conversationId: string) {
     const [thread] = yield* query((database) =>
       database
         .select({ id: conversation.id, kind: conversation.kind })
         .from(conversation)
-        .where(eq(conversation.id, membership.conversationId))
+        .where(eq(conversation.id, conversationId))
         .limit(1),
     );
     if (thread === undefined) {
-      continue;
+      return 0;
     }
-    unread += yield* unreadCountFor(
-      viewerId,
-      membership.conversationId,
-      thread.kind === groupConversationKind,
-    );
-  }
-  return unread;
+    return yield* unreadCountFor(viewerId, conversationId, thread.kind === groupConversationKind);
+  },
+);
+
+const totalUnreadCount = Effect.fn("totalUnreadCount")(function* totalUnreadCount(
+  viewerId: string,
+) {
+  yield* requireMessagingMember(viewerId);
+  const counts = yield* Effect.forEach(
+    yield* memberships(viewerId),
+    (membership) => conversationUnreadCount(viewerId, membership.conversationId),
+    { concurrency: "unbounded" },
+  );
+  return counts.reduce((total, unread) => total + unread, 0);
 });
 
 export {
