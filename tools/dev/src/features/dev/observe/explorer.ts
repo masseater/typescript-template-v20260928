@@ -78,13 +78,11 @@ const queryExplorer = Effect.fn("queryExplorer")(function* queryExplorer(
     new URL("/cdn-cgi/local/explorer/api/local/observability/query", origin),
     { acceptJson: true, body: requestBody },
   ).pipe(
+    Effect.flatMap(HttpClientResponse.filterStatusOk),
     Effect.timeout(explorerTimeoutMilliseconds),
     Effect.provide(FetchHttpClient.layer),
     Effect.mapError(queryFailed),
   );
-  if (response.status < 200 || response.status >= 300) {
-    return yield* queryFailed();
-  }
   const { result } = yield* HttpClientResponse.schemaBodyJson(QueryResponse)(response).pipe(
     Effect.mapError(responseInvalid),
   );
