@@ -32,54 +32,42 @@ function supportApi(api: ApiRoutes<AppServices>) {
   return createApi("")
     .get(
       "/support",
-      ...api.route(
-        { response: InquiryList },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const inquiries = yield* listMemberInquiries(user.id);
-            return { inquiries: inquiries.map(presentSummary) };
-          }),
-        failures,
+      ...api.route({ failures, response: InquiryList }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const inquiries = yield* listMemberInquiries(user.id);
+          return { inquiries: inquiries.map(presentSummary) };
+        }),
       ),
     )
     .get(
       "/support/detail",
-      ...api.route(
-        { response: InquiryThread },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const { id } = yield* readSearchParams(InquiryQuery, request);
-            return presentThread(yield* getMemberInquiry(user.id, id));
-          }),
-        failures,
+      ...api.route({ failures, response: InquiryThread }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const { id } = yield* readSearchParams(InquiryQuery, request);
+          return presentThread(yield* getMemberInquiry(user.id, id));
+        }),
       ),
     )
     .post(
       "/support",
-      ...api.route(
-        { response: InquiryThread },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const values = yield* readJsonBody(InquiryCreate, request);
-            return presentThread(yield* createMemberInquiry(user.id, values));
-          }),
-        failures,
+      ...api.route({ failures, response: InquiryThread }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const values = yield* readJsonBody(InquiryCreate, request);
+          return presentThread(yield* createMemberInquiry(user.id, values));
+        }),
       ),
     )
     .post(
       "/support/reply",
-      ...api.route(
-        { response: InquiryThread },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const { body, id } = yield* readJsonBody(InquiryReply, request);
-            return presentThread(yield* replyAsMember({ body, inquiryId: id, memberId: user.id }));
-          }),
-        failures,
+      ...api.route({ failures, response: InquiryThread }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const { body, id } = yield* readJsonBody(InquiryReply, request);
+          return presentThread(yield* replyAsMember({ body, inquiryId: id, memberId: user.id }));
+        }),
       ),
     );
 }

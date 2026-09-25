@@ -74,14 +74,14 @@ const historyConsent = Effect.fn("interview.api.historyConsent")(function* histo
 
 function interviewApi(api: ApiRoutes<AppServices | Interviewer | ProfileLayoutAssembler | Stripe>) {
   return createApi("")
-    .get("/interview", ...api.route({ response: InterviewView }, open, failures))
-    .post("/interview/turns", ...api.route({ response: InterviewView }, turn, failures))
-    .post("/interview/sheet", ...api.route({ response: InterviewView }, saveSheet, failures))
+    .get("/interview", ...api.route({ failures, response: InterviewView }, open))
+    .post("/interview/turns", ...api.route({ failures, response: InterviewView }, turn))
+    .post("/interview/sheet", ...api.route({ failures, response: InterviewView }, saveSheet))
     .post(
       "/interview/history-consent",
-      ...api.route({ response: InterviewView }, historyConsent, failures),
+      ...api.route({ failures, response: InterviewView }, historyConsent),
     )
-    .post("/interview/restart", ...api.route({ response: InterviewView }, restart, failures));
+    .post("/interview/restart", ...api.route({ failures, response: InterviewView }, restart));
 }
 
 export { interviewApi };

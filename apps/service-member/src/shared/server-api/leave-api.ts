@@ -70,19 +70,19 @@ function leaveApi(api: ApiRoutes<AppServices | PhotoStore>) {
   return createApi("")
     .post(
       "/leave",
-      ...api.route({ body: LeaveRequest, response: LeaveAccepted }, submitLeave, failures),
+      ...api.route({ body: LeaveRequest, failures, response: LeaveAccepted }, submitLeave),
     )
     .get(
       "/recovery-offer",
-      ...api.route({ response: RecoveryOfferView }, loadRecoveryOffer, failures),
+      ...api.route({ failures, response: RecoveryOfferView }, loadRecoveryOffer),
     )
     .post(
       "/recovery/accept",
-      ...api.route({ response: RecoveryAccepted }, submitRecoveryAccept, failures),
+      ...api.route({ failures, response: RecoveryAccepted }, submitRecoveryAccept),
     )
     .post(
       "/recovery/decline",
-      ...api.route({ response: RecoveryAccepted }, submitRecoveryDecline, failures),
+      ...api.route({ failures, response: RecoveryAccepted }, submitRecoveryDecline),
     );
 }
 

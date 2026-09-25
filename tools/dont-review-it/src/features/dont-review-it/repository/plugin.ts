@@ -305,7 +305,7 @@ const projectPlugin = definePlugin({
     "effect-stack": {
       create: effectStackVisitor,
       meta: metadata(
-        "入力検証は valibot ではなく effect の Schema で行ってください。Elysia アプリは libs/runtime/src/features/runtime/http.ts の createApi で作り、createFileRoute の server には elysiaServer(app) だけを渡して Elysia に委譲してください。handlers を直接書いた server route は作れません。",
+        "入力検証は valibot ではなく effect の Schema で行ってください。Elysia アプリは libs/runtime/src/features/runtime/elysia-server.ts の createApi で作り、createFileRoute の server には elysiaServer(app) だけを渡して Elysia に委譲してください。handlers を直接書いた server route は作れません。",
       ),
     },
     "environment-boundary": {

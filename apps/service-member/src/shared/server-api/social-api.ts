@@ -68,14 +68,11 @@ const onboardingFailures = {
 function onboardingStepApi(api: ApiRoutes<AppServices>) {
   return createApi("").get(
     "/onboarding",
-    ...api.route(
-      { response: OnboardingView },
-      (request) =>
-        Effect.gen(function* handle() {
-          const { user } = yield* verifySession(request.headers);
-          return { step: yield* stepOf(user.id) };
-        }),
-      failures,
+    ...api.route({ failures, response: OnboardingView }, (request) =>
+      Effect.gen(function* handle() {
+        const { user } = yield* verifySession(request.headers);
+        return { step: yield* stepOf(user.id) };
+      }),
     ),
   );
 }
@@ -84,186 +81,144 @@ function socialApi(api: ApiRoutes<AppServices | OpsMail>) {
   return createApi("")
     .post(
       "/onboarding",
-      ...api.route(
-        { response: OnboardingView },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const { step } = yield* readJsonBody(OnboardingAdvance, request);
-            if ((yield* stepOf(user.id)) === "agreement") {
-              yield* requireSignupAgreements(user.id);
-            }
-            yield* advanceOnboarding(user.id, step);
-            return { step };
-          }),
-        onboardingFailures,
+      ...api.route({ failures: onboardingFailures, response: OnboardingView }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const { step } = yield* readJsonBody(OnboardingAdvance, request);
+          if ((yield* stepOf(user.id)) === "agreement") {
+            yield* requireSignupAgreements(user.id);
+          }
+          yield* advanceOnboarding(user.id, step);
+          return { step };
+        }),
       ),
     )
     .get(
       "/home/feed",
-      ...api.route(
-        { response: HomeFeed },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            return { items: yield* homeFeed(user.id) };
-          }),
-        failures,
+      ...api.route({ failures, response: HomeFeed }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          return { items: yield* homeFeed(user.id) };
+        }),
       ),
     )
     .get(
       "/social/follow",
-      ...api.route(
-        { response: FollowState },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const { memberId } = yield* readSearchParams(FollowMemberQuery, request);
-            return { following: yield* isFollowing(user.id, memberId) };
-          }),
-        failures,
+      ...api.route({ failures, response: FollowState }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const { memberId } = yield* readSearchParams(FollowMemberQuery, request);
+          return { following: yield* isFollowing(user.id, memberId) };
+        }),
       ),
     )
     .put(
       "/social/follow",
-      ...api.route(
-        { response: FollowMember },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const { memberId } = yield* readJsonBody(FollowMemberQuery, request);
-            yield* followMember(user.id, memberId);
-            return { ok: true as const };
-          }),
-        failures,
+      ...api.route({ failures, response: FollowMember }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const { memberId } = yield* readJsonBody(FollowMemberQuery, request);
+          yield* followMember(user.id, memberId);
+          return { ok: true as const };
+        }),
       ),
     )
     .delete(
       "/social/follow",
-      ...api.route(
-        { response: FollowMember },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const { memberId } = yield* readJsonBody(FollowMemberQuery, request);
-            yield* unfollowMember(user.id, memberId);
-            return { ok: true as const };
-          }),
-        failures,
+      ...api.route({ failures, response: FollowMember }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const { memberId } = yield* readJsonBody(FollowMemberQuery, request);
+          yield* unfollowMember(user.id, memberId);
+          return { ok: true as const };
+        }),
       ),
     )
     .get(
       "/social/followers",
-      ...api.route(
-        { response: FollowList },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const { memberId } = yield* readSearchParams(FollowMemberQuery, request);
-            return { members: yield* listFollowers(user.id, memberId) };
-          }),
-        failures,
+      ...api.route({ failures, response: FollowList }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const { memberId } = yield* readSearchParams(FollowMemberQuery, request);
+          return { members: yield* listFollowers(user.id, memberId) };
+        }),
       ),
     )
     .get(
       "/social/following",
-      ...api.route(
-        { response: FollowList },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const { memberId } = yield* readSearchParams(FollowMemberQuery, request);
-            return { members: yield* listFollowing(user.id, memberId) };
-          }),
-        failures,
+      ...api.route({ failures, response: FollowList }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const { memberId } = yield* readSearchParams(FollowMemberQuery, request);
+          return { members: yield* listFollowing(user.id, memberId) };
+        }),
       ),
     )
     .get(
       "/notifications",
-      ...api.route(
-        { response: NotificationList },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            return { items: yield* listNotifications(user.id) };
-          }),
-        failures,
+      ...api.route({ failures, response: NotificationList }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          return { items: yield* listNotifications(user.id) };
+        }),
       ),
     )
     .get(
       "/notifications/unread",
-      ...api.route(
-        { response: NotificationUnread },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            return { count: yield* unreadNotificationCount(user.id) };
-          }),
-        failures,
+      ...api.route({ failures, response: NotificationUnread }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          return { count: yield* unreadNotificationCount(user.id) };
+        }),
       ),
     )
     .post(
       "/notifications/read",
-      ...api.route(
-        { response: FollowMember },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const { id } = yield* readJsonBody(NotificationId, request);
-            yield* markNotificationRead(user.id, id);
-            return { ok: true as const };
-          }),
-        failures,
+      ...api.route({ failures, response: FollowMember }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const { id } = yield* readJsonBody(NotificationId, request);
+          yield* markNotificationRead(user.id, id);
+          return { ok: true as const };
+        }),
       ),
     )
     .post(
       "/notifications/read-all",
-      ...api.route(
-        { response: FollowMember },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            yield* markAllNotificationsRead(user.id);
-            return { ok: true as const };
-          }),
-        failures,
+      ...api.route({ failures, response: FollowMember }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          yield* markAllNotificationsRead(user.id);
+          return { ok: true as const };
+        }),
       ),
     )
     .get(
       "/notifications/preferences",
-      ...api.route(
-        { response: NotificationPreferences },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            return yield* getNotificationPreferences(user.id);
-          }),
-        failures,
+      ...api.route({ failures, response: NotificationPreferences }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          return yield* getNotificationPreferences(user.id);
+        }),
       ),
     )
     .patch(
       "/notifications/preferences",
-      ...api.route(
-        { response: NotificationPreferences },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const preferences = yield* readJsonBody(NotificationPreferences, request);
-            return yield* updateNotificationPreferences(user.id, preferences);
-          }),
-        failures,
+      ...api.route({ failures, response: NotificationPreferences }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const preferences = yield* readJsonBody(NotificationPreferences, request);
+          return yield* updateNotificationPreferences(user.id, preferences);
+        }),
       ),
     )
     .get(
       "/nav/badges",
-      ...api.route(
-        { response: NavBadges },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            return yield* navBadges(user.id);
-          }),
-        failures,
+      ...api.route({ failures, response: NavBadges }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          return yield* navBadges(user.id);
+        }),
       ),
     );
 }

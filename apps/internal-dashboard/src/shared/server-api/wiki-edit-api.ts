@@ -127,7 +127,7 @@ const getSource = Effect.fn("getWikiSource")(function* getSource(request: Reques
 
 const putDraft = Effect.fn("saveWikiDraft")(function* putDraft(request: Request) {
   const { user } = yield* verifySession(request.headers);
-  const draft = yield* readJsonBody(WikiDraftSave, request, maximumDraftBytes);
+  const draft = yield* readJsonBody(WikiDraftSave, { incoming: request, limit: maximumDraftBytes });
   yield* publishedSource(draft.path);
   yield* readWikiFrontmatter(draft.markdown);
   const version = yield* saveWikiDraft({ ...draft, updatedBy: user.id });
@@ -143,7 +143,10 @@ const deleteDraft = Effect.fn("discardWikiDraft")(function* deleteDraft(request:
 
 const postImage = Effect.fn("uploadWikiImage")(function* postImage(request: Request) {
   yield* verifySession(request.headers);
-  const { bytes, contentType } = yield* readJsonBody(WikiImageUpload, request, maximumImageBody);
+  const { bytes, contentType } = yield* readJsonBody(WikiImageUpload, {
+    incoming: request,
+    limit: maximumImageBody,
+  });
   if (bytes.byteLength > maximumImageBytes) {
     return yield* new WikiImageTooLarge();
   }
@@ -223,85 +226,115 @@ function wikiEditApi<Requirements>(api: ApiRoutes<WikiServices | Requirements>) 
   return createApi("/wiki-edit")
     .get(
       "/source",
-      ...api.route({ response: WikiSource }, getSource, {
-        ...sessionFailures,
-        DatabaseFailure: "unexpected",
-        WikiPageMissing: missing,
-      }),
+      ...api.route(
+        {
+          failures: {
+            ...sessionFailures,
+            DatabaseFailure: "unexpected",
+            WikiPageMissing: missing,
+          },
+          response: WikiSource,
+        },
+        getSource,
+      ),
     )
     .put(
       "/draft",
-      ...api.route({ response: WikiDraftSaved }, putDraft, {
-        ...sessionFailures,
-        DatabaseFailure: "unexpected",
-        WikiDraftConflict: conflict,
-        WikiPageInvalid: {
-          message: "タイトルと説明を入れてください。",
-          status: httpStatus.badRequest,
+      ...api.route(
+        {
+          failures: {
+            ...sessionFailures,
+            DatabaseFailure: "unexpected",
+            WikiDraftConflict: conflict,
+            WikiPageInvalid: {
+              message: "タイトルと説明を入れてください。",
+              status: httpStatus.badRequest,
+            },
+            WikiPageMissing: missing,
+          },
+          response: WikiDraftSaved,
         },
-        WikiPageMissing: missing,
-      }),
+        putDraft,
+      ),
     )
     .delete(
       "/draft",
-      ...api.route({ response: WikiSource }, deleteDraft, {
-        ...sessionFailures,
-        DatabaseFailure: "unexpected",
-        WikiDraftConflict: conflict,
-        WikiPageMissing: missing,
-      }),
+      ...api.route(
+        {
+          failures: {
+            ...sessionFailures,
+            DatabaseFailure: "unexpected",
+            WikiDraftConflict: conflict,
+            WikiPageMissing: missing,
+          },
+          response: WikiSource,
+        },
+        deleteDraft,
+      ),
     )
     .post(
       "/publish",
-      ...api.route({ response: WikiDraftPublished }, postPublish, {
-        ...sessionFailures,
-        DatabaseFailure: "unexpected",
-        StorageFailed: "unexpected",
-        WikiDraftConflict: conflict,
-        WikiPageInvalid: {
-          message: "タイトルと説明を入れてください。",
-          status: httpStatus.badRequest,
+      ...api.route(
+        {
+          failures: {
+            ...sessionFailures,
+            DatabaseFailure: "unexpected",
+            StorageFailed: "unexpected",
+            WikiDraftConflict: conflict,
+            WikiPageInvalid: {
+              message: "タイトルと説明を入れてください。",
+              status: httpStatus.badRequest,
+            },
+            WikiPageMissing: {
+              message: "下書きに入れた画像が見つかりません。画像を入れ直してください。",
+              status: httpStatus.notFound,
+            },
+            WikiPublishFailed: "unexpected",
+            WikiPublishForbidden: {
+              message: "文書を公開できるのは「変更できる」権限の人だけです。",
+              status: httpStatus.forbidden,
+            },
+            WikiPublishKeyInvalid: "unexpected",
+            WikiPublishStale: {
+              message:
+                "公開されている文書がこの下書きより後に更新されました。下書きの内容を控えてから捨て、最新の文書に反映し直してください。",
+              status: httpStatus.conflict,
+            },
+            WikiPublishUnavailable: {
+              message: "この環境では公開を有効にしていません。",
+              status: httpStatus.notImplemented,
+            },
+            WikiPublishUnchanged: {
+              message: "公開されている文書から変わっていません。",
+              status: httpStatus.badRequest,
+            },
+            WikiPublishUnreachable: {
+              message: "GitHub に届きませんでした。時間をおいてもう一度公開してください。",
+              status: httpStatus.serviceUnavailable,
+            },
+          },
+          response: WikiDraftPublished,
         },
-        WikiPageMissing: {
-          message: "下書きに入れた画像が見つかりません。画像を入れ直してください。",
-          status: httpStatus.notFound,
-        },
-        WikiPublishFailed: "unexpected",
-        WikiPublishForbidden: {
-          message: "文書を公開できるのは「変更できる」権限の人だけです。",
-          status: httpStatus.forbidden,
-        },
-        WikiPublishKeyInvalid: "unexpected",
-        WikiPublishStale: {
-          message:
-            "公開されている文書がこの下書きより後に更新されました。下書きの内容を控えてから捨て、最新の文書に反映し直してください。",
-          status: httpStatus.conflict,
-        },
-        WikiPublishUnavailable: {
-          message: "この環境では公開を有効にしていません。",
-          status: httpStatus.notImplemented,
-        },
-        WikiPublishUnchanged: {
-          message: "公開されている文書から変わっていません。",
-          status: httpStatus.badRequest,
-        },
-        WikiPublishUnreachable: {
-          message: "GitHub に届きませんでした。時間をおいてもう一度公開してください。",
-          status: httpStatus.serviceUnavailable,
-        },
-      }),
+        postPublish,
+      ),
     )
     .post(
       "/images",
-      ...api.route({ response: WikiImageUploaded }, postImage, {
-        ...sessionFailures,
-        DatabaseFailure: "unexpected",
-        StorageFailed: "unexpected",
-        WikiImageTooLarge: {
-          message: "画像は 5MB までです。",
-          status: httpStatus.payloadTooLarge,
+      ...api.route(
+        {
+          failures: {
+            ...sessionFailures,
+            DatabaseFailure: "unexpected",
+            StorageFailed: "unexpected",
+            WikiImageTooLarge: {
+              message: "画像は 5MB までです。",
+              status: httpStatus.payloadTooLarge,
+            },
+          },
+          response: WikiImageUploaded,
         },
-      }),
+        postImage,
+      ),
     )
     .get(
       "/images/:name",

@@ -1,17 +1,9 @@
 import { httpStatus } from "@repo/config";
 import { Telemetry } from "@repo/observability";
-import { Deferred, Effect, Layer, Queue, Schema, Stream } from "effect";
+import { Effect, Layer, Schema } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { apiServerClient } from "./client.ts";
-import {
-  AppOrigin,
-  apiRoutes,
-  createApi,
-  elysiaServer,
-  readJsonBody,
-  readSearchParams,
-} from "./http.ts";
+import { AppOrigin, apiRoutes, createApi, elysiaServer, readJsonBody } from "./http.ts";
 import { startRoute, workerRuntime } from "./worker.ts";
 
 const EchoBody = Schema.Struct({
@@ -26,19 +18,12 @@ const EchoBody = Schema.Struct({
     ),
   ).check(Schema.isMaxLength(10)),
 });
-const Tick = Schema.Struct({
-  data: Schema.Struct({ count: Schema.FiniteFromString }),
-  event: Schema.Literal("tick"),
-});
-const TickQuery = Schema.Struct({ from: Schema.FiniteFromString });
 
 const origin = "http://localhost:3001";
 const profileLink = "https://profile.example.test/member";
 const oversizedBody = 16_385;
 const repeatedPrivateText = 10;
 const jsonHeaders = { "content-type": "application/json", origin };
-const firstTick = { data: { count: 1 }, event: "tick" } as const;
-const secondTick = { data: { count: 2 }, event: "tick" } as const;
 const telemetry = Telemetry.layer({ release: "test", routes: {}, serviceName: "service-member" });
 const appContext = Layer.succeed(AppOrigin, origin).pipe(Layer.provideMerge(telemetry));
 const runtime = workerRuntime(() => appContext);
@@ -115,9 +100,8 @@ describe.for(rejections)(
         Effect.runPromise(
           Effect.gen(function* rejectedAnswerProgram() {
             const echo = api.route(
-              { body: EchoBody, response: EchoBody },
+              { body: EchoBody, failures: {}, response: EchoBody },
               (_asked, mutation) => Effect.succeed(mutation),
-              {},
             );
             const {
               handlers: { ANY: answerAny },
@@ -180,9 +164,8 @@ describe("an api route behind a start server route given invalid input", () => {
     Effect.runPromise(
       Effect.gen(function* invalidAnswerProgram() {
         const echo = api.route(
-          { body: EchoBody, response: EchoBody },
+          { body: EchoBody, failures: {}, response: EchoBody },
           (_asked, mutation) => Effect.succeed(mutation),
-          {},
         );
         const {
           handlers: { ANY: answerAny },
@@ -218,124 +201,22 @@ describe("an api route behind a start server route given invalid input", () => {
   });
 });
 
-describe("an event stream route fed as values happen", () => {
-  const it = test.extend("tickFrames", () =>
-    Effect.runPromise(
-      Effect.gen(function* tickFramesProgram() {
-        const ticks = yield* Queue.unbounded<typeof Tick.Type>();
-        yield* Queue.offer(ticks, firstTick);
-        const app = createApi("/api").get(
-          "/events",
-          ...api.events(Tick, () => Effect.succeed(Stream.fromQueue(ticks)), {}),
-        );
-        const opened = yield* Effect.promise(() => app.handle(new Request(`${origin}/api/events`)));
-        const frames: ReadableStreamDefaultReader<unknown> = (
-          opened.body ?? new ReadableStream<Uint8Array>()
-        ).getReader();
-        const first = yield* Effect.promise(() => frames.read());
-        yield* Queue.offer(ticks, secondTick);
-        const second = yield* Effect.promise(() => frames.read());
-        yield* Effect.promise(() => frames.cancel());
-        return [first.value, second.value].map((frame) =>
-          frame instanceof Uint8Array ? new TextDecoder().decode(frame) : frame,
-        );
-      }),
-    ));
-
-  it("sends each value as it happens, encoded by the contract", ({ tickFrames }) => {
-    expect(tickFrames).toStrictEqual([
-      'event: tick\ndata: {"count":"1"}\n\n',
-      'event: tick\ndata: {"count":"2"}\n\n',
-    ]);
-  });
-});
-
-describe("an event stream route's headers", () => {
-  const it = test.extend("streamHeaders", () =>
-    Effect.runPromise(
-      Effect.gen(function* streamHeadersProgram() {
-        const app = createApi("/api").get(
-          "/events",
-          ...api.events(Tick, () => Effect.succeed(Stream.make(firstTick)), {}),
-        );
-        const opened = yield* Effect.promise(() => app.handle(new Request(`${origin}/api/events`)));
-        yield* Effect.promise(() => opened.body?.cancel() ?? Promise.resolve());
-        return ["content-type", "content-encoding", "cache-control"].map((headerName) =>
-          opened.headers.get(headerName),
-        );
-      }),
-    ));
-
-  it("is never compressed or cached, so a proxy cannot hold frames back", ({ streamHeaders }) => {
-    expect(streamHeaders).toStrictEqual(["text/event-stream", "identity", "no-store"]);
-  });
-});
-
-describe("an event stream route whose viewer goes away while nothing is happening", () => {
-  const it = test.extend("sourceReleased", () =>
-    Effect.runPromise(
-      Effect.gen(function* sourceReleasedProgram() {
-        const released = yield* Deferred.make<boolean>();
-        const ticks = Stream.make(firstTick).pipe(
-          Stream.concat(Stream.never),
-          Stream.ensuring(Deferred.succeed(released, true)),
-        );
-        const app = createApi("/api").get(
-          "/events",
-          ...api.events(Tick, () => Effect.succeed(ticks), {}),
-        );
-        const opened = yield* Effect.promise(() => app.handle(new Request(`${origin}/api/events`)));
-        const frames: ReadableStreamDefaultReader<unknown> = (
-          opened.body ?? new ReadableStream<Uint8Array>()
-        ).getReader();
-        yield* Effect.promise(() => frames.read());
-        yield* Effect.promise(() => frames.cancel());
-        return yield* Deferred.await(released);
-      }),
-    ));
-
-  it("stops the stream", ({ sourceReleased }) => {
-    expect(sourceReleased).toBe(true);
-  });
-});
-
-describe("an event stream route whose source dies after it opened", () => {
-  const it = test.extend("closingFrames", () =>
-    Effect.runPromise(
-      Effect.gen(function* closingFramesProgram() {
-        const ticks = Stream.make(firstTick).pipe(Stream.concat(Stream.die("source died")));
-        const app = createApi("/api").get(
-          "/events",
-          ...api.events(Tick, () => Effect.succeed(ticks), {}),
-        );
-        const opened = yield* Effect.promise(() => app.handle(new Request(`${origin}/api/events`)));
-        const frames: ReadableStreamDefaultReader<unknown> = (
-          opened.body ?? new ReadableStream<Uint8Array>()
-        ).getReader();
-        const first = yield* Effect.promise(() => frames.read());
-        const failed = yield* Effect.promise(() => frames.read());
-        const ended = yield* Effect.promise(() => frames.read());
-        return [first.value, failed.value, ended.value].map((frame) =>
-          frame instanceof Uint8Array ? new TextDecoder().decode(frame) : frame,
-        );
-      }),
-    ));
-
-  it("ends with a failed event", ({ closingFrames }) => {
-    expect(closingFrames).toStrictEqual([
-      'event: tick\ndata: {"count":"1"}\n\n',
-      `event: failed\ndata: {"message":"処理に失敗しました。リクエスト ID でログを確認してください。","status":${String(httpStatus.internalServerError)}}\n\n`,
-      undefined,
-    ]);
-  });
-});
-
 describe("a HEAD request to an event stream route", () => {
   const it = test.extend("headAnswer", () =>
     Effect.runPromise(
       Effect.gen(function* headAnswerProgram() {
-        const silentAfterFirst = Stream.make(firstTick).pipe(Stream.concat(Stream.never));
-        const ticks = api.events(Tick, () => Effect.succeed(silentAfterFirst), {});
+        const silentAfterFirst = new ReadableStream<Uint8Array>({
+          start: (frames): void => {
+            frames.enqueue(new TextEncoder().encode("event: tick\ndata: 1\n\n"));
+          },
+        });
+        const ticks = api.raw(
+          () =>
+            Effect.succeed(
+              new Response(silentAfterFirst, { headers: { "content-type": "text/event-stream" } }),
+            ),
+          {},
+        );
         const {
           handlers: { HEAD: answerHead },
         } = elysiaServer(createApi("/api").get("/events", ...ticks));
@@ -351,64 +232,5 @@ describe("a HEAD request to an event stream route", () => {
     headAnswer,
   }) => {
     expect(headAnswer).toStrictEqual([httpStatus.ok, "text/event-stream", ""]);
-  });
-});
-
-describe("an event stream route that fails before the stream opens", () => {
-  const it = test.extend("openingFailure", () =>
-    Effect.runPromise(
-      Effect.gen(function* openingFailureProgram() {
-        const ticks = api.events(
-          Tick,
-          (asked) =>
-            readSearchParams(TickQuery, asked).pipe(
-              Effect.map(({ from }) =>
-                Stream.make({ data: { count: from }, event: "tick" } as const),
-              ),
-            ),
-          {},
-        );
-        const app = createApi("/api").get("/events", ...ticks);
-        const answered = yield* Effect.promise(() =>
-          app.handle(new Request(`${origin}/api/events`)),
-        );
-        const failure: unknown = yield* Effect.promise(() => answered.json());
-        return [answered.status, failure];
-      }),
-    ));
-
-  it("is answered as an ordinary json failure", ({ openingFailure }) => {
-    expect(openingFailure).toStrictEqual([
-      httpStatus.badRequest,
-      { error: "入力内容を確認してください。" },
-    ]);
-  });
-});
-
-describe("an event stream route seen by the typed client", () => {
-  const it = test.extend("receivedTicks", () =>
-    Effect.runPromise(
-      Effect.gen(function* receivedTicksProgram() {
-        const ticks = api.events(
-          Tick,
-          () => Effect.succeed(Stream.make(firstTick, secondTick)),
-          {},
-        );
-        const client = apiServerClient(createApi("/api").get("/events", ...ticks), {});
-        const eventReply = yield* Effect.promise(() => client.api.events.get());
-        const tickEvents = eventReply.data;
-        if (tickEvents === null || !(Symbol.asyncIterator in tickEvents)) {
-          return yield* Effect.die(tickEvents);
-        }
-        return yield* Stream.fromAsyncIterable(tickEvents, (cause) => cause).pipe(
-          Stream.orDie,
-          Stream.mapEffect((tickEvent) => Schema.decodeUnknownEffect(Tick)(tickEvent)),
-          Stream.runCollect,
-        );
-      }),
-    ));
-
-  it("receives event objects the contract decodes", ({ receivedTicks }) => {
-    expect(receivedTicks).toStrictEqual([firstTick, secondTick]);
   });
 });

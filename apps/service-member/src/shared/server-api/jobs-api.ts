@@ -33,41 +33,35 @@ function jobsApi(api: ApiRoutes<AppServices>) {
   return createApi("")
     .post(
       "/jobs",
-      ...api.route(
-        { response: JobAccepted },
-        (request) =>
-          Effect.gen(function* handleRequest() {
-            const { user } = yield* verifySession(request.headers);
-            yield* readJsonBody(JobCreate, request);
-            const jobs = yield* readJobs(env);
-            const { jobId } = yield* enqueueJob(jobs, user.id);
-            return { id: jobId };
-          }),
-        failures,
+      ...api.route({ failures, response: JobAccepted }, (request) =>
+        Effect.gen(function* handleRequest() {
+          const { user } = yield* verifySession(request.headers);
+          yield* readJsonBody(JobCreate, request);
+          const jobs = yield* readJobs(env);
+          const { jobId } = yield* enqueueJob(jobs, user.id);
+          return { id: jobId };
+        }),
       ),
     )
     .get(
       "/jobs/:id",
-      ...api.route(
-        { response: JobStatusView },
-        (request) =>
-          Effect.gen(function* handleRequest() {
-            const { user } = yield* verifySession(request.headers);
-            const id = new URL(request.url).pathname.split("/").at(-1) ?? "";
-            const payload = yield* Schema.decodeEffect(JobPayload)({
-              jobId: id,
-              ownerId: user.id,
-            }).pipe(Effect.mapError(() => ({ _tag: "InputInvalid" as const })));
-            const jobs = yield* readJobs(env);
-            const status = yield* jobStatus(jobs, payload);
-            return {
-              id,
-              status: status.status,
-              ...(status.output === undefined ? {} : { output: status.output }),
-              ...(status.error === undefined ? {} : { error: status.error }),
-            };
-          }),
-        failures,
+      ...api.route({ failures, response: JobStatusView }, (request) =>
+        Effect.gen(function* handleRequest() {
+          const { user } = yield* verifySession(request.headers);
+          const id = new URL(request.url).pathname.split("/").at(-1) ?? "";
+          const payload = yield* Schema.decodeEffect(JobPayload)({
+            jobId: id,
+            ownerId: user.id,
+          }).pipe(Effect.mapError(() => ({ _tag: "InputInvalid" as const })));
+          const jobs = yield* readJobs(env);
+          const status = yield* jobStatus(jobs, payload);
+          return {
+            id,
+            status: status.status,
+            ...(status.output === undefined ? {} : { output: status.output }),
+            ...(status.error === undefined ? {} : { error: status.error }),
+          };
+        }),
       ),
     );
 }

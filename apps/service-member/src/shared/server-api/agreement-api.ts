@@ -107,13 +107,13 @@ const withdraw = Effect.fn("agreements.withdraw")(function* withdraw(request: Re
 
 function agreementApi(api: ApiRoutes<AppServices>) {
   return createApi("")
-    .get("/agreements", ...api.route({ response: AgreementsView }, listCurrent, failures))
-    .post("/agreements/accept", ...api.route({ response: AgreementsView }, accept, failures))
+    .get("/agreements", ...api.route({ failures, response: AgreementsView }, listCurrent))
+    .post("/agreements/accept", ...api.route({ failures, response: AgreementsView }, accept))
     .get(
       "/agreements/published",
-      ...api.route({ response: PublishedAgreementView }, published, failures),
+      ...api.route({ failures, response: PublishedAgreementView }, published),
     )
-    .post("/agreements/withdraw", ...api.route({ response: AgreementsView }, withdraw, failures));
+    .post("/agreements/withdraw", ...api.route({ failures, response: AgreementsView }, withdraw));
 }
 
 const exemptPrefixes = [

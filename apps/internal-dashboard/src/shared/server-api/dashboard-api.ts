@@ -15,30 +15,24 @@ function dashboardApi(api: ApiRoutes<WikiServices>) {
   return createApi("")
     .get(
       "/overview",
-      ...api.route({ response: StaffOverview }, () => dashboardStaff.overview(), failures),
+      ...api.route({ failures, response: StaffOverview }, () => dashboardStaff.overview()),
     )
     .get(
       "/metrics/trend",
-      ...api.route(
-        { response: MetricTrend },
-        (request) =>
-          Effect.gen(function* handle() {
-            const query = yield* readSearchParams(TrendQuery, request);
-            return yield* dashboardStaff.metricTrend(query);
-          }),
-        failures,
+      ...api.route({ failures, response: MetricTrend }, (request) =>
+        Effect.gen(function* handle() {
+          const query = yield* readSearchParams(TrendQuery, request);
+          return yield* dashboardStaff.metricTrend(query);
+        }),
       ),
     )
     .get(
       "/audit",
-      ...api.route(
-        { response: StaffAuditPage },
-        (request) =>
-          Effect.gen(function* handle() {
-            const page = yield* readSearchParams(AuditPage, request);
-            return yield* dashboardStaff.auditEvents(page);
-          }),
-        failures,
+      ...api.route({ failures, response: StaffAuditPage }, (request) =>
+        Effect.gen(function* handle() {
+          const page = yield* readSearchParams(AuditPage, request);
+          return yield* dashboardStaff.auditEvents(page);
+        }),
       ),
     );
 }

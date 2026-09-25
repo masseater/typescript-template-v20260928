@@ -58,7 +58,7 @@ const reportForeignServer = (inspection: LintContext, node: Node): void => {
 
 const effectStackVisitor = (inspection: LintContext): Visitor => {
   const inspected = filename(inspection);
-  const elysiaFactory = inspected.endsWith("/libs/runtime/src/features/runtime/http.ts");
+  const elysiaFactory = inspected.endsWith("/libs/runtime/src/features/runtime/elysia-server.ts");
   const startRoute = /\/apps\/[^/]+\/src\/(?:[^/]+\/)*routes\//u.test(inspected);
   const check = (node: Node, typeOnly: boolean): void => {
     const source = staticText(inspection, node);

@@ -51,87 +51,69 @@ function groupsApi(api: ApiRoutes<AppServices>) {
   return createApi("/groups")
     .get(
       "/view",
-      ...api.route(
-        { response: GroupView },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const { id, invite } = yield* readSearchParams(GroupQuery, request);
-            return yield* findGroup(user.id, id, invite);
-          }),
-        failures,
+      ...api.route({ failures, response: GroupView }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const { id, invite } = yield* readSearchParams(GroupQuery, request);
+          return yield* findGroup(user.id, id, invite);
+        }),
       ),
     )
     .post(
       "/create",
-      ...api.route(
-        { response: GroupCreated },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const draft = yield* readJsonBody(GroupCreate, request);
-            const created = yield* createGroup(user.id, draft);
-            return {
-              conversationId: created.conversationId,
-              groupId: created.groupId,
-              inviteToken: created.inviteToken,
-            };
-          }),
-        failures,
+      ...api.route({ failures, response: GroupCreated }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const draft = yield* readJsonBody(GroupCreate, request);
+          const created = yield* createGroup(user.id, draft);
+          return {
+            conversationId: created.conversationId,
+            groupId: created.groupId,
+            inviteToken: created.inviteToken,
+          };
+        }),
       ),
     )
     .post(
       "/join",
-      ...api.route(
-        { response: GroupJoined },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const { id, invite } = yield* readJsonBody(GroupJoin, request);
-            return { conversationId: yield* joinGroup(user.id, id, invite) };
-          }),
-        failures,
+      ...api.route({ failures, response: GroupJoined }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const { id, invite } = yield* readJsonBody(GroupJoin, request);
+          return { conversationId: yield* joinGroup(user.id, id, invite) };
+        }),
       ),
     )
     .post(
       "/leave",
-      ...api.route(
-        { response: GroupLeft },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const { id } = yield* readJsonBody(GroupLeave, request);
-            yield* leaveGroup(user.id, id);
-            return { id };
-          }),
-        failures,
+      ...api.route({ failures, response: GroupLeft }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const { id } = yield* readJsonBody(GroupLeave, request);
+          yield* leaveGroup(user.id, id);
+          return { id };
+        }),
       ),
     )
     .post(
       "/rename",
-      ...api.route(
-        { response: GroupRenamed },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const { id, name } = yield* readJsonBody(GroupRename, request);
-            yield* renameGroup(user.id, id, name);
-            return { id };
-          }),
-        failures,
+      ...api.route({ failures, response: GroupRenamed }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const { id, name } = yield* readJsonBody(GroupRename, request);
+          yield* renameGroup(user.id, id, name);
+          return { id };
+        }),
       ),
     )
     .post(
       "/invite",
-      ...api.route(
-        { response: GroupInviteRefreshed },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const { id } = yield* readJsonBody(GroupInviteRefresh, request);
-            return { inviteToken: yield* refreshGroupInvite(user.id, id) };
-          }),
-        failures,
+      ...api.route({ failures, response: GroupInviteRefreshed }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const { id } = yield* readJsonBody(GroupInviteRefresh, request);
+          return { inviteToken: yield* refreshGroupInvite(user.id, id) };
+        }),
       ),
     );
 }

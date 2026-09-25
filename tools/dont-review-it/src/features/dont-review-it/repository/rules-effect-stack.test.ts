@@ -49,7 +49,7 @@ const forbiddenStacks = [
 
 const allowedStacks = [
   [
-    "libs/runtime/src/features/runtime/http.ts",
+    "libs/runtime/src/features/runtime/elysia-server.ts",
     'import { Elysia } from "elysia"; export const api = new Elysia();',
   ],
   [

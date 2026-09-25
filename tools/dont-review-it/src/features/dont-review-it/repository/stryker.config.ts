@@ -9,8 +9,11 @@ const configuration = {
   mutate: [
     "libs/config/src/features/config/index.ts",
     "libs/runtime/src/features/runtime/failures.ts",
-    "libs/runtime/src/features/runtime/http.ts",
+    "libs/runtime/src/features/runtime/elysia-server.ts",
+    "libs/runtime/src/features/runtime/http-input.ts",
     "libs/runtime/src/features/runtime/responses.ts",
+    "libs/runtime/src/features/runtime/routes.ts",
+    "libs/runtime/src/features/runtime/unavailable.ts",
     "tools/dont-review-it/src/features/dont-review-it/repository/alias-visitor.ts",
     "tools/dont-review-it/src/features/dont-review-it/repository/d1-references.ts",
     "tools/dont-review-it/src/features/dont-review-it/repository/d1-types.ts",

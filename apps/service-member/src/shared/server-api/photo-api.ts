@@ -47,29 +47,23 @@ function photoApi(api: ApiRoutes<AppServices | PhotoStore>) {
     )
     .put(
       "/profile/photo",
-      ...api.route(
-        { response: PhotoView },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const { slot } = yield* readSearchParams(PhotoQuery, request);
-            const file = yield* readPhotoUpload(request);
-            return yield* uploadPhoto(user.id, slot, file);
-          }),
-        failures,
+      ...api.route({ failures, response: PhotoView }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const { slot } = yield* readSearchParams(PhotoQuery, request);
+          const file = yield* readPhotoUpload(request);
+          return yield* uploadPhoto(user.id, slot, file);
+        }),
       ),
     )
     .delete(
       "/profile/photo",
-      ...api.route(
-        { response: PhotoView },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const { slot } = yield* readSearchParams(PhotoQuery, request);
-            return yield* removePhoto(user.id, slot);
-          }),
-        failures,
+      ...api.route({ failures, response: PhotoView }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const { slot } = yield* readSearchParams(PhotoQuery, request);
+          return yield* removePhoto(user.id, slot);
+        }),
       ),
     );
 }

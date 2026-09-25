@@ -26,47 +26,38 @@ function trustApi(api: ApiRoutes<AppServices>) {
   return createApi("/trust")
     .put(
       "/block",
-      ...api.route(
-        { response: Blocked },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const { memberId } = yield* readJsonBody(BlockMember, request);
-            yield* blockMember(user.id, memberId);
-            return { ok: true as const };
-          }),
-        failures,
+      ...api.route({ failures, response: Blocked }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const { memberId } = yield* readJsonBody(BlockMember, request);
+          yield* blockMember(user.id, memberId);
+          return { ok: true as const };
+        }),
       ),
     )
     .delete(
       "/block",
-      ...api.route(
-        { response: Blocked },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const { memberId } = yield* readJsonBody(BlockMember, request);
-            yield* unblockMember(user.id, memberId);
-            return { ok: true as const };
-          }),
-        failures,
+      ...api.route({ failures, response: Blocked }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const { memberId } = yield* readJsonBody(BlockMember, request);
+          yield* unblockMember(user.id, memberId);
+          return { ok: true as const };
+        }),
       ),
     )
     .post(
       "/report",
-      ...api.route(
-        { response: ReportFiled },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const report = yield* readJsonBody(ReportCreate, request);
-            return yield* fileReport({
-              reason: report.reason,
-              reporterId: user.id,
-              subject: { id: report.subjectId, kind: report.subjectKind },
-            });
-          }),
-        failures,
+      ...api.route({ failures, response: ReportFiled }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const report = yield* readJsonBody(ReportCreate, request);
+          return yield* fileReport({
+            reason: report.reason,
+            reporterId: user.id,
+            subject: { id: report.subjectId, kind: report.subjectKind },
+          });
+        }),
       ),
     );
 }

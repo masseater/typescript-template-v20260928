@@ -13,27 +13,21 @@ function visibilityApi(api: ApiRoutes<AppServices>) {
   return createApi("")
     .get(
       "/profile/visibility",
-      ...api.route(
-        { response: VisibilityView },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            return yield* readVisibility(user.id);
-          }),
-        failures,
+      ...api.route({ failures, response: VisibilityView }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          return yield* readVisibility(user.id);
+        }),
       ),
     )
     .patch(
       "/profile/visibility",
-      ...api.route(
-        { response: VisibilityView },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const values = yield* readJsonBody(VisibilityView, request);
-            return yield* updateVisibility(user.id, values);
-          }),
-        failures,
+      ...api.route({ failures, response: VisibilityView }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const values = yield* readJsonBody(VisibilityView, request);
+          return yield* updateVisibility(user.id, values);
+        }),
       ),
     );
 }

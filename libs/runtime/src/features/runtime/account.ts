@@ -118,17 +118,15 @@ function inviteApi<Requirements = never>(api: ApiRoutes<AppServices | Requiremen
     .get(
       "/invite",
       ...api.route(
-        { query: InvitePreviewQuery, response: InvitePreview },
+        { failures: inviteFailures, query: InvitePreviewQuery, response: InvitePreview },
         openInvite,
-        inviteFailures,
       ),
     )
     .post(
       "/invite",
       ...api.route(
-        { body: InviteAcceptance, response: InviteAccepted },
+        { body: InviteAcceptance, failures: inviteFailures, response: InviteAccepted },
         acceptOpenInvite,
-        inviteFailures,
       ),
     );
 }
@@ -137,13 +135,11 @@ function sessionApi<Requirements = never>(api: ApiRoutes<AppServices | Requireme
   return createApi("")
     .all("/auth/*", ...api.raw(handleAuthRequest, authUnavailable))
     .post("/telemetry", ...api.raw(ingestBrowser, {}))
-    .get("/health", ...api.route({ response: HealthView }, health, databaseUnavailable))
+    .get("/health", ...api.route({ failures: databaseUnavailable, response: HealthView }, health))
     .get(
       "/session",
-      ...api.route(
-        { response: SessionView },
-        (request) => verifySession(request.headers, true),
-        sessionFailures,
+      ...api.route({ failures: sessionFailures, response: SessionView }, (request) =>
+        verifySession(request.headers, true),
       ),
     );
 }
@@ -154,9 +150,8 @@ function accountApi<Requirements = never>(api: ApiRoutes<AppServices | Requireme
     .post(
       "/verify-email",
       ...api.route(
-        { body: EmailVerificationRequest, response: EmailVerified },
+        { body: EmailVerificationRequest, failures: verificationFailures, response: EmailVerified },
         (request, { token }) => verifyEmailToken(token, request.headers),
-        verificationFailures,
       ),
     );
 }

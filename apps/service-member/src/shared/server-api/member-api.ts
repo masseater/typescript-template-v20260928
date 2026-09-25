@@ -66,64 +66,52 @@ function memberApi(
     .use(visibilityApi(api))
     .get(
       "/profile",
-      ...api.route(
-        { response: ProfileView },
-        (request) =>
-          Effect.gen(function* handleRequest() {
-            const { user } = yield* verifySessionOrApiKey(request.headers);
-            const profile = yield* getProfile(user.id);
-            if (profile === undefined) {
-              return yield* new UserNotFound();
-            }
-            return profile;
-          }),
-        failures,
+      ...api.route({ failures, response: ProfileView }, (request) =>
+        Effect.gen(function* handleRequest() {
+          const { user } = yield* verifySessionOrApiKey(request.headers);
+          const profile = yield* getProfile(user.id);
+          if (profile === undefined) {
+            return yield* new UserNotFound();
+          }
+          return profile;
+        }),
       ),
     )
     .get(
       "/member",
-      ...api.route(
-        { response: MemberView },
-        (request) =>
-          Effect.gen(function* handleRequest() {
-            const { user } = yield* verifySessionOrApiKey(request.headers);
-            const { id } = yield* readSearchParams(MemberQuery, request);
-            return yield* getMember(user.id, id);
-          }),
-        failures,
+      ...api.route({ failures, response: MemberView }, (request) =>
+        Effect.gen(function* handleRequest() {
+          const { user } = yield* verifySessionOrApiKey(request.headers);
+          const { id } = yield* readSearchParams(MemberQuery, request);
+          return yield* getMember(user.id, id);
+        }),
       ),
     )
     .get(
       "/members",
-      ...api.route(
-        { response: MemberList },
-        (request) =>
-          Effect.gen(function* handleRequest() {
-            const { user } = yield* verifySessionOrApiKey(request.headers);
-            yield* requirePaid(user.id);
-            const { keyword, page } = yield* readSearchParams(MemberListQuery, request);
-            const offset = (page - 1) * memberPageSize;
-            const list = yield* listMembers(user.id, {
-              keyword,
-              limit: memberPageSize,
-              offset,
-            });
-            return { ...list, pageSize: memberPageSize };
-          }),
-        failures,
+      ...api.route({ failures, response: MemberList }, (request) =>
+        Effect.gen(function* handleRequest() {
+          const { user } = yield* verifySessionOrApiKey(request.headers);
+          yield* requirePaid(user.id);
+          const { keyword, page } = yield* readSearchParams(MemberListQuery, request);
+          const offset = (page - 1) * memberPageSize;
+          const list = yield* listMembers(user.id, {
+            keyword,
+            limit: memberPageSize,
+            offset,
+          });
+          return { ...list, pageSize: memberPageSize };
+        }),
       ),
     )
     .patch(
       "/profile",
-      ...api.route(
-        { response: ProfileView },
-        (request) =>
-          Effect.gen(function* handleRequest() {
-            const { user } = yield* verifySessionWriter(request.headers);
-            const values = yield* readJsonBody(ProfileUpdate, request);
-            return yield* updateProfile(user.id, values);
-          }),
-        failures,
+      ...api.route({ failures, response: ProfileView }, (request) =>
+        Effect.gen(function* handleRequest() {
+          const { user } = yield* verifySessionWriter(request.headers);
+          const values = yield* readJsonBody(ProfileUpdate, request);
+          return yield* updateProfile(user.id, values);
+        }),
       ),
     )
     .use(boardApi(api))

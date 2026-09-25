@@ -175,24 +175,23 @@ function recordingsApi(api: ApiRoutes<AppServices>) {
     .get(
       "/recordings",
       ...api.route(
-        { response: RecordingList },
+        { failures, response: RecordingList },
         withRecordings((request) =>
           verifySession(request.headers).pipe(
             Effect.andThen(CoreRecords.use((core) => core.listRecordings({}))),
             Effect.map((recordings) => ({ recordings })),
           ),
         ),
-        failures,
       ),
     )
     .post(
       "/recordings",
-      ...api.route({ response: CreatedResource }, withRecordings(uploadRecording), failures),
+      ...api.route({ failures, response: CreatedResource }, withRecordings(uploadRecording)),
     )
     .get(
       "/recording",
       ...api.route(
-        { response: RecordingView },
+        { failures, response: RecordingView },
         withRecordings((request) =>
           Effect.gen(function* view() {
             yield* verifySession(request.headers);
@@ -200,41 +199,39 @@ function recordingsApi(api: ApiRoutes<AppServices>) {
             return yield* (yield* CoreRecords).findRecording({ recordingId: id });
           }),
         ),
-        failures,
       ),
     )
     .delete(
       "/recording",
-      ...api.route({ response: CreatedResource }, withRecordings(remove), failures),
+      ...api.route({ failures, response: CreatedResource }, withRecordings(remove)),
     )
     .post(
       "/recording/retry",
-      ...api.route({ response: CreatedResource }, withRecordings(retry), failures),
+      ...api.route({ failures, response: CreatedResource }, withRecordings(retry)),
     )
     .patch(
       "/recording/speaker",
-      ...api.route({ response: CreatedResource }, withRecordings(assign), failures),
+      ...api.route({ failures, response: CreatedResource }, withRecordings(assign)),
     )
     .get(
       "/people",
       ...api.route(
-        { response: PeopleList },
+        { failures, response: PeopleList },
         withRecordings((request) =>
           verifySession(request.headers).pipe(
             Effect.andThen(CoreRecords.use((core) => core.listPeople({}))),
             Effect.map((people) => ({ people })),
           ),
         ),
-        failures,
       ),
     )
     .post(
       "/people",
-      ...api.route({ response: CreatedResource }, withRecordings(register), failures),
+      ...api.route({ failures, response: CreatedResource }, withRecordings(register)),
     )
     .delete(
       "/people",
-      ...api.route({ response: CreatedResource }, withRecordings(forget), failures),
+      ...api.route({ failures, response: CreatedResource }, withRecordings(forget)),
     );
 }
 

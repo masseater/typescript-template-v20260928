@@ -59,13 +59,13 @@ const removeMember = Effect.fn("removeMember")(function* removeMember(request: R
 function staffApi<Requirements = never>(api: ApiRoutes<AppServices | Requirements>) {
   return createApi("")
     .use(inviteApi(api))
-    .get("/staff", ...api.route({ response: StaffList }, listMembers, failures))
-    .post("/staff/invites", ...api.route({ response: StaffInvited }, inviteMember, failures))
+    .get("/staff", ...api.route({ failures, response: StaffList }, listMembers))
+    .post("/staff/invites", ...api.route({ failures, response: StaffInvited }, inviteMember))
     .patch(
       "/staff",
-      ...api.route({ response: StaffPermissionChanged }, changeMemberPermission, failures),
+      ...api.route({ failures, response: StaffPermissionChanged }, changeMemberPermission),
     )
-    .delete("/staff", ...api.route({ response: StaffRemoved }, removeMember, failures));
+    .delete("/staff", ...api.route({ failures, response: StaffRemoved }, removeMember));
 }
 
 export { staffApi };

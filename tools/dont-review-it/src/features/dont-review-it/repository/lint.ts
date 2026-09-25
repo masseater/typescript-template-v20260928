@@ -810,7 +810,6 @@ const lintOptions = {
     },
     {
       files: [
-        "libs/runtime/src/features/runtime/http.ts",
         "libs/runtime/src/features/runtime/bindings.ts",
         "libs/runtime/src/features/runtime/jobs.ts",
         "libs/runtime/src/features/runtime/configured-app-layer.ts",
@@ -824,27 +823,6 @@ const lintOptions = {
         "typescript/explicit-function-return-type": LINT_SEVERITY.OFF,
         "typescript/explicit-module-boundary-types": LINT_SEVERITY.OFF,
         "typescript/prefer-readonly-parameter-types": LINT_SEVERITY.OFF,
-      },
-    },
-    {
-      files: ["libs/runtime/src/features/runtime/http.ts"],
-      rules: {
-        "dont-review-it/no-ambiguous-variable-name--rename-to-concrete-noun": LINT_SEVERITY.OFF,
-        "dont-review-it/no-blanket-suppression--name-and-record": LINT_SEVERITY.OFF,
-        "dont-review-it/no-detached-declaration--declare-it-next-to-its-use": LINT_SEVERITY.OFF,
-        "dont-review-it/no-duplicated-body--import-the-existing-declaration": LINT_SEVERITY.OFF,
-        "dont-review-it/no-interface-declaration--write-a-type-alias": LINT_SEVERITY.OFF,
-        "dont-review-it/no-promise-chain--use-async-await": LINT_SEVERITY.OFF,
-        "dont-review-it/no-reassign--use-spread-or-iife": LINT_SEVERITY.OFF,
-        "dont-review-it/no-receiver-mutation--derive-new-value": LINT_SEVERITY.OFF,
-        "dont-review-it/no-twin-declaration--merge-into-one-owner": LINT_SEVERITY.OFF,
-        "eslint/func-style": LINT_SEVERITY.OFF,
-        "eslint/max-nested-callbacks": LINT_SEVERITY.OFF,
-        "eslint/max-params": LINT_SEVERITY.OFF,
-        "eslint/max-statements": LINT_SEVERITY.OFF,
-        "eslint/no-duplicate-imports": LINT_SEVERITY.OFF,
-        "eslint/no-warning-comments": LINT_SEVERITY.OFF,
-        "typescript/consistent-indexed-object-style": LINT_SEVERITY.OFF,
       },
     },
     {

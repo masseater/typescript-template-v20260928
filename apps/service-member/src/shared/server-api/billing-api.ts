@@ -193,17 +193,17 @@ const webhook = Effect.fn("billing.api.webhook")(function* webhook(request: Requ
 });
 function billingApi(api: ApiRoutes<AppServices | Stripe>) {
   return createApi("")
-    .get("/billing/plan", ...api.route({ response: PlanView }, plan, failures))
-    .get("/billing/offer", ...api.route({ response: OfferView }, offer, failures))
-    .post("/billing/checkout", ...api.route({ response: HostedPage }, checkout, failures))
-    .post("/billing/portal", ...api.route({ response: HostedPage }, portal, failures))
-    .get("/billing/invoices", ...api.route({ response: InvoiceList }, invoices, failures))
-    .get("/billing/quotes", ...api.route({ response: QuoteList }, quotes, failures))
-    .get("/billing/usage", ...api.route({ response: UsageView }, usage, failures))
+    .get("/billing/plan", ...api.route({ failures, response: PlanView }, plan))
+    .get("/billing/offer", ...api.route({ failures, response: OfferView }, offer))
+    .post("/billing/checkout", ...api.route({ failures, response: HostedPage }, checkout))
+    .post("/billing/portal", ...api.route({ failures, response: HostedPage }, portal))
+    .get("/billing/invoices", ...api.route({ failures, response: InvoiceList }, invoices))
+    .get("/billing/quotes", ...api.route({ failures, response: QuoteList }, quotes))
+    .get("/billing/usage", ...api.route({ failures, response: UsageView }, usage))
     .post(
       "/billing/invoice-payment",
-      ...api.route({ response: WebhookReceipt }, payByInvoice, failures),
+      ...api.route({ failures, response: WebhookReceipt }, payByInvoice),
     )
-    .post("/billing/webhook", ...api.route({ response: WebhookReceipt }, webhook, failures));
+    .post("/billing/webhook", ...api.route({ failures, response: WebhookReceipt }, webhook));
 }
 export { billingApi };

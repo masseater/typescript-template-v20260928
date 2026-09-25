@@ -51,104 +51,83 @@ function messagingApi(api: ApiRoutes<AppServices>) {
   return createApi("/messages")
     .get(
       "/conversations",
-      ...api.route(
-        { response: ConversationList },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const { page } = yield* readSearchParams(ConversationListQuery, request);
-            const list = yield* listInbox(user.id, {
-              limit: messagingConversationPageSize,
-              offset: (page - 1) * messagingConversationPageSize,
-            });
-            return { ...list, pageSize: messagingConversationPageSize };
-          }),
-        failures,
+      ...api.route({ failures, response: ConversationList }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const { page } = yield* readSearchParams(ConversationListQuery, request);
+          const list = yield* listInbox(user.id, {
+            limit: messagingConversationPageSize,
+            offset: (page - 1) * messagingConversationPageSize,
+          });
+          return { ...list, pageSize: messagingConversationPageSize };
+        }),
       ),
     )
     .get(
       "/conversation",
-      ...api.route(
-        { response: ConversationView },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const { id, page } = yield* readSearchParams(ConversationQuery, request);
-            const found = yield* findConversation(user.id, id, {
-              limit: messagingMessagePageSize,
-              offset: (page - 1) * messagingMessagePageSize,
-            });
-            yield* markConversationRead(user.id, id);
-            return { ...found, pageSize: messagingMessagePageSize };
-          }),
-        failures,
+      ...api.route({ failures, response: ConversationView }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const { id, page } = yield* readSearchParams(ConversationQuery, request);
+          const found = yield* findConversation(user.id, id, {
+            limit: messagingMessagePageSize,
+            offset: (page - 1) * messagingMessagePageSize,
+          });
+          yield* markConversationRead(user.id, id);
+          return { ...found, pageSize: messagingMessagePageSize };
+        }),
       ),
     )
     .get(
       "/lookup",
-      ...api.route(
-        { response: ConversationLookupResult },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const { peerId } = yield* readSearchParams(ConversationLookup, request);
-            const conversationId = yield* lookupDirectConversation(user.id, peerId);
-            return { conversationId: conversationId ?? null };
-          }),
-        failures,
+      ...api.route({ failures, response: ConversationLookupResult }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const { peerId } = yield* readSearchParams(ConversationLookup, request);
+          const conversationId = yield* lookupDirectConversation(user.id, peerId);
+          return { conversationId: conversationId ?? null };
+        }),
       ),
     )
     .get(
       "/unread",
-      ...api.route(
-        { response: UnreadCount },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            return { count: yield* totalUnreadCount(user.id) };
-          }),
-        failures,
+      ...api.route({ failures, response: UnreadCount }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          return { count: yield* totalUnreadCount(user.id) };
+        }),
       ),
     )
     .post(
       "/conversations",
-      ...api.route(
-        { response: ConversationOpened },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const { body, recipientId } = yield* readJsonBody(ConversationOpen, request);
-            const opened = yield* openDirectConversation(user.id, recipientId, body);
-            return { conversationId: opened.conversationId, id: opened.messageId };
-          }),
-        failures,
+      ...api.route({ failures, response: ConversationOpened }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const { body, recipientId } = yield* readJsonBody(ConversationOpen, request);
+          const opened = yield* openDirectConversation(user.id, recipientId, body);
+          return { conversationId: opened.conversationId, id: opened.messageId };
+        }),
       ),
     )
     .post(
       "/messages",
-      ...api.route(
-        { response: MessageSent },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const { body, conversationId } = yield* readJsonBody(MessageSend, request);
-            return { id: yield* sendConversationMessage(user.id, conversationId, body) };
-          }),
-        failures,
+      ...api.route({ failures, response: MessageSent }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const { body, conversationId } = yield* readJsonBody(MessageSend, request);
+          return { id: yield* sendConversationMessage(user.id, conversationId, body) };
+        }),
       ),
     )
     .post(
       "/read",
-      ...api.route(
-        { response: ConversationRead },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { user } = yield* verifySession(request.headers);
-            const { conversationId } = yield* readJsonBody(ConversationRead, request);
-            yield* markConversationRead(user.id, conversationId);
-            return { conversationId };
-          }),
-        failures,
+      ...api.route({ failures, response: ConversationRead }, (request) =>
+        Effect.gen(function* handle() {
+          const { user } = yield* verifySession(request.headers);
+          const { conversationId } = yield* readJsonBody(ConversationRead, request);
+          yield* markConversationRead(user.id, conversationId);
+          return { conversationId };
+        }),
       ),
     );
 }

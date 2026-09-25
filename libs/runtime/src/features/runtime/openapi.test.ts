@@ -41,16 +41,13 @@ describe("an api that serves its own reference", () => {
           .use(apiDocs(APPLICATION.user))
           .get(
             "/profile",
-            ...api.route(
-              { response: ProfileView },
-              () =>
-                Effect.succeed({
-                  email: "reader@example.test",
-                  id: "user-1",
-                  name: "reader",
-                  profile: "自己紹介",
-                }),
-              {},
+            ...api.route({ failures: {}, response: ProfileView }, () =>
+              Effect.succeed({
+                email: "reader@example.test",
+                id: "user-1",
+                name: "reader",
+                profile: "自己紹介",
+              }),
             ),
           );
         const answered = yield* Effect.promise(() =>

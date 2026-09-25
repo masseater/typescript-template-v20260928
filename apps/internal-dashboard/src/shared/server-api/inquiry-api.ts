@@ -24,31 +24,25 @@ function inquiryApi(api: ApiRoutes<WikiServices>) {
   return createApi("")
     .get(
       "/inquiries/counts",
-      ...api.route({ response: StaffInquiryCounts }, () => inquiryStaff.inquiryCounts(), failures),
+      ...api.route({ failures, response: StaffInquiryCounts }, () => inquiryStaff.inquiryCounts()),
     )
     .get(
       "/inquiries/member",
-      ...api.route(
-        { response: StaffInquiryList },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { id } = yield* readSearchParams(MemberQuery, request);
-            const inquiries = yield* inquiryStaff.listMemberInquiries(id);
-            return { inquiries };
-          }),
-        failures,
+      ...api.route({ failures, response: StaffInquiryList }, (request) =>
+        Effect.gen(function* handle() {
+          const { id } = yield* readSearchParams(MemberQuery, request);
+          const inquiries = yield* inquiryStaff.listMemberInquiries(id);
+          return { inquiries };
+        }),
       ),
     )
     .get(
       "/inquiries/detail",
-      ...api.route(
-        { response: StaffInquiryThread },
-        (request) =>
-          Effect.gen(function* handle() {
-            const { id } = yield* readSearchParams(InquiryQuery, request);
-            return yield* inquiryStaff.getInquiry(id);
-          }),
-        failures,
+      ...api.route({ failures, response: StaffInquiryThread }, (request) =>
+        Effect.gen(function* handle() {
+          const { id } = yield* readSearchParams(InquiryQuery, request);
+          return yield* inquiryStaff.getInquiry(id);
+        }),
       ),
     );
 }

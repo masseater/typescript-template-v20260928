@@ -21,9 +21,8 @@ describe("an api response behind a start server route", () => {
     Effect.runPromise(
       Effect.gen(function* encodedViewProgram() {
         const viewRoute = api.route(
-          { response: Schema.Struct({ id: Schema.String }) },
+          { failures: {}, response: Schema.Struct({ id: Schema.String }) },
           () => Effect.succeed({ id: "visible", profile: "x" }),
-          {},
         );
         const {
           handlers: { ANY: answerAny },
@@ -59,11 +58,13 @@ describe("an api route behind a start server route that fails unexpectedly", () 
     Effect.runPromise(
       Effect.gen(function* brokenStatusProgram() {
         const viewRoute = api.route(
-          { response: Schema.Struct({}) },
-          () => Effect.fail({ _tag: "Broken" } as const),
           {
-            Broken: "unexpected",
+            failures: {
+              Broken: "unexpected",
+            },
+            response: Schema.Struct({}),
           },
+          () => Effect.fail({ _tag: "Broken" } as const),
         );
         const {
           handlers: { ANY: answerAny },
@@ -85,9 +86,8 @@ describe("a HEAD request behind a start server route", () => {
     Effect.runPromise(
       Effect.gen(function* headStatusProgram() {
         const viewRoute = api.route(
-          { response: Schema.Struct({ id: Schema.String }) },
+          { failures: {}, response: Schema.Struct({ id: Schema.String }) },
           () => Effect.succeed({ id: "visible" }),
-          {},
         );
         const {
           handlers: { HEAD: answerHead },
@@ -108,7 +108,9 @@ describe("an unknown api path behind a start server route", () => {
   const it = test.extend("missingAnswer", () =>
     Effect.runPromise(
       Effect.gen(function* missingAnswerProgram() {
-        const viewRoute = api.route({ response: Schema.Struct({}) }, () => Effect.succeed({}), {});
+        const viewRoute = api.route({ failures: {}, response: Schema.Struct({}) }, () =>
+          Effect.succeed({}),
+        );
         const {
           handlers: { ANY: answerAny },
         } = elysiaServer(createApi("").get("/api/view", ...viewRoute));
