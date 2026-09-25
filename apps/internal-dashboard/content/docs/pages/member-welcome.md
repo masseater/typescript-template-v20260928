@@ -9,8 +9,10 @@ description: メール確認のあと、規約同意とプロフィールの作�
 | -------------------------- | -------------------- |
 | 過去のデータの復旧         | `/welcome/recovery`  |
 | 規約への同意               | `/welcome/agreement` |
-| プロフィールの作り方を選ぶ | `/welcome`           |
+| プロフィールの作り方を選ぶ | `/welcome/choose`    |
 | 基本項目の入力             | `/welcome/profile`   |
+
+`/welcome` はページを持たず、終えていない段階のページへ移る。登録を終えていればホーム（`/home`）へ移る。
 
 ## 過去のデータの復旧
 
@@ -31,7 +33,7 @@ description: メール確認のあと、規約同意とプロフィールの作�
 2. 利用規約とプライバシーポリシーへのリンク
 3. 「同意して続ける」ボタン
 
-同意したら `/welcome` へ移る。同意しない限り先に進めない。
+同意したら `/welcome/choose` へ移る。同意しない限り先に進めない。
 
 ## プロフィールの作り方を選ぶ
 
@@ -61,7 +63,7 @@ description: メール確認のあと、規約同意とプロフィールの作�
 ```mermaid
 flowchart TD
   login["ログイン"] --> agree["/welcome/agreement"]
-  agree --> choose["/welcome"]
+  agree --> choose["/welcome/choose"]
   choose -- 自分で入力する --> basic["/welcome/profile"]
   choose -- AI にインタビューしてもらう --> interview["/welcome/interview"]
   basic --> home["/home"]

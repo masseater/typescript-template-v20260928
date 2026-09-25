@@ -3,10 +3,11 @@ title: 利用者アプリのメッセージ
 description: 1 対 1 とグループの会話一覧と、会話の中で送受信するページ
 ---
 
-パスは 2 つある。どちらも [会員の枠](/pages/member-layout#会員の枠) に入る。
+パスは 3 つある。どれも [会員の枠](/pages/member-layout#会員の枠) に入る。
 
 - `/messages`: タブ「メッセージ」から開く一覧
-- `/messages/{id}`: 一覧・プロフィール・通知から開く会話
+- `/messages/{id}`: 一覧・通知から開く会話
+- `/messages/new?peer={相手の id}`: プロフィールの「メッセージを送る」から開く、最初のメッセージの入力
 
 無料の利用者が、まだやり取りの無い相手へ最初のメッセージを送ろうとしたときは [有料の案内](/pages/member-upgrade) へ移る。
 
@@ -39,7 +40,17 @@ description: 1 対 1 とグループの会話一覧と、会話の中で送受�
 - 下端: 入力欄と送信ボタン
 - 「情報」は `/groups/{id}` へ移る
 - ブロック中の相手には入力欄の代わりに、送れないことを出す
-- プロフィールの「メッセージを送る」から来て、まだ Conversation が無いときは、送信に成功した時点で Conversation を作る
+
+## 最初のメッセージ
+
+### 構成
+
+- 上端: 相手のユーザー名
+- 本体: 「メッセージ」の入力欄と「送信する」
+
+- 相手との Conversation が既にあれば、このページを出さずにその会話（`/messages/{id}`）へ移る
+- 送信に成功した時点で Conversation を作り、その会話へ移る
+- `peer` が無いか読めないときは一覧（`/messages`）へ移る
 
 ## 状態ごとの表示
 
@@ -56,8 +67,9 @@ description: 1 対 1 とグループの会話一覧と、会話の中で送受�
 ```mermaid
 flowchart TD
   list["/messages"] --> conversation["/messages/{id}"]
-  profile["/users/{id}"] -- メッセージを送る --> conversation
-  profile -- 無料の最初のメッセージ --> upgrade["/upgrade"]
+  profile["/users/{id}"] -- メッセージを送る --> compose["/messages/new"]
+  compose -- 会話がある・送信に成功 --> conversation
+  compose -- 無料の最初のメッセージ --> upgrade["/upgrade"]
   conversation -- グループの情報 --> group["/groups/{id}"]
   notifications["/notifications"] --> conversation
 ```

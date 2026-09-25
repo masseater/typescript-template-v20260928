@@ -3,7 +3,7 @@ title: 利用者アプリのレイアウト
 description: 利用者アプリの全ページが共有する枠と、ページの一覧、ページ間の遷移
 ---
 
-利用者アプリのページは、誰でも開ける公開の枠、登録の直後に通る登録の枠、ログインした利用者だけが使う会員の枠のどれか 1 つに入る。
+利用者アプリのページは、誰でも開ける公開の枠、登録の直後に通る登録の枠、ログインした利用者だけが使う会員の枠のどれか 1 つに入る。AI 連携の許可だけは、どの枠にも入らない。
 
 ## 公開の枠
 
@@ -39,13 +39,23 @@ description: 利用者アプリの全ページが共有する枠と、ページ�
 | ページ                     | パス                 |
 | -------------------------- | -------------------- |
 | 規約への同意               | `/welcome/agreement` |
-| プロフィールの作り方を選ぶ | `/welcome`           |
+| プロフィールの作り方を選ぶ | `/welcome/choose`    |
 | 基本項目の入力             | `/welcome/profile`   |
 | AI インタビュー            | `/welcome/interview` |
+
+- `/welcome` はページを持たず、終えていない段階のページへ移る
 
 - プロフィールの作り方は、「自分で入力する」か「AI にインタビューしてもらう」かを選ぶ
 - AI インタビューはいつでもスキップでき、スキップしたら空のプロフィールのままホームへ進む
 - 登録の途中でやめた利用者は、次にログインしたとき、終えていない段階から続ける
+
+## ナビゲーションを持たないページ
+
+| ページ        | パス       |
+| ------------- | ---------- |
+| AI 連携の許可 | `/consent` |
+
+- AI エージェントを `/mcp` の MCP サーバーに OAuth で接続するときに開く。エージェントが求めた範囲から渡す権限を選び、許可するか拒否する
 
 ## 会員の枠
 
@@ -72,7 +82,8 @@ description: 利用者アプリの全ページが共有する枠と、ページ�
 | 掲示板 | `/board` | タブ |
 | スレッド | `/board/{id}` | 掲示板・通知 |
 | メッセージ（1 対 1 とグループ） | `/messages` | タブ |
-| 会話 | `/messages/{id}` | メッセージ・プロフィール・通知 |
+| 会話 | `/messages/{id}` | メッセージ・通知 |
+| 最初のメッセージ | `/messages/new?peer={相手の id}` | プロフィール |
 | グループの情報と参加 | `/groups/{id}` | 会話・グループの招待のリンク |
 | 通知 | `/notifications` | タブ |
 | プロフィール | `/users/{id}` | ホーム・探す・スレッド・通知・アイコンのメニュー・共有されたリンク |
@@ -131,7 +142,7 @@ flowchart TD
   verify -- 成功 --> login
   login -- 登録の途中 --> step["終えていない段階のページ"]
   step --> agree["/welcome/agreement"]
-  agree --> choose{"/welcome"}
+  agree --> choose{"/welcome/choose"}
   choose -- 自分で入力する --> basic["/welcome/profile"]
   choose -- AI にインタビューしてもらう --> interview["/welcome/interview"]
   basic --> home["/home"]
@@ -153,8 +164,9 @@ flowchart TD
   search --> profile
   board --> thread["/board/{id}"]
   thread --> profile
-  profile -- メッセージを送る --> conversation["/messages/{id}"]
-  profile -- 無料の利用者が最初のメッセージを送る --> upgrade
+  profile -- メッセージを送る --> compose["/messages/new"]
+  compose -- 会話がある・送信に成功 --> conversation["/messages/{id}"]
+  compose -- 無料の利用者が最初のメッセージを送る --> upgrade
   messages --> conversation
   conversation --> group["/groups/{id}"]
   groupInvite(["グループの招待のリンク"]) --> group
