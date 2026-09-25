@@ -1,4 +1,4 @@
-export { meterAiTurn } from "./ai-metering.ts";
+export { meterAiTurn, resendUnreportedAiUsage } from "./ai-metering.ts";
 export { PaidAlready } from "./paid-already.ts";
 export { paidFailures } from "./paid-guard.ts";
 export { Stripe } from "./stripe.ts";

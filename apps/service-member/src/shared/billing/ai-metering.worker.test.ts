@@ -7,7 +7,7 @@ import { DateTime, Effect, Layer } from "effect";
 import { TestClock } from "effect/testing";
 import { HttpResponse, http } from "msw";
 
-import { meterAiTurn } from "./ai-metering.ts";
+import { meterAiTurn, resendUnreportedAiUsage } from "./ai-metering.ts";
 import { Stripe } from "./stripe.ts";
 
 import type { Scope } from "effect";
@@ -162,5 +162,51 @@ it.effect("a free member's turn is neither recorded nor sent", () =>
     const usage = yield* aiUsageSince({ memberId: "member", since: epoch });
     assert.strictEqual(sent.length, 0);
     assert.deepStrictEqual(usage, { events: 0, quantity: 0, unreported: 0 });
+  }).pipe(Effect.provide(TestDatabase)),
+);
+
+it.effect("usage refused on its turn reaches the meter from the scheduled resend", () =>
+  Effect.gen(function* program() {
+    const sent: URLSearchParams[] = [];
+    yield* addMember("member");
+    yield* subscribe("member");
+    const resent = yield* withStripeAnswering(
+      [503, 200],
+      sent,
+      Effect.gen(function* turnThenResend() {
+        yield* meterAiTurn({ identifier: "interview:member:1", memberId: "member" });
+        return yield* resendUnreportedAiUsage();
+      }),
+    );
+    const usage = yield* aiUsageSince({ memberId: "member", since: epoch });
+    assert.deepStrictEqual(
+      sent.map((form) => [form.get("identifier"), form.get("timestamp")]),
+      [
+        ["interview:member:1", "0"],
+        ["interview:member:1", "0"],
+      ],
+    );
+    assert.deepStrictEqual(resent, { resent: 1 });
+    assert.deepStrictEqual(usage, { events: 1, quantity: 1, unreported: 0 });
+  }).pipe(Effect.provide(TestDatabase)),
+);
+
+it.effect("a scheduled resend that Stripe refuses fails and keeps the usage unreported", () =>
+  Effect.gen(function* program() {
+    const sent: URLSearchParams[] = [];
+    yield* addMember("member");
+    yield* subscribe("member");
+    const resend = yield* withStripeAnswering(
+      [503],
+      sent,
+      Effect.gen(function* turnThenResend() {
+        yield* meterAiTurn({ identifier: "interview:member:1", memberId: "member" });
+        return yield* resendUnreportedAiUsage().pipe(Effect.flip);
+      }),
+    );
+    const usage = yield* aiUsageSince({ memberId: "member", since: epoch });
+    assert.strictEqual(resend._tag, "StripeFailure");
+    assert.strictEqual(sent.length, 2);
+    assert.deepStrictEqual(usage, { events: 1, quantity: 1, unreported: 1 });
   }).pipe(Effect.provide(TestDatabase)),
 );

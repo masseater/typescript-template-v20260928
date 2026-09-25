@@ -1,7 +1,7 @@
 import { and, asc, count, eq, gte, isNull, sum } from "drizzle-orm";
 import { Effect } from "effect";
 
-import { aiUsageEvent } from "./billing-schema.ts";
+import { aiUsageEvent, planSubscription } from "./billing-schema.ts";
 import { clockDate } from "./clock-date.ts";
 import { query } from "./database.ts";
 
@@ -53,6 +53,24 @@ const unreportedAiUsage = Effect.fn("unreportedAiUsage")(function* unreportedAiU
   );
 });
 
+const unreportedSubscriberAiUsage = Effect.fn("unreportedSubscriberAiUsage")(
+  function* unreportedSubscriberAiUsage(since: Date) {
+    return yield* query((database) =>
+      database
+        .select({
+          customerId: planSubscription.stripeCustomerId,
+          identifier: aiUsageEvent.identifier,
+          occurredAt: aiUsageEvent.occurredAt,
+          quantity: aiUsageEvent.quantity,
+        })
+        .from(aiUsageEvent)
+        .innerJoin(planSubscription, eq(planSubscription.memberId, aiUsageEvent.memberId))
+        .where(and(gte(aiUsageEvent.occurredAt, since), isNull(aiUsageEvent.reportedAt)))
+        .orderBy(asc(aiUsageEvent.occurredAt)),
+    );
+  },
+);
+
 const aiUsageSince = Effect.fn("aiUsageSince")(function* aiUsageSince(
   member: Readonly<{ memberId: string; since: Date }>,
 ) {
@@ -83,4 +101,10 @@ const aiUsageSince = Effect.fn("aiUsageSince")(function* aiUsageSince(
   };
 });
 
-export { aiUsageSince, markAiUsageReported, recordAiUsage, unreportedAiUsage };
+export {
+  aiUsageSince,
+  markAiUsageReported,
+  recordAiUsage,
+  unreportedAiUsage,
+  unreportedSubscriberAiUsage,
+};

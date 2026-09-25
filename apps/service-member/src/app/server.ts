@@ -6,6 +6,7 @@ import { env } from "cloudflare:workers";
 import { Effect, DateTime } from "effect";
 
 import { paraglideMiddleware } from "#paraglide/server.js";
+import { resendUnreportedAiUsage } from "#shared/billing/index.ts";
 import { UserInbox } from "#shared/inbox/index.ts";
 import { Process } from "#shared/jobs/index.ts";
 import { purgeWithdrawnWithPhotos } from "#shared/photo/index.ts";
@@ -49,5 +50,6 @@ export default {
         }),
       ),
     );
+    context.waitUntil(runtime.runPromise(resendUnreportedAiUsage()));
   },
 };
