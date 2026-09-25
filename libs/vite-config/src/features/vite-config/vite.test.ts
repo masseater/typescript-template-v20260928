@@ -165,7 +165,7 @@ describe("paraglideAppRun", () => {
     .extend("localizedApplicationRun", () => paraglideAppRun(applicationRoot))
     .extend("applicationRun", () => appRun(applicationRoot));
 
-  it("compiles message catalogs before typecheck and the workspace checks", ({
+  it("compiles message catalogs before typecheck and the workspace checks, and reruns the typecheck when a catalog or the inlang settings change", ({
     applicationRun,
     localizedApplicationRun,
   }) => {
@@ -174,6 +174,11 @@ describe("paraglideAppRun", () => {
         ...applicationRun.tasks,
         "check:effect": {
           ...awaitingEffectDiagnostics(applicationRoot)["check:effect"],
+          input: [
+            ...awaitingEffectDiagnostics(applicationRoot)["check:effect"].input,
+            { base: "package", pattern: "messages/**" },
+            { base: "package", pattern: "project.inlang/settings.json" },
+          ],
           dependsOn: ["typescript-template#compile:paraglide"],
         },
         "check:code": {

@@ -5,4 +5,9 @@ const taskInput = [
   { base: "workspace", pattern: "!**/node_modules/.cache/**" },
 ] as const;
 
-export { taskInput };
+const dependencyManifests = [
+  { base: "workspace", pattern: "pnpm-lock.yaml" },
+  { base: "workspace", pattern: "pnpm-workspace.yaml" },
+] as const;
+
+export { dependencyManifests, taskInput };

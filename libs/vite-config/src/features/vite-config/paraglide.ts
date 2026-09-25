@@ -21,6 +21,8 @@ const withoutInlangState = [
   "!project.inlang/.lix/**",
 ] as const;
 
+const paraglideSources = ["messages/**", "project.inlang/settings.json"] as const;
+
 const compileWorkspaceScript = paths
   .relative(
     repositoryRoot,
@@ -34,8 +36,7 @@ const workspaceParaglideCompile = {
     ...taskInput,
     ...localizedApps.flatMap((app) =>
       [
-        `apps/${app}/messages/**`,
-        `apps/${app}/project.inlang/settings.json`,
+        ...paraglideSources.map((source) => `apps/${app}/${source}`),
         `!apps/${app}`,
         `!apps/${app}/project.inlang`,
         `!apps/${app}/.paraglide/**`,
@@ -58,6 +59,7 @@ const workspaceParaglideCompile = {
 export {
   paraglideAppPlugin,
   paraglideCompileOptions,
+  paraglideSources,
   paraglideStrategy,
   withoutInlangState,
   workspaceParaglideCompile,

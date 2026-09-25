@@ -23,7 +23,7 @@ describe("effectDiagnostics", () => {
     .extend("rootDiagnostics", () => effectDiagnostics(repositoryRoot))
     .extend("repositoryRanges", () => Effect.runPromise(workspaceDependencyRanges(repositoryRoot)));
 
-  it("names the files of the package and of every workspace package it depends on, without the package root listing", ({
+  it("names the lockfile, the workspace catalog, and the files of the package and of every workspace package it depends on, without the package root listing", ({
     libraryDiagnostics,
     repositoryRanges,
   }) => {
@@ -33,6 +33,8 @@ describe("effectDiagnostics", () => {
         env: [...telemetryEnv],
         input: [
           ...taskInput,
+          { base: "workspace", pattern: "pnpm-lock.yaml" },
+          { base: "workspace", pattern: "pnpm-workspace.yaml" },
           ...(repositoryRanges.get("libs/db-local") ?? []).flatMap((directory) => [
             { base: "workspace", pattern: `${directory}/**/*.{ts,tsx}` },
             { base: "workspace", pattern: `${directory}/**/package.json` },
@@ -55,6 +57,8 @@ describe("effectDiagnostics", () => {
         env: [...telemetryEnv],
         input: [
           ...taskInput,
+          { base: "workspace", pattern: "pnpm-lock.yaml" },
+          { base: "workspace", pattern: "pnpm-workspace.yaml" },
           { base: "workspace", pattern: "**/*.{ts,tsx}" },
           { base: "workspace", pattern: "**/package.json" },
           { base: "workspace", pattern: "**/tsconfig*.json" },

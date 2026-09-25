@@ -1,5 +1,5 @@
 import { measured, type Tasks } from "./run-config.ts";
-import { taskInput } from "./task-input.ts";
+import { dependencyManifests, taskInput } from "./task-input.ts";
 
 const testRun = measured({
   test: {
@@ -8,8 +8,7 @@ const testRun = measured({
       ...taskInput,
       "!coverage/**",
       { base: "workspace", pattern: "!**/coverage/**" },
-      { base: "workspace", pattern: "pnpm-lock.yaml" },
-      { base: "workspace", pattern: "pnpm-workspace.yaml" },
+      ...dependencyManifests,
     ],
     output: [],
   },
