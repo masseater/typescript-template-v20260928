@@ -5,6 +5,7 @@
   "exports": {
     ".": "./src/features/config/index.ts",
     "./local-database-path": "./src/features/config/local-database-path.ts",
+    "./optional-config": "./src/features/config/optional-config.ts",
     "./realtime": "./src/features/config/realtime.ts",
     "./repository-root": "./src/features/config/repository-root.ts",
     "./paging": "./src/features/config/paging.ts",

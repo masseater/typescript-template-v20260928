@@ -1,4 +1,5 @@
-import { Config, Context, Effect, Layer, Option, Schema, Stream } from "effect";
+import { optionalConfig } from "@repo/config/optional-config";
+import { Config, Context, Effect, Layer, Schema, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
 import { gitExecutablePath } from "../repository-checks/index.ts";
@@ -102,8 +103,8 @@ export const gitEnvironmentLayer: Layer.Layer<
 > = Layer.effect(
   GitEnvironment,
   Effect.gen(function* repositoryAgnosticEnvironment() {
-    const searchPath = yield* Effect.orDie(Config.option(Config.String("PATH")));
-    const executable = gitExecutablePath(Option.getOrUndefined(searchPath));
+    const searchPath = yield* Effect.orDie(optionalConfig(Config.String("PATH")));
+    const executable = gitExecutablePath(searchPath);
     const listed = yield* spawnedGit({
       executable,
       variables: {},

@@ -1,3 +1,4 @@
+import { optionalConfig } from "@repo/config/optional-config";
 import { Config, Effect, Layer, Option, Schema } from "effect";
 import { FetchHttpClient } from "effect/unstable/http";
 
@@ -39,7 +40,7 @@ const checkedProblems = Effect.fn("checkedProblems")(function* checkedProblems({
   repositoryRoot,
 }: StopAiSlopOptions) {
   const comparison = yield* resolvedComparison(repositoryRoot, {
-    repository: Option.getOrUndefined(yield* Config.option(Config.String("GITHUB_REPOSITORY"))),
+    repository: yield* optionalConfig(Config.String("GITHUB_REPOSITORY")),
     api: yield* gitHubApiFromEnvironment,
   });
   return yield* failingWhenThrown(() => runChecks({ comparison }), Schema.is(SourceUnparsable));

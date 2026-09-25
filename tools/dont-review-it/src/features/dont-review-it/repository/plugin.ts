@@ -17,6 +17,7 @@ import { lazyMotionVisitor } from "./lazy-motion.ts";
 import { filename, reportViolation, type LintContext, type Node } from "./lint-context.ts";
 import { modularImportsVisitor } from "./modular-imports.ts";
 import { modularLayersVisitor } from "./modular-layers.ts";
+import { optionalConfigImport, optionalConfigVisitor } from "./optional-config.ts";
 import {
   cliImplementation,
   exitCodeImplementation,
@@ -372,6 +373,12 @@ const projectPlugin = definePlugin({
       create: memoizationVisitor,
       meta: metadata(
         "手作業のメモ化は禁止です。React Compiler が最適化するので useMemo・useCallback・React.memo は別名や分割代入も含めて使わず、素の値と関数宣言のまま書いてください。",
+      ),
+    },
+    "optional-config": {
+      create: optionalConfigVisitor,
+      meta: metadata(
+        `未設定を undefined にする Config を書き直せません。Config.option の結果を Option.getOrUndefined で剥がすと、同じ振る舞いの持ち主が増えます。${optionalConfigImport} の optionalConfig を import して使ってください。`,
       ),
     },
     "process-boundary": {

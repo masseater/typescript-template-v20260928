@@ -1,6 +1,7 @@
 import { GoogleAnalyticsMeasurementId, readWikiPublishConfig, wikiPublishKey } from "@repo/config";
+import { optionalConfig } from "@repo/config/optional-config";
 import { deploymentKey } from "@repo/observability/deployment-keys";
-import { Config, Effect, Option, Redacted, Schema } from "effect";
+import { Config, Effect, Redacted, Schema } from "effect";
 
 import {
   AuthSecret,
@@ -15,10 +16,6 @@ import {
   deriveOrigins,
 } from "./config.ts";
 
-function optional<Value>(config: Config.Config<Value>): Config.Config<Value | undefined> {
-  return Config.option(config).pipe(Config.map(Option.getOrUndefined));
-}
-
 const budget = Config.all({
   budgetJpy: Config.schema(Positive, deploymentKey.budgetJpy),
   recipients: Config.Array(Email, deploymentKey.alertEmail).pipe(
@@ -30,11 +27,11 @@ const budget = Config.all({
   ),
 });
 
-const otlpDestination = optional(Config.schema(HttpsUrl, deploymentKey.otlpEndpoint)).pipe(
+const otlpDestination = optionalConfig(Config.schema(HttpsUrl, deploymentKey.otlpEndpoint)).pipe(
   Config.map((endpoint) => (endpoint === undefined ? undefined : { endpoint })),
 );
 
-const googleAnalyticsMeasurementId = optional(
+const googleAnalyticsMeasurementId = optionalConfig(
   Config.schema(GoogleAnalyticsMeasurementId, deploymentKey.googleAnalyticsMeasurementId),
 );
 
@@ -59,7 +56,7 @@ const authSecret = Config.schema(AuthSecret, deploymentKey.authSecret).pipe(
   Config.map(Redacted.make),
 );
 
-const otlpAuthorization = optional(Config.Redacted(deploymentKey.otlpAuthorization));
+const otlpAuthorization = optionalConfig(Config.Redacted(deploymentKey.otlpAuthorization));
 
 const StripeSandboxKey = Schema.String.check(Schema.isPattern(/^(?:sk|rk)_test_[A-Za-z0-9]+$/u));
 
@@ -68,9 +65,9 @@ const stripeSandboxKey = Config.schema(StripeSandboxKey, deploymentKey.stripeSec
 );
 
 const wikiPublishSettings = Config.all({
-  appId: optional(Config.String(deploymentKey.wikiPublishAppId)),
-  privateKey: optional(Config.Redacted(deploymentKey.wikiPublishPrivateKey)),
-  repository: optional(Config.String(deploymentKey.wikiPublishRepository)),
+  appId: optionalConfig(Config.String(deploymentKey.wikiPublishAppId)),
+  privateKey: optionalConfig(Config.Redacted(deploymentKey.wikiPublishPrivateKey)),
+  repository: optionalConfig(Config.String(deploymentKey.wikiPublishRepository)),
 }).pipe(
   Effect.flatMap(({ appId, privateKey, repository }) =>
     readWikiPublishConfig(

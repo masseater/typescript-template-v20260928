@@ -1,5 +1,6 @@
 import { APPLICATION, applicationOrigins, mailpitOrigin } from "@repo/config";
-import { Config, ConfigProvider, Effect, Option, Schema } from "effect";
+import { optionalConfig } from "@repo/config/optional-config";
+import { Config, ConfigProvider, Effect, Schema } from "effect";
 
 import { failure, type VerifyCommandFailure } from "./failure.ts";
 
@@ -20,9 +21,8 @@ type ResolvedVerifyEnvironment = {
 
 const readOptionalEnv = (envKey: string): string | undefined =>
   Effect.runSync(
-    Config.option(Config.String(envKey)).pipe(
+    optionalConfig(Config.String(envKey)).pipe(
       Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv()),
-      Effect.map(Option.getOrUndefined),
     ),
   );
 

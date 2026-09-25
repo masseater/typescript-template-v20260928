@@ -6,6 +6,7 @@ import {
   type Application,
   type AssetFetcher,
 } from "@repo/config";
+import { optionalConfig } from "@repo/config/optional-config";
 import { readOptionalStorage, readStorage } from "@repo/config/storage";
 import { Config, Effect, Layer, Option, Redacted } from "effect";
 import {
@@ -67,9 +68,7 @@ const loadedBinding = Effect.gen(function* loadedBinding() {
   const database = yield* WorkerDatabase;
   const assets = yield* WorkerAssets;
   const secret = yield* Config.Redacted("AUTH_SECRET");
-  const authorization = Option.getOrUndefined(
-    yield* Config.option(Config.Redacted("OTLP_AUTHORIZATION")),
-  );
+  const authorization = yield* optionalConfig(Config.Redacted("OTLP_AUTHORIZATION"));
   const email = yield* Effect.serviceOption(OutboundEmail);
   const model = yield* Effect.serviceOption(WorkersModel);
   return {
