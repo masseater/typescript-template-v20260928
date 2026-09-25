@@ -34,7 +34,7 @@ import type { Database } from "@repo/db";
 import type { AuthFailure } from "./auth-failure.ts";
 
 const PASSWORD = "test-password-safe-123";
-const authTestSecret = "integration-test-secret-at-least-32-characters-long";
+const authTestSecret = "integration-test-secret-of-at-least-32-characters-0123456789";
 
 class AuthApps extends Context.Service<AuthApps, Readonly<Record<Application, Auth["Service"]>>>()(
   "@repo/auth/AuthApps",
