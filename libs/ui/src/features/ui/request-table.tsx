@@ -1,6 +1,5 @@
+import { fetchedFailure, settledData, type FetchedValue } from "./fetched-value";
 import { LoadingRow } from "./loading-row";
-import { resultError } from "./request";
-import { settledValue, type ListedValue } from "./request-value";
 import { RetryableFailure } from "./retryable-failure";
 import { Table } from "./shared/ui/table";
 import { TableBody } from "./shared/ui/table-body";
@@ -10,18 +9,18 @@ import { TableRow } from "./shared/ui/table-row";
 
 import type { ReactElement } from "react";
 
-const RequestTable = <Listing extends object>({
+const RequestTable = <Listed,>({
   columns,
   listing,
   onReload,
   row,
 }: Readonly<{
   columns: readonly string[];
-  listing: Listing;
+  listing: FetchedValue<readonly Listed[]>;
   onReload: () => void;
-  row: (listed: ListedValue<Listing>) => ReactElement;
+  row: (listed: Listed) => ReactElement;
 }>): ReactElement => {
-  const failure = resultError(listing);
+  const failure = fetchedFailure(listing);
   if (failure !== undefined) {
     return (
       <RetryableFailure onRetry={onReload}>
@@ -30,7 +29,7 @@ const RequestTable = <Listing extends object>({
       </RetryableFailure>
     );
   }
-  const loaded = settledValue(listing) as readonly ListedValue<Listing>[] | undefined;
+  const loaded = settledData(listing);
   return (
     <Table>
       <TableHeader>

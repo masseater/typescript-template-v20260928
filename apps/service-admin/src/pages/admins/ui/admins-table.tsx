@@ -1,4 +1,4 @@
-import { RequestTable, type RequestResult } from "@repo/ui";
+import { RequestTable, type FetchedValue } from "@repo/ui";
 
 import { adminsTableColumns } from "#pages/admins/model/admin-labels.ts";
 import { AdminRow } from "./admin-row.tsx";
@@ -10,7 +10,7 @@ function AdminsTable({
   listing,
   onReload,
 }: Readonly<{
-  listing: RequestResult<readonly ListedAdmin[]>;
+  listing: FetchedValue<readonly ListedAdmin[]>;
   onReload: () => void;
 }>): ReactElement {
   return (

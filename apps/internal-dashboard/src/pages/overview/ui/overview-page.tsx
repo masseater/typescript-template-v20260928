@@ -1,13 +1,13 @@
-import { resultError, resultValue } from "@repo/ui";
+import { useQuery } from "@tanstack/react-query";
 
-import { useOverview } from "#pages/overview/model/overview.ts";
+import { overviewOptions } from "#pages/overview/api/overview.ts";
 import { OverviewView } from "./overview-view.tsx";
 
 import type { ReactElement } from "react";
 
 function OverviewPage(): ReactElement {
-  const listing = useOverview();
-  return <OverviewView error={resultError(listing)} overview={resultValue(listing)} />;
+  const overview = useQuery(overviewOptions);
+  return <OverviewView error={overview.error?.message} overview={overview.data} />;
 }
 
 export { OverviewPage };

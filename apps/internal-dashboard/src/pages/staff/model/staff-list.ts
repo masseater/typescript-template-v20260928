@@ -1,43 +1,20 @@
-import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
-import { errorMessage } from "@repo/auth-ui";
-import { apiData } from "@repo/runtime/client";
-import { formatWarekiDate, requestAtom, type RequestResult } from "@repo/ui";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { wikiClient } from "#shared/api/index.ts";
-import { StaffList } from "#shared/contracts/index.ts";
+import { staffListOptions } from "#pages/staff/api/staff.ts";
 
-type StaffSummary = (typeof StaffList.Type)[number];
-
-interface ListedStaff {
-  readonly email: string;
-  readonly id: string;
-  readonly name: string;
-  readonly permission?: StaffSummary["permission"];
-  readonly registeredOn: string;
-}
-
-function listStaff(): Promise<readonly ListedStaff[]> {
-  return Promise.resolve(wikiClient())
-    .then(({ api }) => api.staff.get())
-    .then((response) => {
-      const staff = apiData(StaffList, response);
-      return staff.map(({ createdAt, ...member }) => ({
-        ...member,
-        registeredOn: formatWarekiDate(createdAt),
-      }));
-    })
-    .catch((failure: unknown) => {
-      throw new Error(errorMessage(failure));
-    });
-}
-
-const staffListAtom = requestAtom(() => listStaff());
+import type { ListedStaff } from "#pages/staff/api/staff.ts";
+import type { FetchedValue } from "@repo/ui";
 
 function useStaffList(): Readonly<{
-  listing: RequestResult<readonly ListedStaff[]>;
+  listing: FetchedValue<readonly ListedStaff[]>;
   reload: () => void;
 }> {
-  return { listing: useAtomValue(staffListAtom), reload: useAtomRefresh(staffListAtom) };
+  const queries = useQueryClient();
+  const listing = useQuery(staffListOptions);
+  function reload(): void {
+    void queries.invalidateQueries({ queryKey: staffListOptions.queryKey });
+  }
+  return { listing, reload };
 }
 
 export { useStaffList };

@@ -1,30 +1,16 @@
 import { CheckboxField, STATUS_VARIANT, StatusMessage, useAction } from "@repo/ui";
-import { Effect } from "effect";
+
+import { toggleFlag } from "#pages/flags/api/flags.ts";
 
 import type { FlagEntry } from "#shared/contracts/index.ts";
 import type { ReactElement } from "react";
 
-function toggleFlag(
-  onToggle: (key: FlagEntry["key"], enabled: boolean) => Promise<string | undefined>,
-  key: FlagEntry["key"],
-  enabled: boolean,
-): Promise<void> {
-  return Effect.runPromise(
-    Effect.gen(function* toggleRow() {
-      const message = yield* Effect.promise(() => onToggle(key, enabled));
-      if (message !== undefined) {
-        throw new Error(message);
-      }
-    }),
-  );
-}
-
 function FlagRow({
   entry,
-  onToggle,
+  onToggled,
 }: Readonly<{
   entry: FlagEntry;
-  onToggle: (key: FlagEntry["key"], enabled: boolean) => Promise<string | undefined>;
+  onToggled: () => Promise<void>;
 }>): ReactElement {
   const action = useAction();
 
@@ -42,7 +28,7 @@ function FlagRow({
           label={entry.enabled ? "オン" : "オフ"}
           name={`flag-${String(entry.key)}`}
           onCheckedChange={(checked) => {
-            action.run(() => toggleFlag(onToggle, entry.key, checked === true));
+            action.run(() => toggleFlag(entry.key, checked === true).then(onToggled));
           }}
         />
       </div>

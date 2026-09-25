@@ -9,12 +9,12 @@ function FlagsView({
   failure,
   flags,
   onReload,
-  onToggle,
+  onToggled,
 }: Readonly<{
   failure: string | undefined;
   flags: readonly FlagEntry[] | undefined;
   onReload: () => void;
-  onToggle: (key: FlagEntry["key"], enabled: boolean) => Promise<string | undefined>;
+  onToggled: () => Promise<void>;
 }>): ReactElement {
   return (
     <Page title="機能フラグ">
@@ -40,7 +40,7 @@ function FlagsView({
       {flags === undefined ? null : (
         <div className="flex flex-col gap-3">
           {flags.map((entry) => (
-            <FlagRow key={entry.key} entry={entry} onToggle={onToggle} />
+            <FlagRow key={entry.key} entry={entry} onToggled={onToggled} />
           ))}
         </div>
       )}
