@@ -10,10 +10,10 @@ function loadMember(id: string): Promise<Member> {
   return Promise.resolve(userClient()).then(({ api }) =>
     api.member.get({ query: { id } }).then((response) => {
       const member = apiDataOrNoneFor(absent.notFound)(MemberView, response);
-      if (member == null) {
+      if (member === undefined) {
         throw notFound();
       }
-      return member as Member;
+      return member;
     }),
   );
 }
