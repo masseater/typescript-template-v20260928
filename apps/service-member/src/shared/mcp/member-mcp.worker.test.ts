@@ -2,7 +2,7 @@ import { Auth } from "@repo/auth";
 import { AuthApps, authTest, authTestSecret, runWith } from "@repo/auth/testing";
 import { APPLICATION, MEMBER_MCP_SCOPE, SUBSCRIPTION_STATUS, httpStatus } from "@repo/config";
 import { eq, query, recordSubscription, schema } from "@repo/db";
-import { unavailable } from "@repo/runtime/account";
+import { mcpFailures } from "@repo/runtime/account";
 import { appLayer } from "@repo/runtime/bindings";
 import { apiRoutes, createApi } from "@repo/runtime/http";
 import { appEnvironment } from "@repo/runtime/testing";
@@ -61,7 +61,7 @@ function memberMcpApp(auth: Parameters<typeof runWith>[0]): {
     ),
   );
   const api = apiRoutes(runtime, reporting);
-  const app = createApi("").all("/mcp", ...api.raw(serveMcp, unavailable));
+  const app = createApi("").all("/mcp", ...api.raw(serveMcp, mcpFailures));
   const fetchMcp = (request: Request): Effect.Effect<Response, never, never> =>
     Effect.promise(() => Promise.resolve(app.fetch(request)));
   return {

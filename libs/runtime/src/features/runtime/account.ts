@@ -95,6 +95,14 @@ const privileged = {
 
 const inviteFailures = { ...unavailable, InviteRejected: inviteRejected };
 
+const mcpFailures = {
+  ...unavailable,
+  JwksUnavailable: {
+    message: "認可サーバーの公開鍵を取得できません。",
+    status: httpStatus.serviceUnavailable,
+  },
+} as const;
+
 const openInvite = Effect.fn("openInvite")(function* openInvite(
   _request: Request,
   query: { readonly token: string },
@@ -168,6 +176,7 @@ export {
   databaseUnavailable,
   forbidden,
   inviteApi,
+  mcpFailures,
   privileged,
   sessionApi,
   sessionFailures,

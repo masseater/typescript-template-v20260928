@@ -1,5 +1,5 @@
 import { handleAuthRequest } from "@repo/auth";
-import { unavailable } from "@repo/runtime/account";
+import { mcpFailures, unavailable } from "@repo/runtime/account";
 import { apiRoutes, createApi } from "@repo/runtime/http";
 
 import { serveMcp } from "#shared/mcp/index.ts";
@@ -11,7 +11,7 @@ const api = apiRoutes(runtime, reporting);
 const userApi = memberApi(api);
 
 const memberProtocol = createApi("")
-  .all("/mcp", ...api.raw(serveMcp, unavailable))
+  .all("/mcp", ...api.raw(serveMcp, mcpFailures))
   .all("/.well-known/oauth-*", ...api.raw(handleAuthRequest, unavailable));
 
 export { memberProtocol, userApi, userApi as app };

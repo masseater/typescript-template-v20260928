@@ -1,9 +1,11 @@
-import { APPLICATION, ROLE, memberApiKeyReadPermissions } from "@repo/config";
+import { APPLICATION, ROLE, memberApiKeyHeader, memberApiKeyReadPermissions } from "@repo/config";
 import { query, schema } from "@repo/db";
 import { DateTime, Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 
+import { Auth } from "./auth.ts";
 import { AuthApps, authTest, registerVerified, runWith, signInAs } from "./index-test-fixture.ts";
+import { verifyMemberApiKey } from "./member-api-key.ts";
 
 const { apikey, user } = schema;
 
@@ -94,5 +96,73 @@ describe("an api key revoked by its member", () => {
 
   it("verifies until it is revoked", ({ keyValidity }) => {
     expect(keyValidity).toStrictEqual({ afterRevocation: false, beforeRevocation: true });
+  });
+});
+
+describe("an api key that the member app does not know", () => {
+  const it = authTest.extend("theUnknownKeyFailure", ({ auth }) =>
+    runWith(auth, () =>
+      Effect.gen(function* verifyUnknownKey() {
+        const member = (yield* AuthApps)[APPLICATION.user];
+        return yield* verifyMemberApiKey(new Headers({ [memberApiKeyHeader]: "unknown-key" })).pipe(
+          Effect.provideService(Auth, member),
+          Effect.as("verified"),
+          Effect.catchTag("SessionRequired", (required) => Effect.succeed(required._tag)),
+        );
+      }),
+    ),
+  );
+
+  it("requires a session", ({ theUnknownKeyFailure }) => {
+    expect(theUnknownKeyFailure).toBe("SessionRequired");
+  });
+});
+
+describe("an api key presented to an app without the api key plugin", () => {
+  const it = authTest.extend("thePluginFailure", ({ auth }) =>
+    runWith(auth, () =>
+      Effect.gen(function* verifyWithoutPlugin() {
+        const admin = (yield* AuthApps)[APPLICATION.admin];
+        return yield* verifyMemberApiKey(new Headers({ [memberApiKeyHeader]: "any-key" })).pipe(
+          Effect.provideService(Auth, admin),
+          Effect.as("verified"),
+          Effect.catchTag("ConfigurationInvalid", (invalid) => Effect.succeed(invalid._tag)),
+        );
+      }),
+    ),
+  );
+
+  it("fails as an invalid configuration", ({ thePluginFailure }) => {
+    expect(thePluginFailure).toBe("ConfigurationInvalid");
+  });
+});
+
+describe("an api key verification that rejects", () => {
+  const it = authTest.extend("theRejectedVerification", ({ auth }) =>
+    runWith(auth, () =>
+      Effect.gen(function* verifyWithRejection() {
+        const member = (yield* AuthApps)[APPLICATION.user];
+        const rejectingMember = {
+          ...member,
+          instance: {
+            ...member.instance,
+            api: {
+              ...member.instance.api,
+              verifyApiKey: (): Promise<never> =>
+                Promise.reject(new Error("api key store unavailable")),
+            },
+          },
+        };
+        return yield* verifyMemberApiKey(new Headers({ [memberApiKeyHeader]: "any-key" })).pipe(
+          Effect.provideService(Auth, rejectingMember),
+          Effect.as("verified"),
+          Effect.catchTag("AuthFailure", (failure) => Effect.succeed(failure.cause)),
+        );
+      }),
+    ),
+  );
+
+  it("fails as an auth failure carrying the rejection", ({ theRejectedVerification }) => {
+    expect(theRejectedVerification).toStrictEqual(new Error("api key store unavailable"));
   });
 });

@@ -15,7 +15,7 @@ import {
 import { APPLICATION, httpStatus } from "@repo/config";
 import { ADMIN_PERMISSION } from "@repo/config/identity";
 import { addUser, auditActionsOf } from "@repo/db/testing";
-import { unavailable } from "@repo/runtime/account";
+import { mcpFailures } from "@repo/runtime/account";
 import { appLayer } from "@repo/runtime/bindings";
 import { apiRoutes, createApi } from "@repo/runtime/http";
 import { appEnvironment } from "@repo/runtime/testing";
@@ -67,7 +67,7 @@ function adminMcpApp(auth: Parameters<typeof runWith>[0]): {
     ),
   );
   const api = apiRoutes(runtime, reporting);
-  const app = createApi("").all("/mcp", ...api.raw(serveMcp, unavailable));
+  const app = createApi("").all("/mcp", ...api.raw(serveMcp, mcpFailures));
   const fetchMcp = (request: Request): Effect.Effect<Response, never, never> =>
     Effect.promise(() => Promise.resolve(app.fetch(request)));
   return { fetchMcp, stop: Effect.promise(() => runtime.dispose()) };

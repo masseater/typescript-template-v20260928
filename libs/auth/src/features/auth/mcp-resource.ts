@@ -3,7 +3,7 @@ import { httpStatus } from "@repo/config";
 import { APIError } from "better-auth/api";
 import { createInsufficientScopeError, verifyJwsAccessToken } from "better-auth/oauth2";
 import { APIError as ChallengeError } from "better-call";
-import { Effect, Option, Schema } from "effect";
+import { Effect, Option, Result, Schema } from "effect";
 
 import { Auth } from "./auth.ts";
 import { JwksUnavailable } from "./jwks-unavailable.ts";
@@ -92,27 +92,33 @@ const publishedJwks = (
       return yield* new JwksUnavailable();
     }
     const published: unknown = yield* Effect.tryPromise({
-      catch: () => new JwksUnavailable(),
+      catch: (cause) => new JwksUnavailable({ cause }),
       try: () => Promise.resolve(handler(new Request(`${origin}/api/auth/jwks`))),
     });
     if (!(published instanceof Response) || !published.ok) {
       return yield* new JwksUnavailable();
     }
     const keySet: unknown = yield* Effect.tryPromise({
-      catch: () => new JwksUnavailable(),
+      catch: (cause) => new JwksUnavailable({ cause }),
       try: () => published.json(),
     });
     return yield* Schema.decodeUnknownEffect(Jwks)(keySet).pipe(
-      Effect.mapError(() => new JwksUnavailable()),
+      Effect.mapError((cause) => new JwksUnavailable({ cause })),
     );
   });
+
+const isJwksUnavailable = Schema.is(JwksUnavailable);
 
 const verifiedClaims = (
   issuer: ResourceAuth,
   presented: Readonly<{ origin: string; token: string }>,
-): Effect.Effect<Readonly<Awaited<ReturnType<typeof verifyJwsAccessToken>>>, APIError> =>
+): Effect.Effect<
+  Result.Result<Readonly<Awaited<ReturnType<typeof verifyJwsAccessToken>>>, APIError>,
+  JwksUnavailable
+> =>
   Effect.tryPromise({
-    catch: () => mcpUnauthorized("ACCESS_TOKEN_INVALID"),
+    catch: (rejected) =>
+      isJwksUnavailable(rejected) ? rejected : mcpUnauthorized("ACCESS_TOKEN_INVALID"),
     try: () =>
       verifyJwsAccessToken(presented.token, {
         jwksCacheKey: issuer,
@@ -122,7 +128,13 @@ const verifiedClaims = (
           issuer: `${presented.origin}/api/auth`,
         },
       }),
-  });
+  }).pipe(
+    Effect.map(Result.succeed),
+    Effect.catchIf(
+      (rejected): rejected is APIError => rejected instanceof APIError,
+      (rejected) => Effect.succeed(Result.fail(rejected)),
+    ),
+  );
 
 const authorizedActor = <Actor, Failure, Requirements>(
   issuer: ResourceAuth,
@@ -131,12 +143,13 @@ const authorizedActor = <Actor, Failure, Requirements>(
     resource: McpResource;
     token: string;
   }>,
-): Effect.Effect<Actor | Response, Failure, Requirements> =>
+): Effect.Effect<Actor | Response, Failure | JwksUnavailable, Requirements> =>
   Effect.gen(function* authorizedActor() {
     const { policy, resource } = presented;
-    const claims = yield* Effect.result(
-      verifiedClaims(issuer, { origin: resource.origin, token: presented.token }),
-    );
+    const claims = yield* verifiedClaims(issuer, {
+      origin: resource.origin,
+      token: presented.token,
+    });
     if (claims._tag === "Failure") {
       return challengeResponse(claims.failure, resource);
     }
@@ -153,7 +166,7 @@ const mcpAuthorizer = <Actor, Failure, Requirements>(
 ): ((
   incoming: Readonly<{ headers: Readonly<Pick<Headers, "get">> }>,
   origin: string,
-) => Effect.Effect<Actor | Response, Failure, Requirements | Auth>) =>
+) => Effect.Effect<Actor | Response, Failure | JwksUnavailable, Requirements | Auth>) =>
   Effect.fn("authorizeMcpRequest")(function* authorizeMcpRequest(incoming, origin) {
     const resource = { challengeScopes: policy.challengeScopes, origin };
     const token = bearerToken(incoming.headers.get("authorization") ?? "");

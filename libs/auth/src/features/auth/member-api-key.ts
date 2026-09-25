@@ -1,8 +1,14 @@
-import { httpStatus, memberApiKeyHeader, memberApiKeyReadPermissions } from "@repo/config";
+import {
+  ConfigurationInvalid,
+  httpStatus,
+  memberApiKeyHeader,
+  memberApiKeyReadPermissions,
+} from "@repo/config";
 import { findUser } from "@repo/db";
 import { Effect } from "effect";
 
 import { ApiKeyWriteForbidden } from "./api-key-write-forbidden.ts";
+import { AuthFailure } from "./auth-failure.ts";
 import { Auth } from "./auth.ts";
 import { assertEligibleUser } from "./policy.ts";
 import { SessionRequired } from "./session-required.ts";
@@ -27,10 +33,10 @@ const apiKeyFromHeaders = (headers: Headers): string | undefined => {
 const apiKeyOwnerId = Effect.fn("apiKeyOwnerId")(function* apiKeyOwnerId(presented: string) {
   const { instance } = yield* Auth;
   const verifyApiKey = yield* Effect.fromNullishOr(instance.api.verifyApiKey).pipe(
-    Effect.mapError(() => new SessionRequired()),
+    Effect.mapError(() => new ConfigurationInvalid({ reason: "api-key plugin" })),
   );
   const verified = yield* Effect.tryPromise({
-    catch: () => new SessionRequired(),
+    catch: (cause) => new AuthFailure({ cause }),
     try: () =>
       verifyApiKey({
         body: { key: presented, permissions: memberApiKeyReadPermissions },
