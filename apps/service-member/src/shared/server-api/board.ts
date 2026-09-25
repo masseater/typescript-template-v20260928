@@ -129,14 +129,17 @@ const listBoardThreads = Effect.fn("listBoardThreads")(function* listBoardThread
     isNull(boardThread.authorId),
     not(blockBetween(viewerId, boardThread.authorId)),
   );
-  const threads = yield* query((database) =>
-    authoredThreads(database, visible)
-      .orderBy(desc(boardThread.lastPostedAt), desc(boardThread.id))
-      .limit(page.limit)
-      .offset(page.offset),
-  );
-  const [total] = yield* query((database) =>
-    database.select({ count: count() }).from(boardThread).where(visible),
+  const [threads, [total]] = yield* Effect.all(
+    [
+      query((database) =>
+        authoredThreads(database, visible)
+          .orderBy(desc(boardThread.lastPostedAt), desc(boardThread.id))
+          .limit(page.limit)
+          .offset(page.offset),
+      ),
+      query((database) => database.select({ count: count() }).from(boardThread).where(visible)),
+    ],
+    { concurrency: "unbounded" },
   );
   return { threads: threads.map(shownThread), total: total?.count ?? 0 };
 });

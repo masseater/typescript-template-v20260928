@@ -99,23 +99,33 @@ const followMember = Effect.fn("followMember")(function* followMember(
   if (followerId === followeeId) {
     return yield* new FollowSelfForbidden();
   }
-  const [followee] = yield* query((database) =>
-    database
-      .select({ id: user.id })
-      .from(user)
-      .where(and(eq(user.id, followeeId), eq(user.role, ROLE.member), memberVisible(followerId)))
-      .limit(1),
+  const [followeeRead, followerRead, blockedRead] = yield* Effect.all(
+    [
+      query((database) =>
+        database
+          .select({ id: user.id })
+          .from(user)
+          .where(
+            and(eq(user.id, followeeId), eq(user.role, ROLE.member), memberVisible(followerId)),
+          )
+          .limit(1),
+      ),
+      query((database) =>
+        database.select({ name: user.name }).from(user).where(eq(user.id, followerId)).limit(1),
+      ),
+      pairBlocked(followerId, followeeId),
+    ],
+    { concurrency: "unbounded", mode: "result" },
   );
+  const [followee] = yield* Effect.fromResult(followeeRead);
   if (followee === undefined) {
     return yield* new UserNotFound();
   }
-  const [follower] = yield* query((database) =>
-    database.select({ name: user.name }).from(user).where(eq(user.id, followerId)).limit(1),
-  );
+  const [follower] = yield* Effect.fromResult(followerRead);
   if (follower === undefined) {
     return yield* new UserNotFound();
   }
-  if (yield* pairBlocked(followerId, followeeId)) {
+  if (yield* Effect.fromResult(blockedRead)) {
     return yield* new UserNotFound();
   }
   const now = DateTime.toDate(yield* DateTime.now);

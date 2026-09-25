@@ -129,9 +129,15 @@ const finishSaving = Effect.fn("interview.finishSaving")(function* finishSaving(
   version: number,
   state: Exclude<InterviewState, { readonly phase: "asking" }>,
 ) {
-  const layout = yield* assembleProfileLayout(state.sheet);
+  const [layout, acceptance] = yield* Effect.all(
+    [
+      assembleProfileLayout(state.sheet),
+      Effect.result(hasAcceptedLatestAgreement(userId, AGREEMENT_KIND.interview_history)),
+    ],
+    { concurrency: "unbounded" },
+  );
   const savedSheet = yield* Effect.orDie(writeSavedSheet(state.sheet, layout));
-  const accepted = yield* hasAcceptedLatestAgreement(userId, AGREEMENT_KIND.interview_history);
+  const accepted = yield* Effect.fromResult(acceptance);
   const next = accepted ? save(state) : requestHistoryConsent(state);
   return yield* replace(userId, version, { savedSheet, state: next });
 });
