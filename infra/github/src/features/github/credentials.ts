@@ -6,6 +6,7 @@ import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import { GitHubApp, gitHubAppProvider } from "./github-app.ts";
 
 class CredentialsFailure extends Schema.TaggedError<CredentialsFailure>()("CredentialsFailure", {
+  cause: Schema.optionalKey(Schema.Defect()),
   code: Schema.Literals(["gh_token_unavailable"]),
 }) {}
 
@@ -13,7 +14,9 @@ const ghCliToken = Effect.fn("ghCliToken")(function* ghCliToken() {
   const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
   const tokenText = yield* spawner
     .string(ChildProcess.make("gh", ["auth", "token"]))
-    .pipe(Effect.mapError(() => new CredentialsFailure({ code: "gh_token_unavailable" })));
+    .pipe(
+      Effect.mapError((cause) => new CredentialsFailure({ cause, code: "gh_token_unavailable" })),
+    );
   const token = tokenText.trim();
   if (token === "") {
     return yield* new CredentialsFailure({ code: "gh_token_unavailable" });

@@ -36,9 +36,9 @@ const sendThroughMailpit = ({
       Subject: outbound.subject,
       Text: outbound.text,
       To: [{ Email: outbound.to }],
-    }).pipe(Effect.mapError(() => new EmailDeliveryFailed({ reason: "unreachable" })));
+    }).pipe(Effect.mapError((cause) => new EmailDeliveryFailed({ cause, reason: "unreachable" })));
     const delivery = yield* Effect.tryPromise({
-      catch: () => new EmailDeliveryFailed({ reason: "unreachable" }),
+      catch: (cause) => new EmailDeliveryFailed({ cause, reason: "unreachable" }),
       try: (signal) =>
         fetchImpl(mailpitSendUrl, {
           body: requestPayload,
@@ -70,7 +70,7 @@ const sendThroughBinding = (
     return Effect.fail(new EmailDeliveryFailed({ reason: "unreachable" }));
   }
   return Effect.tryPromise({
-    catch: () => new EmailDeliveryFailed({ reason: "rejected" }),
+    catch: (cause) => new EmailDeliveryFailed({ cause, reason: "rejected" }),
     try: () => binding.send(outbound),
   }).pipe(Effect.asVoid);
 };

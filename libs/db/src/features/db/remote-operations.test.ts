@@ -59,7 +59,7 @@ describe("migrateD1", () => {
   });
 
   describe("a migration whose second statement fails", () => {
-    const it = test.extend("migrationFailure", () =>
+    const it = test.extend("migrationFailureCode", () =>
       Effect.runPromise(
         Effect.gen(function* interrupt() {
           const filesystem = yield* FileSystem.FileSystem;
@@ -73,12 +73,13 @@ describe("migrateD1", () => {
           );
           const binding = yield* TestBinding;
           yield* migrateD1(binding);
-          return yield* Effect.flip(migrateD1(binding, folder));
+          const migrationFailure = yield* Effect.flip(migrateD1(binding, folder));
+          return migrationFailure.code;
         }).pipe(Effect.scoped, Effect.provide([EmptyTestDatabase, NodeServices.layer])),
       ));
 
-    it("fails as a query failure", { timeout: 60_000 }, ({ migrationFailure }) => {
-      expect(migrationFailure).toStrictEqual(new RemoteFailure({ code: "REMOTE_QUERY_FAILED" }));
+    it("fails as a query failure", { timeout: 60_000 }, ({ migrationFailureCode }) => {
+      expect(migrationFailureCode).toBe("REMOTE_QUERY_FAILED");
     });
   });
 

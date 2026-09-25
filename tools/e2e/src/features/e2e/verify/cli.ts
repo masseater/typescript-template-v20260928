@@ -22,7 +22,7 @@ const verifyCommand = Command.make(
     }
     const decoded = yield* Schema.decodeUnknownEffect(VerifyEnvironment)(
       Option.getOrUndefined(environment),
-    ).pipe(Effect.mapError(() => failure("command_unsupported")));
+    ).pipe(Effect.mapError((cause) => failure("command_unsupported", cause)));
     const resolved = yield* resolveVerifyEnvironment(decoded);
     yield* verifyMember(resolved).pipe(
       Effect.flatMap((report) => Console.log(JSON.stringify(report))),

@@ -13,6 +13,7 @@ const retiredKeys = [
 ] as const;
 
 class PrepareCiEnvFailure extends Schema.TaggedError<PrepareCiEnvFailure>()("PrepareCiEnvFailure", {
+  cause: Schema.optionalKey(Schema.Defect()),
   code: Schema.Literals([
     "ci_env_incomplete",
     "ci_env_output_missing",
@@ -44,8 +45,8 @@ function presentRetiredKeys(
   return retiredKeys.filter((key) => envValue(key, environment) !== undefined);
 }
 
-function unwritable(): PrepareCiEnvFailure {
-  return new PrepareCiEnvFailure({ code: "ci_env_unwritable", keys: [] });
+function unwritable(cause: unknown): PrepareCiEnvFailure {
+  return new PrepareCiEnvFailure({ cause, code: "ci_env_unwritable", keys: [] });
 }
 
 const writeCiSecretsFile = Effect.fn("writeCiSecretsFile")(function* writeCiSecretsFile(

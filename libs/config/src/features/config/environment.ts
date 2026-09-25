@@ -142,14 +142,15 @@ const isLocalDevelopmentOrigin = (candidate: string): boolean => {
   );
 };
 
-const invalid = (reason: string): ConfigurationInvalid => new ConfigurationInvalid({ reason });
+const invalid = (reason: string, cause?: unknown): ConfigurationInvalid =>
+  new ConfigurationInvalid(cause === undefined ? { reason } : { cause, reason });
 
 const decode = <Decoded extends Schema.Top & { readonly DecodingServices: never }>(
   schema: Decoded,
   input: unknown,
 ): Effect.Effect<Decoded["Type"], ConfigurationInvalid> =>
   Schema.decodeUnknownEffect(schema)(input).pipe(
-    Effect.mapError((issue) => invalid(issue.message)),
+    Effect.mapError((issue) => invalid(issue.message, issue)),
   );
 
 type EnvironmentScalars = Schema.Schema.Type<typeof Scalars>;

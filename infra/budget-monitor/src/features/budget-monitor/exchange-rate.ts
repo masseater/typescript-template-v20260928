@@ -20,12 +20,12 @@ const ExchangeRate = Schema.Struct({
   }),
 });
 
-const responseInvalid = (): BudgetFailure =>
-  new BudgetFailure({ code: "exchange_rate_response_invalid" });
+const responseInvalid = (cause: unknown): BudgetFailure =>
+  new BudgetFailure({ cause, code: "exchange_rate_response_invalid" });
 
 const requestRate = (fetchImpl: typeof fetch): Effect.Effect<Response, BudgetFailure> =>
   Effect.tryPromise({
-    catch: () => new BudgetFailure({ code: "exchange_rate_http_failed" }),
+    catch: (cause) => new BudgetFailure({ cause, code: "exchange_rate_http_failed" }),
     try: (signal) =>
       fetchImpl(`${exchangeRateEndpoint}?${exchangeRateQuery.toString()}`, {
         headers: { Accept: "application/json" },

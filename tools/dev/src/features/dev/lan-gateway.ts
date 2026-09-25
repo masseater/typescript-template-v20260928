@@ -21,13 +21,13 @@ const browserLaunchArguments = Effect.fn("browserLaunchArguments")(
     const certificatePath = yield* urlPath(certificateAuthority);
     const certificate = yield* withFileSystem((fs) => fs.readFileString(certificatePath));
     const spki = yield* Effect.try({
-      catch: () => failure("file_io_failed"),
+      catch: (cause) => failure("file_io_failed", cause),
       try: () => spkiFromCertificatePem(certificate),
     });
     const pin = yield* Crypto.Crypto.pipe(
       Effect.flatMap((crypto) => crypto.digest("SHA-256", spki)),
       Effect.map((hash) => Buffer.from(hash).toString("base64")),
-      Effect.mapError(() => failure("file_io_failed")),
+      Effect.mapError((cause) => failure("file_io_failed", cause)),
     );
     return [
       "--args",

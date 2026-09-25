@@ -1,4 +1,3 @@
-import { ConfigurationInvalid } from "@repo/config";
 import { env } from "cloudflare:workers";
 import { Effect, Layer } from "effect";
 import { describe, expect, test } from "vite-plus/test";
@@ -104,7 +103,7 @@ describe("FileStore", () => {
   });
 
   describe("an environment without the file binding", () => {
-    const it = test.extend("startupFailure", () =>
+    const it = test.extend("startupFailureReason", () =>
       Effect.runPromise(
         Layer.build(
           FileStore.fromEnvironment(
@@ -112,13 +111,15 @@ describe("FileStore", () => {
               Object.entries(env).filter(([bindingName]) => bindingName !== "FILES"),
             ),
           ),
-        ).pipe(Effect.scoped, Effect.flip),
+        ).pipe(
+          Effect.scoped,
+          Effect.flip,
+          Effect.map((startupFailure) => startupFailure.reason),
+        ),
       ));
 
-    it("refuses to start", ({ startupFailure }) => {
-      expect(startupFailure).toStrictEqual(
-        new ConfigurationInvalid({ reason: 'Missing key\n  at ["FILES"]' }),
-      );
+    it("refuses to start", ({ startupFailureReason }) => {
+      expect(startupFailureReason).toBe('Missing key\n  at ["FILES"]');
     });
   });
 

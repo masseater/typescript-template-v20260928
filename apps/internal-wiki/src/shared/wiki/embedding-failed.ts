@@ -1,6 +1,7 @@
 import { Schema } from "effect";
 
 class EmbeddingFailed extends Schema.TaggedError<EmbeddingFailed>()("EmbeddingFailed", {
+  cause: Schema.optionalKey(Schema.Defect()),
   reason: Schema.Literals(["unavailable", "invalid_output", "count_mismatch"]),
 }) {}
 

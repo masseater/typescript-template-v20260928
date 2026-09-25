@@ -18,8 +18,12 @@ function databaseSource(accountId: string): Endpoint {
   return endpoint`accounts/${accountId}/d1/database`;
 }
 
-function unavailable(keys: readonly string[]): CloudflareFailure {
-  return new CloudflareFailure({ code: "database_output_unavailable", keys });
+function unavailable(keys: readonly string[], cause?: unknown): CloudflareFailure {
+  return new CloudflareFailure({
+    ...(cause === undefined ? {} : { cause }),
+    code: "database_output_unavailable",
+    keys,
+  });
 }
 
 const findDatabaseId = Effect.fn("findDatabaseId")(function* findDatabaseId(
@@ -28,7 +32,7 @@ const findDatabaseId = Effect.fn("findDatabaseId")(function* findDatabaseId(
 ) {
   const source = databaseSource(access.accountId);
   const listed = yield* readList(access, { filter: { name }, source }, DatabaseList).pipe(
-    Effect.mapError((failure) => unavailable(failure.keys)),
+    Effect.mapError((failure) => unavailable(failure.keys, failure)),
   );
   const matches = listed.result.filter((database) => database.name === name);
   if (matches.length > 1) {

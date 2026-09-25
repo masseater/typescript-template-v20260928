@@ -1,4 +1,3 @@
-import { ConfigurationInvalid } from "@repo/config";
 import { env } from "cloudflare:workers";
 import { Effect, Layer, Ref } from "effect";
 import { describe, expect, test } from "vite-plus/test";
@@ -57,7 +56,7 @@ describe("ReadCache", () => {
   });
 
   describe("an environment without the cache binding", () => {
-    const it = test.extend("startupFailure", () =>
+    const it = test.extend("startupFailureReason", () =>
       Effect.runPromise(
         Layer.build(
           ReadCache.fromEnvironment(
@@ -65,13 +64,15 @@ describe("ReadCache", () => {
               Object.entries(env).filter(([bindingName]) => bindingName !== "CACHE"),
             ),
           ),
-        ).pipe(Effect.scoped, Effect.flip),
+        ).pipe(
+          Effect.scoped,
+          Effect.flip,
+          Effect.map((startupFailure) => startupFailure.reason),
+        ),
       ));
 
-    it("refuses to start", ({ startupFailure }) => {
-      expect(startupFailure).toStrictEqual(
-        new ConfigurationInvalid({ reason: 'Missing key\n  at ["CACHE"]' }),
-      );
+    it("refuses to start", ({ startupFailureReason }) => {
+      expect(startupFailureReason).toBe('Missing key\n  at ["CACHE"]');
     });
   });
 });

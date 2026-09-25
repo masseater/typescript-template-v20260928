@@ -6,6 +6,7 @@ export type JsonRequest = {
 };
 const defaultBodyLimit = 16384;
 export class RequestRejected extends Schema.TaggedError<RequestRejected>()("RequestRejected", {
+  cause: Schema.optionalKey(Schema.Defect()),
   reason: Schema.Literals([
     "origin_denied",
     "json_required",
@@ -70,7 +71,7 @@ const readBody = (bounded: {
     Effect.map(({ chunks }) => decodeChunks(chunks)),
     Effect.flatMap((bodyText) =>
       parseJson(bodyText).pipe(
-        Effect.mapError(() => new RequestRejected({ reason: "invalid_json" })),
+        Effect.mapError((cause) => new RequestRejected({ cause, reason: "invalid_json" })),
       ),
     ),
     Effect.matchEffect({

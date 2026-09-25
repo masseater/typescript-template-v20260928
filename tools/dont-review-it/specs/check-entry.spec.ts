@@ -8,6 +8,7 @@ import { dontReviewItCommand } from "../src/features/dont-review-it/dont-review-
 import { EXIT_MISUSE } from "../src/features/dont-review-it/repository-checks/index.ts";
 
 class CommandRejected extends Schema.TaggedError<CommandRejected>()("CommandRejected", {
+  cause: Schema.Defect(),
   reason: Schema.String,
 }) {}
 
@@ -19,6 +20,7 @@ layer(NodeServices.layer)("リポジトリ検査の入口", (it) => {
           try: () => runCommand(dontReviewItCommand, { rawArgs: ["deploy"] }),
           catch: (rejected) =>
             new CommandRejected({
+              cause: rejected,
               reason: rejected instanceof Error ? rejected.message : String(rejected),
             }),
         }),

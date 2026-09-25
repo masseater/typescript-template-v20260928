@@ -113,7 +113,7 @@ function readObject<Contract extends Decodable>(
   object: unknown,
 ): Effect.Effect<Contract["Type"], StripeEventUnreadable> {
   return Schema.decodeUnknownEffect(schema)(object).pipe(
-    Effect.mapError(() => new StripeEventUnreadable()),
+    Effect.mapError((cause) => new StripeEventUnreadable({ cause })),
   );
 }
 

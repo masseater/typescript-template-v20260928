@@ -55,14 +55,6 @@ const bindingsFor = (env: WorkerEnv) =>
   Layer.mergeAll(sharedBindings, optionalBindings(env)).pipe(
     Layer.provideMerge(Layer.succeed(WorkerEnvironment, env)),
   );
-const bindingReason = (cause: unknown): string => {
-  if (typeof cause !== "object" || cause === null || !("message" in cause)) {
-    return "Cloudflare binding is invalid";
-  }
-  return typeof cause.message === "string" && cause.message !== ""
-    ? cause.message
-    : "Cloudflare binding is invalid";
-};
 const loadedBinding = Effect.gen(function* loadedBinding() {
   const database = yield* WorkerDatabase;
   const assets = yield* WorkerAssets;
@@ -149,7 +141,9 @@ const readWorkerConfig = Effect.fn("readWorkerConfig")(function* readWorkerConfi
     readonly OTLP_AUTHORIZATION: Redacted.Redacted | undefined;
   } = yield* loadedBinding.pipe(
     Effect.provide(bindingsFor(env)),
-    Effect.mapError((cause) => new ConfigurationInvalid({ reason: bindingReason(cause) })),
+    Effect.mapError(
+      (cause) => new ConfigurationInvalid({ cause, reason: "Cloudflare binding is invalid" }),
+    ),
   );
   const mismatch = loadedScalarsMatch(scalars, { ...loaded, FLAGS: Reflect.get(env, "FLAGS") });
   if (mismatch !== undefined) {

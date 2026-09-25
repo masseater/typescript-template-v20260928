@@ -55,8 +55,10 @@ function unreadable(
   source: Endpoint,
   reason: string,
   detail: readonly string[] = [],
+  cause?: unknown,
 ): CloudflareFailure {
   return new CloudflareFailure({
+    ...(cause === undefined ? {} : { cause }),
     code: "account_read_unavailable",
     keys: [source.shape, reason, ...detail],
   });
@@ -154,7 +156,7 @@ const fetchJson = Effect.fn("fetchJson")(function* fetchJson(
   }).pipe(
     Effect.timeout(Duration.millis(REQUEST_TIMEOUT_MS)),
     Effect.provide(FetchHttpClient.layer),
-    Effect.mapError((error) => unreadable(source, requestReason(error))),
+    Effect.mapError((error) => unreadable(source, requestReason(error), [], error)),
   );
   if (response.status === httpStatus.notFound) {
     return { body: undefined, found: false };
@@ -163,7 +165,7 @@ const fetchJson = Effect.fn("fetchJson")(function* fetchJson(
     return yield* unreadable(source, `status_${response.status}`);
   }
   const body = yield* response.json.pipe(
-    Effect.mapError(() => unreadable(source, DECODE_REASON, [mediaType(response)])),
+    Effect.mapError((cause) => unreadable(source, DECODE_REASON, [mediaType(response)], cause)),
   );
   return { body, found: true };
 });
@@ -174,7 +176,9 @@ const decodeBody = Effect.fn("decodeBody")(function* decodeBody<Shape, Encoded>(
   body: unknown,
 ) {
   return yield* Schema.decodeUnknownEffect(shape)(body).pipe(
-    Effect.mapError((error) => unreadable(source, DECODE_REASON, schemaMismatches(error.issue))),
+    Effect.mapError((error) =>
+      unreadable(source, DECODE_REASON, schemaMismatches(error.issue), error),
+    ),
   );
 });
 

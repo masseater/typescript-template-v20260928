@@ -14,11 +14,11 @@ const readWikiFrontmatter = Effect.fn("readWikiFrontmatter")(function* readWikiF
 ) {
   const frontmatter = frontmatterPattern.exec(source);
   const yaml = yield* Effect.try({
-    catch: () => new WikiPageInvalid(),
+    catch: (cause) => new WikiPageInvalid({ cause }),
     try: (): unknown => parse(frontmatter?.groups?.["yaml"] ?? ""),
   });
   const { description, title } = yield* decodeFrontmatter(yaml).pipe(
-    Effect.mapError(() => new WikiPageInvalid()),
+    Effect.mapError((cause) => new WikiPageInvalid({ cause })),
   );
   return { body: source.slice(frontmatter?.[0].length ?? 0), description, title };
 });

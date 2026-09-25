@@ -11,7 +11,7 @@ const isTraceId = Schema.is(TraceId);
 
 class ReceiverCheckFailure extends Schema.TaggedError<ReceiverCheckFailure>()(
   "ReceiverCheckFailure",
-  { reason: Schema.String },
+  { cause: Schema.optionalKey(Schema.Defect()), reason: Schema.String },
 ) {}
 
 const isReceiverCheckFailure = Schema.is(ReceiverCheckFailure);
@@ -102,7 +102,7 @@ const capture = (
       Effect.mapError((error) => new ReceiverCheckFailure({ reason: describeError(error) })),
     );
     const parsed = yield* Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown))(raw).pipe(
-      Effect.mapError(() => new ReceiverCheckFailure({ reason: "response_invalid" })),
+      Effect.mapError((cause) => new ReceiverCheckFailure({ cause, reason: "response_invalid" })),
     );
     yield* Ref.update(inbox, (current) => ({
       ...current,
@@ -172,7 +172,9 @@ const deliver = Effect.fn("deliver")(function* deliver(origin: string) {
         serviceName: APPLICATION.user,
       }),
     ),
-    Effect.mapError((invalid) => new ReceiverCheckFailure({ reason: invalid.reason })),
+    Effect.mapError(
+      (invalid) => new ReceiverCheckFailure({ cause: invalid, reason: invalid.reason }),
+    ),
   );
   return lines;
 });
@@ -182,7 +184,7 @@ function decode<Decoded extends Schema.Top & { readonly DecodingServices: never 
   body: unknown,
 ): Effect.Effect<Decoded["Type"], ReceiverCheckFailure> {
   return Schema.decodeUnknownEffect(schema)(body).pipe(
-    Effect.mapError(() => new ReceiverCheckFailure({ reason: "response_invalid" })),
+    Effect.mapError((cause) => new ReceiverCheckFailure({ cause, reason: "response_invalid" })),
   );
 }
 

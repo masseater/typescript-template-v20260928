@@ -1,4 +1,5 @@
-import { Effect, Option, Schema } from "effect";
+import { logCause } from "@repo/observability";
+import { Cause, Effect, Option, Result, Schema } from "effect";
 
 import type { Application as HealthService } from "@repo/config";
 
@@ -27,16 +28,14 @@ const HealthPayload = Schema.Struct({
 const requestHealth = (
   fetchImpl: typeof fetch,
   healthTarget: HealthTarget,
-): Effect.Effect<Option.Option<ProbeResponse>> =>
-  Effect.tryPromise({
-    catch: () => "unreachable" as const,
-    try: (signal) =>
-      fetchImpl(healthTarget.healthEndpoint, {
-        headers: { accept: "application/json" },
-        redirect: "manual",
-        signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
-      }),
-  }).pipe(Effect.option);
+): Effect.Effect<ProbeResponse, Cause.UnknownError> =>
+  Effect.tryPromise((signal) =>
+    fetchImpl(healthTarget.healthEndpoint, {
+      headers: { accept: "application/json" },
+      redirect: "manual",
+      signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
+    }),
+  );
 
 const observedProbe = (asked: {
   readonly healthTarget: HealthTarget;
@@ -70,18 +69,23 @@ const decodeHealthPayload = Effect.fn("decodeHealthPayload")(function* decodeHea
 });
 
 const probeService = Effect.fn("probeService")(function* probeService(healthTarget: HealthTarget) {
-  const healthResponse = yield* requestHealth(fetch, healthTarget);
-  if (Option.isNone(healthResponse)) {
+  const healthResponse = yield* Effect.result(requestHealth(fetch, healthTarget));
+  if (Result.isFailure(healthResponse)) {
+    yield* logCause({
+      attributes: { service: healthTarget.service },
+      cause: Cause.fail(healthResponse.failure),
+      eventName: "health.probe_unreachable",
+    });
     return observedProbe({ detail: "unreachable", healthTarget, healthy: false });
   }
-  if (!healthResponse.value.ok) {
+  if (!healthResponse.success.ok) {
     return observedProbe({
-      detail: `status_${healthResponse.value.status}`,
+      detail: `status_${healthResponse.success.status}`,
       healthTarget,
       healthy: false,
     });
   }
-  return yield* decodeHealthPayload(healthTarget, healthResponse.value);
+  return yield* decodeHealthPayload(healthTarget, healthResponse.success);
 });
 
 export { probeService };

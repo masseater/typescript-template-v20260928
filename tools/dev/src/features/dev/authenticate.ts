@@ -106,7 +106,7 @@ const authenticate = Effect.fn("authenticate")(function* authenticate(
   const credentials = yield* readCredentials();
   const operator = (yield* ensureOperators())[app];
   const origin = yield* signInThroughBrowser(app, credentials, operator).pipe(
-    Effect.mapError(() => failure("browser_authentication_failed")),
+    Effect.mapError((cause) => failure("browser_authentication_failed", cause)),
   );
   const report: AuthenticateReport = {
     app,

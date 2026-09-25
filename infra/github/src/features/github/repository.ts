@@ -11,6 +11,7 @@ const RepositoryView = Schema.fromJsonString(
 );
 
 class RepositoryFailure extends Schema.TaggedError<RepositoryFailure>()("RepositoryFailure", {
+  cause: Schema.optionalKey(Schema.Defect()),
   code: Schema.Literals(["repository_view_unavailable", "repository_view_invalid"]),
 }) {}
 
@@ -22,9 +23,13 @@ const originRepository = Effect.fn("originRepository")(function* originRepositor
     .string(
       ChildProcess.make("gh", ["repo", "view", "--json", "owner,name"], { cwd: workingDirectory }),
     )
-    .pipe(Effect.mapError(() => new RepositoryFailure({ code: "repository_view_unavailable" })));
+    .pipe(
+      Effect.mapError(
+        (cause) => new RepositoryFailure({ cause, code: "repository_view_unavailable" }),
+      ),
+    );
   const view = yield* Schema.decodeEffect(RepositoryView)(viewed).pipe(
-    Effect.mapError(() => new RepositoryFailure({ code: "repository_view_invalid" })),
+    Effect.mapError((cause) => new RepositoryFailure({ cause, code: "repository_view_invalid" })),
   );
   return { owner: view.owner.login, repository: view.name } as const satisfies RepositoryAddress;
 });

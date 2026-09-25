@@ -3,6 +3,7 @@ import { budgetMonitorEnv, budgetMonitorWorker } from "@repo/monitor/workers";
 import { Effect, Schema, SchemaTransformation } from "effect";
 
 class BudgetFailure extends Schema.TaggedError<BudgetFailure>()("BudgetFailure", {
+  cause: Schema.optionalKey(Schema.Defect()),
   code: Schema.Literals([
     "budget_config_invalid",
     "budget_has_no_usage_allowance",
@@ -44,7 +45,7 @@ const parseBudgetConfig = Effect.fn("parseBudgetConfig")(function* parseBudgetCo
   input: unknown,
 ) {
   return yield* Schema.decodeUnknownEffect(BudgetEnvironment)(input).pipe(
-    Effect.mapError(() => new BudgetFailure({ code: "budget_config_invalid" })),
+    Effect.mapError((cause) => new BudgetFailure({ cause, code: "budget_config_invalid" })),
   );
 });
 

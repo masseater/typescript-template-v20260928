@@ -19,6 +19,7 @@ import type { WorkerObservability } from "alchemy/Cloudflare";
 import type { StackName } from "./stacks.ts";
 
 class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("CloudflareFailure", {
+  cause: Schema.optionalKey(Schema.Defect()),
   code: Schema.Literals([
     "deployment_command_invalid",
     "account_read_unavailable",
@@ -159,7 +160,9 @@ const parseDeploymentCommand = Effect.fn("parseDeploymentCommand")(function* par
   args: readonly string[],
 ) {
   const parsed = yield* Schema.decodeUnknownEffect(DeploymentCommand)(args).pipe(
-    Effect.mapError(() => new CloudflareFailure({ code: "deployment_command_invalid", keys: [] })),
+    Effect.mapError(
+      (cause) => new CloudflareFailure({ cause, code: "deployment_command_invalid", keys: [] }),
+    ),
   );
   if (parsed[0] === "deploy" && parsed[1] === "all") {
     return { operation: "deploy-all", stacks: stackNames } as const;

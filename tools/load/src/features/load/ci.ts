@@ -8,6 +8,7 @@ import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import { loadCiArguments } from "./load-arguments.ts";
 
 class LoadCiFailure extends Schema.TaggedError<LoadCiFailure>()("LoadCiFailure", {
+  cause: Schema.optionalKey(Schema.Defect()),
   reason: Schema.Literals(["load_failed", "preview_failed", "usage_invalid"]),
 }) {}
 
@@ -29,7 +30,7 @@ const startPreview = (
         stdout: "ignore",
       }),
     );
-  }).pipe(Effect.mapError(() => new LoadCiFailure({ reason: "preview_failed" })));
+  }).pipe(Effect.mapError((cause) => new LoadCiFailure({ cause, reason: "preview_failed" })));
 };
 
 const runLoad = (
@@ -51,7 +52,7 @@ const runLoad = (
     if (exitCode !== 0) {
       return yield* new LoadCiFailure({ reason: "load_failed" });
     }
-  }).pipe(Effect.mapError(() => new LoadCiFailure({ reason: "load_failed" })));
+  }).pipe(Effect.mapError((cause) => new LoadCiFailure({ cause, reason: "load_failed" })));
 };
 
 const runWithPreview = (
@@ -92,7 +93,7 @@ runCli(
   Schema.decodeUnknownEffect(loadCiArguments)(
     profile === undefined ? { app } : { app, profile },
   ).pipe(
-    Effect.mapError(() => new LoadCiFailure({ reason: "usage_invalid" })),
+    Effect.mapError((cause) => new LoadCiFailure({ cause, reason: "usage_invalid" })),
     Effect.flatMap(runWithPreview),
     Effect.andThen(
       Schema.encodeEffect(Schema.fromJsonString(finishedRecord))({

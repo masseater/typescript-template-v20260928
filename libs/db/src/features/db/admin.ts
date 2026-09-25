@@ -41,7 +41,7 @@ const protectLastAdmin = <Value, Requirements>(
 ): Effect.Effect<Value, DatabaseFailure | LastAdminRequired, Requirements> => {
   return effect.pipe(
     Effect.mapError((failure) =>
-      mentionsLastAdmin(failure.cause) ? new LastAdminRequired() : failure,
+      mentionsLastAdmin(failure.cause) ? new LastAdminRequired({ cause: failure }) : failure,
     ),
   );
 };

@@ -286,7 +286,7 @@ const decodeSnapshot = (
         eventName: "member_leave.snapshot_invalid",
       }),
     ),
-    Effect.mapError(() => new RecoveryUnavailable()),
+    Effect.mapError((cause) => new RecoveryUnavailable({ cause })),
   );
 
 const restoreWithdrawn = Effect.fn("restoreWithdrawnMember")(function* restoreWithdrawn(

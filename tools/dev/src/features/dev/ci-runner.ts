@@ -95,7 +95,7 @@ function serviceOf(
     const fs = yield* FileSystem.FileSystem;
     const content = yield* fs
       .readFileString(path.join(root, ".service"))
-      .pipe(Effect.mapError(() => failure("file_io_failed")));
+      .pipe(Effect.mapError((cause) => failure("file_io_failed", cause)));
     const plistFile = content.trim();
     const label = path.basename(plistFile, plistSuffix);
     return plistFile.endsWith(plistSuffix) && label !== ""
@@ -114,7 +114,7 @@ function installedDocument(
           (error): error is PlatformError.PlatformError => isNotFound(error),
           () => Effect.succeed(""),
         ),
-        Effect.mapError(() => failure("file_io_failed")),
+        Effect.mapError((cause) => failure("file_io_failed", cause)),
       ),
     ),
   );

@@ -57,8 +57,11 @@ const Jwk = Schema.StructWithRest(Schema.Struct({ kty: Schema.String }), [
 ]);
 const Jwks = Schema.Struct({ keys: Schema.mutable(Schema.Array(Jwk)) });
 
-const mcpUnauthorized = (reason: string): APIError =>
-  new APIError("UNAUTHORIZED", { message: reason });
+const mcpUnauthorized = (reason: string, cause?: unknown): APIError =>
+  new APIError(
+    "UNAUTHORIZED",
+    cause === undefined ? { message: reason } : { cause, message: reason },
+  );
 
 const grantedScopesOf = (scope: unknown): ReadonlySet<string> =>
   new Set(typeof scope === "string" ? scope.split(" ") : []);
@@ -92,18 +95,18 @@ const publishedJwks = (
       return yield* new JwksUnavailable();
     }
     const published: unknown = yield* Effect.tryPromise({
-      catch: () => new JwksUnavailable(),
+      catch: (cause) => new JwksUnavailable({ cause }),
       try: () => Promise.resolve(handler(new Request(`${origin}/api/auth/jwks`))),
     });
     if (!(published instanceof Response) || !published.ok) {
       return yield* new JwksUnavailable();
     }
     const keySet: unknown = yield* Effect.tryPromise({
-      catch: () => new JwksUnavailable(),
+      catch: (cause) => new JwksUnavailable({ cause }),
       try: () => published.json(),
     });
     return yield* Schema.decodeUnknownEffect(Jwks)(keySet).pipe(
-      Effect.mapError(() => new JwksUnavailable()),
+      Effect.mapError((cause) => new JwksUnavailable({ cause })),
     );
   });
 
@@ -112,7 +115,7 @@ const verifiedClaims = (
   presented: Readonly<{ origin: string; token: string }>,
 ): Effect.Effect<Readonly<Awaited<ReturnType<typeof verifyJwsAccessToken>>>, APIError> =>
   Effect.tryPromise({
-    catch: () => mcpUnauthorized("ACCESS_TOKEN_INVALID"),
+    catch: (cause) => mcpUnauthorized("ACCESS_TOKEN_INVALID", cause),
     try: () =>
       verifyJwsAccessToken(presented.token, {
         jwksCacheKey: issuer,

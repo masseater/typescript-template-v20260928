@@ -140,18 +140,21 @@ describe("a response without calculations", () => {
     onCleanup(() => {
       telemetryApi.close();
     });
-    return Effect.runPromise(Effect.flip(fetchErrorGroups(queryWindow)));
+    return Effect.runPromise(
+      fetchErrorGroups(queryWindow).pipe(
+        Effect.flip,
+        Effect.map(({ code, keys }) => ({ code, keys })),
+      ),
+    );
   });
 
   it("fails naming the missing calculations rather than returning zero errors", ({
     queryFailure,
   }) => {
-    expect(queryFailure).toStrictEqual(
-      new ErrorMonitorFailure({
-        code: "telemetry_response_invalid",
-        keys: ["result.calculations:MissingKey"],
-      }),
-    );
+    expect(queryFailure).toStrictEqual({
+      code: "telemetry_response_invalid",
+      keys: ["result.calculations:MissingKey"],
+    });
   });
 });
 

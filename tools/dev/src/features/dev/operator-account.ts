@@ -78,7 +78,7 @@ const mailSink = Effect.acquireRelease(
     const scope = yield* Scope.make();
     const built = yield* Layer.build(NodeHttpServer.layerTest).pipe(
       Scope.provide(scope),
-      Effect.mapError(() => failure("operator_provision_failed")),
+      Effect.mapError((cause) => failure("operator_provision_failed", cause)),
     );
     const server = Context.get(built, HttpServer.HttpServer);
     yield* server
@@ -167,7 +167,7 @@ function operatorExists(): Effect.Effect<
           (error): error is PlatformError.PlatformError => isNotFound(error),
           () => Effect.succeed(false),
         ),
-        Effect.mapError(() => failure("file_io_failed")),
+        Effect.mapError((cause) => failure("file_io_failed", cause)),
       ),
     ),
   );
@@ -178,7 +178,7 @@ const readOperators = Effect.fn("readOperators")(function* readOperators() {
   const path = yield* urlPath(operatorFile);
   const text = yield* withFileSystem((fs) => fs.readFileString(path));
   return yield* Schema.decodeEffect(Schema.fromJsonString(OperatorFile))(text).pipe(
-    Effect.mapError(() => failure("credentials_invalid")),
+    Effect.mapError((cause) => failure("credentials_invalid", cause)),
   );
 });
 
@@ -200,10 +200,10 @@ const enrollTotp = Effect.fn("enrollTotp")(function* enrollTotp(
     return yield* failure("operator_provision_failed");
   }
   const enrollment = yield* Effect.promise(() => enabled.json()).pipe(
-    Effect.mapError(() => failure("operator_provision_failed")),
+    Effect.mapError((cause) => failure("operator_provision_failed", cause)),
     Effect.flatMap((body) =>
       Schema.decodeUnknownEffect(TotpEnrollment)(body).pipe(
-        Effect.mapError(() => failure("operator_provision_failed")),
+        Effect.mapError((cause) => failure("operator_provision_failed", cause)),
       ),
     ),
   );
@@ -247,7 +247,7 @@ const createOperator = Effect.fn("createOperator")(function* createOperator(
   const totpURI = yield* enrollTotp(auth, jar, origin, password);
   if (account.kind !== undefined) {
     yield* ensureAdminRole(account.email, account.kind).pipe(
-      Effect.mapError(() => failure("operator_provision_failed")),
+      Effect.mapError((cause) => failure("operator_provision_failed", cause)),
     );
   }
   const operator: Operator = { email: account.email, name: account.name, password, totpURI };
@@ -264,7 +264,7 @@ const createOperators = Effect.fn("createOperators")(function* createOperators(
     provisioned[app] = yield* createOperator(auth, origin, secret, operatorAccounts[app]);
   }
   const operators = yield* Schema.decodeUnknownEffect(OperatorFile)(provisioned).pipe(
-    Effect.mapError(() => failure("operator_provision_failed")),
+    Effect.mapError((cause) => failure("operator_provision_failed", cause)),
   );
   yield* writeOperators(operators);
   return operators;

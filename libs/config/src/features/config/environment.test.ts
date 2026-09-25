@@ -171,11 +171,16 @@ describe("readEnvironment", () => {
       'Expected a string matching the RegExp ^G-[A-Z0-9]{1,48}$\n  at ["GOOGLE_ANALYTICS_MEASUREMENT_ID"]',
     ],
   ] as const)("%s", ([, overridden, expectedReason]) => {
-    const it = test.extend("refusal", () =>
-      Effect.runPromise(Effect.flip(readEnvironment({ ...localBindings, ...overridden }))));
+    const it = test.extend("refusedReason", () =>
+      Effect.runPromise(
+        readEnvironment({ ...localBindings, ...overridden }).pipe(
+          Effect.flip,
+          Effect.map((refusal) => refusal.reason),
+        ),
+      ));
 
-    it("is refused with the reason that names the rule it breaks", ({ refusal }) => {
-      expect(refusal).toStrictEqual(new ConfigurationInvalid({ reason: expectedReason }));
+    it("is refused with the reason that names the rule it breaks", ({ refusedReason }) => {
+      expect(refusedReason).toBe(expectedReason);
     });
   });
 });
@@ -286,22 +291,30 @@ describe("readStripeConfig", () => {
       'Expected a string matching the RegExp ^price_[A-Za-z0-9]+$\n  at ["STRIPE_PRICE_ID"]',
     ],
   ] as const)("%s", ([, overridden, expectedReason]) => {
-    const it = test.extend("refusal", () =>
-      Effect.runPromise(Effect.flip(readStripeConfig({ ...stripeBindings, ...overridden }))));
+    const it = test.extend("refusedReason", () =>
+      Effect.runPromise(
+        readStripeConfig({ ...stripeBindings, ...overridden }).pipe(
+          Effect.flip,
+          Effect.map((refusal) => refusal.reason),
+        ),
+      ));
 
-    it("is refused with the reason that names the rule it breaks", ({ refusal }) => {
-      expect(refusal).toStrictEqual(new ConfigurationInvalid({ reason: expectedReason }));
+    it("is refused with the reason that names the rule it breaks", ({ refusedReason }) => {
+      expect(refusedReason).toBe(expectedReason);
     });
   });
 
   describe("bindings that carry no Stripe keys at all", () => {
-    const it = test.extend("refusal", () =>
-      Effect.runPromise(Effect.flip(readStripeConfig({ APP_ORIGIN: stripeBindings.APP_ORIGIN }))));
+    const it = test.extend("refusedReason", () =>
+      Effect.runPromise(
+        readStripeConfig({ APP_ORIGIN: stripeBindings.APP_ORIGIN }).pipe(
+          Effect.flip,
+          Effect.map((refusal) => refusal.reason),
+        ),
+      ));
 
-    it("are refused instead of falling back to a free-for-all", ({ refusal }) => {
-      expect(refusal).toStrictEqual(
-        new ConfigurationInvalid({ reason: 'Missing key\n  at ["STRIPE_METERED_PRICE_ID"]' }),
-      );
+    it("are refused instead of falling back to a free-for-all", ({ refusedReason }) => {
+      expect(refusedReason).toBe('Missing key\n  at ["STRIPE_METERED_PRICE_ID"]');
     });
   });
 });

@@ -23,11 +23,11 @@ const embedBatch = Effect.fn("embedBatch")(function* embedBatch(
   text: readonly string[],
 ) {
   const output = yield* Effect.tryPromise({
-    catch: () => new EmbeddingFailed({ reason: "unavailable" }),
+    catch: (cause) => new EmbeddingFailed({ cause, reason: "unavailable" }),
     try: () => ai.run(embeddingModel, { text: [...text] }),
   });
   const { data } = yield* decodeOutput(output).pipe(
-    Effect.mapError(() => new EmbeddingFailed({ reason: "invalid_output" })),
+    Effect.mapError((cause) => new EmbeddingFailed({ cause, reason: "invalid_output" })),
   );
   if (data.length !== text.length) {
     return yield* new EmbeddingFailed({ reason: "count_mismatch" });

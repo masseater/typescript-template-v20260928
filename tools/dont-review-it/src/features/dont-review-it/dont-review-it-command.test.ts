@@ -1027,12 +1027,9 @@ describe("dontReviewItCommand", () => {
 
   describe("an unknown command", () => {
     const it = standardIoTest.extend("theRejectionOfAnUnknownCommand", () =>
-      Effect.tryPromise({
-        try: () => runCommand(dontReviewItCommand, { rawArgs: ["publish"] }),
-        catch: (rejection) => (rejection instanceof Error ? rejection.message : String(rejection)),
-      }).pipe(
+      Effect.tryPromise(() => runCommand(dontReviewItCommand, { rawArgs: ["publish"] })).pipe(
         Effect.match({
-          onFailure: (message) => message,
+          onFailure: ({ cause }) => (cause instanceof Error ? cause.message : String(cause)),
           onSuccess: () => "the unknown command was accepted",
         }),
         Effect.ensuring(
@@ -1051,12 +1048,9 @@ describe("dontReviewItCommand", () => {
 
   describe("no command at all", () => {
     const it = standardIoTest.extend("theRejectionOfNoCommand", () =>
-      Effect.tryPromise({
-        try: () => runCommand(dontReviewItCommand, { rawArgs: [] }),
-        catch: (rejection) => (rejection instanceof Error ? rejection.message : String(rejection)),
-      }).pipe(
+      Effect.tryPromise(() => runCommand(dontReviewItCommand, { rawArgs: [] })).pipe(
         Effect.match({
-          onFailure: (message) => message,
+          onFailure: ({ cause }) => (cause instanceof Error ? cause.message : String(cause)),
           onSuccess: () => "no command at all was accepted",
         }),
         Effect.ensuring(

@@ -14,6 +14,7 @@ interface RequestTelemetry {
 }
 
 class ExplorerFailure extends Schema.TaggedError<ExplorerFailure>()("ExplorerFailure", {
+  cause: Schema.optionalKey(Schema.Defect()),
   reason: Schema.Literals([
     "origin_invalid",
     "request_id_invalid",
@@ -31,12 +32,12 @@ function originInvalid(): ExplorerFailure {
   return new ExplorerFailure({ reason: "origin_invalid" });
 }
 
-function queryFailed(): ExplorerFailure {
-  return new ExplorerFailure({ reason: "query_failed" });
+function queryFailed(cause?: unknown): ExplorerFailure {
+  return new ExplorerFailure({ ...(cause === undefined ? {} : { cause }), reason: "query_failed" });
 }
 
-function responseInvalid(): ExplorerFailure {
-  return new ExplorerFailure({ reason: "response_invalid" });
+function responseInvalid(cause: unknown): ExplorerFailure {
+  return new ExplorerFailure({ cause, reason: "response_invalid" });
 }
 
 function isLoopbackAppOrigin(url: Readonly<URL>): boolean {
@@ -120,7 +121,7 @@ const requestTelemetry = Effect.fn("requestTelemetry")(function* requestTelemetr
   requestId: string,
 ) {
   yield* Schema.decodeEffect(RequestId)(requestId).pipe(
-    Effect.mapError(() => new ExplorerFailure({ reason: "request_id_invalid" })),
+    Effect.mapError((cause) => new ExplorerFailure({ cause, reason: "request_id_invalid" })),
   );
   const pattern = String.raw`request_id\":\"${requestId}`;
   const [logs, spans] = yield* Effect.all(

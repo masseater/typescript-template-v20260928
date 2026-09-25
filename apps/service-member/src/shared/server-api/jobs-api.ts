@@ -2,7 +2,7 @@ import { verifySession } from "@repo/auth";
 import { JobPayload, readJobs, httpStatus } from "@repo/config";
 import { sessionFailures } from "@repo/runtime/account";
 import { CreatedResource } from "@repo/runtime/contracts";
-import { createApi, readJsonBody } from "@repo/runtime/http";
+import { createApi, InputInvalid, readJsonBody } from "@repo/runtime/http";
 import { env } from "cloudflare:workers";
 import { Effect, Schema } from "effect";
 
@@ -58,7 +58,7 @@ function jobsApi(api: ApiRoutes<AppServices>) {
             const payload = yield* Schema.decodeEffect(JobPayload)({
               jobId: id,
               ownerId: user.id,
-            }).pipe(Effect.mapError(() => ({ _tag: "InputInvalid" as const })));
+            }).pipe(Effect.mapError((cause) => new InputInvalid({ cause })));
             const jobs = yield* readJobs(env);
             const status = yield* jobStatus(jobs, payload);
             return {

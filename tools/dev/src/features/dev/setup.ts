@@ -56,7 +56,7 @@ const loadOrCreateCredentials = Effect.fn("loadOrCreateCredentials")(
     if (!(yield* credentialsExist())) {
       const bytes = yield* Crypto.Crypto.pipe(
         Effect.flatMap((crypto) => crypto.randomBytes(authSecretBytes)),
-        Effect.mapError(() => failure("file_io_failed")),
+        Effect.mapError((cause) => failure("file_io_failed", cause)),
       );
       const authSecret = Buffer.from(bytes).toString("base64url");
       const content = yield* Schema.encodeEffect(
@@ -85,7 +85,7 @@ const rememberOrigins = Effect.fn("rememberOrigins")(function* rememberOrigins(
   const stored = yield* loadOrCreateCredentials();
   const [requested = stored.origins ?? "lan"] = args;
   const origins = yield* Schema.decodeUnknownEffect(OriginMode)(requested).pipe(
-    Effect.mapError(() => failure("origin_mode_invalid")),
+    Effect.mapError((cause) => failure("origin_mode_invalid", cause)),
   );
   const credentials = { ...stored, origins };
   if (stored.origins !== origins) {

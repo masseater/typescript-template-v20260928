@@ -18,6 +18,7 @@ import { loadCliArguments } from "./load-arguments.ts";
 import { discardSummary, readSummary, type Report } from "./summary.ts";
 
 class LoadTestFailure extends Schema.TaggedError<LoadTestFailure>()("LoadTestFailure", {
+  cause: Schema.optionalKey(Schema.Defect()),
   code: Schema.optionalKey(Schema.Int),
   crossed: Schema.optionalKey(Schema.Array(Schema.String)),
   reason: Schema.Literals([
@@ -77,7 +78,7 @@ const runScenario = (
           },
         ),
       )
-      .pipe(Effect.mapError(() => new LoadTestFailure({ reason: "scenario_failed" })));
+      .pipe(Effect.mapError((cause) => new LoadTestFailure({ cause, reason: "scenario_failed" })));
     if (exitCode !== 0 && exitCode !== thresholdsExitCode) {
       return yield* new LoadTestFailure({ code: exitCode, reason: "scenario_failed" });
     }
@@ -87,7 +88,7 @@ const runScenario = (
 
 const requireMeasurement = (): Effect.Effect<Report, LoadTestFailure> => {
   return readSummary(summaryFile).pipe(
-    Effect.mapError(() => new LoadTestFailure({ reason: "summary_unreadable" })),
+    Effect.mapError((cause) => new LoadTestFailure({ cause, reason: "summary_unreadable" })),
     Effect.filterOrFail(
       (report) => report.requests > 0,
       () => new LoadTestFailure({ reason: "measurement_empty" }),
@@ -134,7 +135,7 @@ const prepare = Effect.fn("prepare")(function* prepare(
   yield* awaitReady(app);
   yield* clearTraces(origin);
   yield* discardSummary(summaryFile).pipe(
-    Effect.mapError(() => new LoadTestFailure({ reason: "summary_unreadable" })),
+    Effect.mapError((cause) => new LoadTestFailure({ cause, reason: "summary_unreadable" })),
   );
   return { binary, scenario };
 });
@@ -196,7 +197,7 @@ runCli(
   Schema.decodeUnknownEffect(loadCliArguments)(
     profile === undefined ? { app } : { app, profile },
   ).pipe(
-    Effect.mapError(() => new LoadTestFailure({ reason: "usage_invalid" })),
+    Effect.mapError((cause) => new LoadTestFailure({ cause, reason: "usage_invalid" })),
     Effect.flatMap(measure),
     Effect.flatMap(announce),
     Effect.catchTags({

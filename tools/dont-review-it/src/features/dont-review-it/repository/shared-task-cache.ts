@@ -6,13 +6,13 @@ const sharedTaskCacheEnv = "SHARED_TASK_CACHE";
 
 class SharedTaskCacheUnset extends Schema.TaggedError<SharedTaskCacheUnset>()(
   "SharedTaskCacheUnset",
-  {},
+  { cause: Schema.optionalKey(Schema.Defect()) },
 ) {}
 
 const readSharedTaskCache: Effect.Effect<string, SharedTaskCacheUnset> = Config.String(
   sharedTaskCacheEnv,
 ).pipe(
-  Effect.mapError(() => new SharedTaskCacheUnset()),
+  Effect.mapError((cause) => new SharedTaskCacheUnset({ cause })),
   Effect.filterOrFail(
     (value) => value.trim() !== "",
     () => new SharedTaskCacheUnset(),

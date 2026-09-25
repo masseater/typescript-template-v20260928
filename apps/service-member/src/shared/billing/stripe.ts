@@ -117,6 +117,14 @@ function decodeStripe<Contract extends Decodable>(
   );
 }
 
+function refusal(response: Response): Effect.Effect<never, StripeFailure> {
+  const refused = (cause: unknown): StripeFailure =>
+    new StripeFailure({ cause, reason: "request_failed", status: response.status });
+  return Effect.tryPromise({ catch: refused, try: (): Promise<unknown> => response.json() }).pipe(
+    Effect.flatMap((answer) => Effect.fail(refused(answer))),
+  );
+}
+
 function request(
   fetchImpl: typeof fetch,
   secretKey: Redacted.Redacted,
@@ -144,7 +152,7 @@ function request(
             catch: (cause) => new StripeFailure({ cause, reason: "response_invalid" }),
             try: (): Promise<unknown> => response.json(),
           })
-        : Effect.fail(new StripeFailure({ reason: "request_failed", status: response.status })),
+        : refusal(response),
     ),
     Effect.timeoutOrElse({
       duration: patience,
@@ -278,12 +286,12 @@ function stripeService(fetchImpl: typeof fetch, config: StripeConfig): StripeSha
       verifyStripeSignature(config.webhookSecret, payload, signature).pipe(
         Effect.flatMap(() =>
           Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown))(payload).pipe(
-            Effect.mapError(() => new StripeEventUnreadable()),
+            Effect.mapError((cause) => new StripeEventUnreadable({ cause })),
           ),
         ),
         Effect.flatMap((json) =>
           Schema.decodeUnknownEffect(StripeEvent)(json).pipe(
-            Effect.mapError(() => new StripeEventUnreadable()),
+            Effect.mapError((cause) => new StripeEventUnreadable({ cause })),
           ),
         ),
       ),

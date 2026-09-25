@@ -9,6 +9,7 @@ import type { Scope } from "effect";
 import type { Socket, SocketError } from "effect/unstable/socket/Socket";
 
 class GatewayFailure extends Schema.TaggedError<GatewayFailure>()("GatewayFailure", {
+  cause: Schema.optionalKey(Schema.Defect()),
   reason: Schema.Literals(["proxy_port_invalid", "listen_failed"]),
 }) {}
 
@@ -54,7 +55,7 @@ function proxyConnection(target: number, client: Socket): Effect.Effect<void, ne
 
 const program = Effect.gen(function* gateway() {
   const target = yield* Schema.decodeEffect(ProxyPort)(Number(process.argv[2])).pipe(
-    Effect.mapError(() => new GatewayFailure({ reason: "proxy_port_invalid" })),
+    Effect.mapError((cause) => new GatewayFailure({ cause, reason: "proxy_port_invalid" })),
   );
   const server = yield* SocketServer;
   yield* Console.info(
@@ -76,7 +77,7 @@ const program = Effect.gen(function* gateway() {
 }).pipe(
   Effect.scoped,
   Effect.provide(NodeSocketServer.layer({ host: "::", port: 443 })),
-  Effect.mapError(() => new GatewayFailure({ reason: "listen_failed" })),
+  Effect.mapError((cause) => new GatewayFailure({ cause, reason: "listen_failed" })),
 ) as Effect.Effect<void, GatewayFailure, never>;
 
 runCli(program, (cause) => causeRecord("local.gateway_failed", { cause }));

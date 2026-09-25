@@ -53,6 +53,7 @@ interface MapLookup extends ParsedLocation, MapCandidate {
 }
 
 class SourceMapFailure extends Schema.TaggedError<SourceMapFailure>()("SourceMapFailure", {
+  cause: Schema.Defect(),
   reason: Schema.Literals(["source_map_unreadable", "source_map_invalid"]),
 }) {}
 
@@ -64,12 +65,12 @@ const Payload = Schema.Struct({
   version: Schema.Literal(sourceMapVersion),
 });
 
-function unreadable(): SourceMapFailure {
-  return new SourceMapFailure({ reason: "source_map_unreadable" });
+function unreadable(cause: unknown): SourceMapFailure {
+  return new SourceMapFailure({ cause, reason: "source_map_unreadable" });
 }
 
-function invalid(): SourceMapFailure {
-  return new SourceMapFailure({ reason: "source_map_invalid" });
+function invalid(cause: unknown): SourceMapFailure {
+  return new SourceMapFailure({ cause, reason: "source_map_invalid" });
 }
 
 function directoryEntries(
@@ -93,7 +94,7 @@ function directoryEntries(
         })),
       ),
     );
-  }).pipe(Effect.mapError(() => unreadable()));
+  }).pipe(Effect.mapError(unreadable));
 }
 
 function findMap(

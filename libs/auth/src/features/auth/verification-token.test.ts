@@ -26,19 +26,25 @@ describe("emailChangeTarget", () => {
 
   describe("a token whose claims segment cannot be decoded", () => {
     const it = test.extend("undecodableClaimsRefusal", () =>
-      Result.mapError(emailChangeTarget("hdr.!!!not-base64!!!.sig"), (refusal) => refusal._tag));
+      Result.match(emailChangeTarget("hdr.!!!not-base64!!!.sig"), {
+        onFailure: (refusal) => refusal._tag,
+        onSuccess: (destination) => destination,
+      }));
 
     it("fails closed", ({ undecodableClaimsRefusal }) => {
-      expect(undecodableClaimsRefusal).toStrictEqual(Result.fail("VerificationTokenInvalid"));
+      expect(undecodableClaimsRefusal).toBe("VerificationTokenInvalid");
     });
   });
 
   describe("a token with no claims segment", () => {
     const it = test.extend("opaqueTokenRefusal", () =>
-      Result.mapError(emailChangeTarget("opaque-token"), (refusal) => refusal._tag));
+      Result.match(emailChangeTarget("opaque-token"), {
+        onFailure: (refusal) => refusal._tag,
+        onSuccess: (destination) => destination,
+      }));
 
     it("fails closed", ({ opaqueTokenRefusal }) => {
-      expect(opaqueTokenRefusal).toStrictEqual(Result.fail("VerificationTokenInvalid"));
+      expect(opaqueTokenRefusal).toBe("VerificationTokenInvalid");
     });
   });
 });

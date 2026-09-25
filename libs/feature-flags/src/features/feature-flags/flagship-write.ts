@@ -45,11 +45,12 @@ const authorization = (config: FlagshipWriteConfig): { readonly Authorization: s
 });
 
 class FlagshipWriteFailed extends Schema.TaggedError<FlagshipWriteFailed>()("FlagshipWriteFailed", {
+  cause: Schema.optionalKey(Schema.Defect()),
   detail: Schema.String,
 }) {}
 
 const asFlagshipFailure = (cause: unknown): FlagshipWriteFailed =>
-  new FlagshipWriteFailed({ detail: String(cause) });
+  new FlagshipWriteFailed({ cause, detail: "flagship request failed" });
 
 const acceptedResponse = (
   operation: "read" | "write",

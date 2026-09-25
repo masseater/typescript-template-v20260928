@@ -11,6 +11,7 @@ import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
 import { exportedTelemetry } from "./exported.ts";
 
 class QueryFailure extends Schema.TaggedError<QueryFailure>()("QueryFailure", {
+  cause: Schema.optionalKey(Schema.Defect()),
   reason: Schema.Literals(["arguments_invalid"]),
 }) {}
 
@@ -42,8 +43,11 @@ type QueryScope = {
   readonly since: number;
 };
 
-function argumentsInvalid(): QueryFailure {
-  return new QueryFailure({ reason: "arguments_invalid" });
+function argumentsInvalid(cause?: unknown): QueryFailure {
+  return new QueryFailure({
+    ...(cause === undefined ? {} : { cause }),
+    reason: "arguments_invalid",
+  });
 }
 
 function required(value: string | undefined): Effect.Effect<string, QueryFailure> {

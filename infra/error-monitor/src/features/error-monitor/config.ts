@@ -3,6 +3,7 @@ import { errorMonitorEnv, errorMonitorWorker } from "@repo/monitor/workers";
 import { Effect, Schema } from "effect";
 
 class ErrorMonitorFailure extends Schema.TaggedError<ErrorMonitorFailure>()("ErrorMonitorFailure", {
+  cause: Schema.optionalKey(Schema.Defect()),
   code: Schema.Literals([
     "error_monitor_config_invalid",
     "telemetry_account_invalid",
@@ -25,7 +26,7 @@ const parseErrorMonitorConfig = (
 ): Effect.Effect<typeof ErrorMonitorEnvironment.Type, ErrorMonitorFailure> =>
   Schema.decodeUnknownEffect(ErrorMonitorEnvironment)(input).pipe(
     Effect.mapError(
-      () => new ErrorMonitorFailure({ code: "error_monitor_config_invalid", keys: [] }),
+      (cause) => new ErrorMonitorFailure({ cause, code: "error_monitor_config_invalid", keys: [] }),
     ),
   );
 

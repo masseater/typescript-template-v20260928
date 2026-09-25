@@ -27,10 +27,10 @@ const apiKeyFromHeaders = (headers: Headers): string | undefined => {
 const apiKeyOwnerId = Effect.fn("apiKeyOwnerId")(function* apiKeyOwnerId(presented: string) {
   const { instance } = yield* Auth;
   const verifyApiKey = yield* Effect.fromNullishOr(instance.api.verifyApiKey).pipe(
-    Effect.mapError(() => new SessionRequired()),
+    Effect.mapError((cause) => new SessionRequired({ cause })),
   );
   const verified = yield* Effect.tryPromise({
-    catch: () => new SessionRequired(),
+    catch: (cause) => new SessionRequired({ cause }),
     try: () =>
       verifyApiKey({
         body: { key: presented, permissions: memberApiKeyReadPermissions },

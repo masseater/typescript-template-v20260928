@@ -34,6 +34,7 @@ const workspaceDependencies = (manifest: typeof PackageManifest.Type): readonly 
   );
 
 class UnlistableWorkspace extends Schema.TaggedError<UnlistableWorkspace>()("UnlistableWorkspace", {
+  cause: Schema.optionalKey(Schema.Defect()),
   definition: Schema.String,
   reason: Schema.String,
 }) {
@@ -90,7 +91,7 @@ const workspaceMembers = Effect.fn("workspaceMembers")(function* workspaceMember
   const definition = paths.join(root, "pnpm-workspace.yaml");
   const definitionYaml = yield* filesystem.readFileString(definition);
   const decoded = yield* Effect.try({
-    catch: () => new UnlistableWorkspace({ definition, reason: "it is not YAML" }),
+    catch: (cause) => new UnlistableWorkspace({ cause, definition, reason: "it is not YAML" }),
     try: (): unknown => parse(definitionYaml),
   }).pipe(Effect.flatMap(Schema.decodeUnknownEffect(WorkspaceDefinition)));
   const directories = yield* Effect.forEach(decoded.packages, (pattern) =>

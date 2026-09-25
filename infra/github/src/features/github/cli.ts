@@ -26,7 +26,7 @@ const commandRejectedEvent = "github.command_rejected";
 
 class GitHubCommandFailure extends Schema.TaggedError<GitHubCommandFailure>()(
   "GitHubCommandFailure",
-  { code: Schema.Literals(["command_invalid"]) },
+  { cause: Schema.optionalKey(Schema.Defect()), code: Schema.Literals(["command_invalid"]) },
 ) {}
 
 const ApplyUnit = Schema.Literals(["github", "wiki-publisher"]);
@@ -78,7 +78,9 @@ runCli(
   Effect.gen(function* program() {
     const parsedCommand = yield* Schema.decodeUnknownEffect(Command)(
       process.argv.slice(firstUserArgumentIndex),
-    ).pipe(Effect.mapError(() => new GitHubCommandFailure({ code: "command_invalid" })));
+    ).pipe(
+      Effect.mapError((cause) => new GitHubCommandFailure({ cause, code: "command_invalid" })),
+    );
     const { config, confidential, secrets } = yield* deploymentAccess();
     yield* Effect.gen(function* run() {
       const planning = yield* planStack({

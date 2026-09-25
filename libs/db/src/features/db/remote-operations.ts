@@ -30,6 +30,7 @@ const RemoteFailureCode = Schema.Literals([
 ]);
 
 class RemoteFailure extends Schema.TaggedError<RemoteFailure>()("RemoteFailure", {
+  cause: Schema.optionalKey(Schema.Defect()),
   code: RemoteFailureCode,
 }) {}
 
@@ -68,11 +69,11 @@ const loadRemoteMigrations = Effect.fn("loadRemoteMigrations")(function* loadRem
   folder: string = migrationsFolder,
 ) {
   const migrations = yield* Effect.try({
-    catch: () => new RemoteFailure({ code: "REMOTE_MIGRATIONS_INVALID" }),
+    catch: (cause) => new RemoteFailure({ cause, code: "REMOTE_MIGRATIONS_INVALID" }),
     try: () => readMigrationFiles({ migrationsFolder: folder }),
   }).pipe(
     Effect.flatMap(Schema.decodeUnknownEffect(MigrationFiles)),
-    Effect.mapError(() => new RemoteFailure({ code: "REMOTE_MIGRATIONS_INVALID" })),
+    Effect.mapError((cause) => new RemoteFailure({ cause, code: "REMOTE_MIGRATIONS_INVALID" })),
   );
   if (
     migrations.some(
@@ -90,7 +91,7 @@ const queryValues = <Result>(
   query: Parameters<SQLiteAsyncDatabase<"async", Result>["values"]>[0],
 ): Effect.Effect<unknown, RemoteFailure> => {
   return Effect.tryPromise({
-    catch: () => new RemoteFailure({ code: "REMOTE_QUERY_FAILED" }),
+    catch: (cause) => new RemoteFailure({ cause, code: "REMOTE_QUERY_FAILED" }),
     try: async () => database.values(query),
   });
 };
@@ -102,7 +103,7 @@ const listedNames = <Result>(
   return queryValues(database, sql.raw(statement)).pipe(
     Effect.flatMap((tableNameRows) =>
       Schema.decodeUnknownEffect(TableNameRows)(tableNameRows).pipe(
-        Effect.mapError(() => new RemoteFailure({ code: "REMOTE_RESPONSE_INVALID" })),
+        Effect.mapError((cause) => new RemoteFailure({ cause, code: "REMOTE_RESPONSE_INVALID" })),
       ),
     ),
     Effect.map((tableNameRows) => tableNameRows.map(([tableName]) => tableName)),
@@ -113,7 +114,7 @@ const decodeHistoryRows = (
   historyRows: unknown,
 ): Effect.Effect<typeof HistoryRows.Type, RemoteFailure> =>
   Schema.decodeUnknownEffect(HistoryRows)(historyRows).pipe(
-    Effect.mapError(() => new RemoteFailure({ code: "REMOTE_RESPONSE_INVALID" })),
+    Effect.mapError((cause) => new RemoteFailure({ cause, code: "REMOTE_RESPONSE_INVALID" })),
   );
 
 const appliedMigrations = <Result>(
@@ -155,7 +156,7 @@ const migrateDatabase = <Result>(
     const migrations = yield* loadRemoteMigrations(folder);
     const applied = yield* appliedMigrations(input.database, migrations);
     yield* Effect.tryPromise({
-      catch: () => new RemoteFailure({ code: "REMOTE_QUERY_FAILED" }),
+      catch: (cause) => new RemoteFailure({ cause, code: "REMOTE_QUERY_FAILED" }),
       try: async () => input.apply({ migrationsFolder: folder }),
     });
     if ((yield* appliedMigrations(input.database, migrations)) !== migrations.length) {
@@ -205,7 +206,7 @@ const decodeBootstrappedRows = (
   listed: unknown,
 ): Effect.Effect<readonly (typeof BootstrappedRow.Type)[], RemoteFailure> =>
   Schema.decodeUnknownEffect(Schema.Array(BootstrappedRow))(listed).pipe(
-    Effect.mapError(() => new RemoteFailure({ code: "REMOTE_RESPONSE_INVALID" })),
+    Effect.mapError((cause) => new RemoteFailure({ cause, code: "REMOTE_RESPONSE_INVALID" })),
   );
 
 const bootstrapDatabase = <Result>(
@@ -234,7 +235,9 @@ const bootstrapDatabase = <Result>(
       id: administratorId,
       permission,
       role,
-    }).pipe(Effect.mapError(() => new RemoteFailure({ code: "REMOTE_RESPONSE_INVALID" })));
+    }).pipe(
+      Effect.mapError((cause) => new RemoteFailure({ cause, code: "REMOTE_RESPONSE_INVALID" })),
+    );
   }).pipe(withSpan("bootstrapDatabase"));
 };
 

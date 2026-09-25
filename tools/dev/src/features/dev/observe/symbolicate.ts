@@ -9,6 +9,7 @@ import { layer } from "../platform.ts";
 import { symbolicate } from "./source-maps.ts";
 
 class SymbolicateFailure extends Schema.TaggedError<SymbolicateFailure>()("SymbolicateFailure", {
+  cause: Schema.optionalKey(Schema.Defect()),
   reason: Schema.Literals(["arguments_invalid"]),
 }) {}
 
@@ -26,7 +27,7 @@ const resolveFrames = Effect.fn("resolveFrames")(function* resolveFrames(input: 
   readonly release: string;
 }) {
   const decoded = yield* Schema.decodeEffect(SymbolicateInput)(input).pipe(
-    Effect.mapError(() => new SymbolicateFailure({ reason: "arguments_invalid" })),
+    Effect.mapError((cause) => new SymbolicateFailure({ cause, reason: "arguments_invalid" })),
   );
   const frames = yield* symbolicate(
     {

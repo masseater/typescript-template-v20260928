@@ -26,6 +26,7 @@ interface StackInventory {
 }
 
 class InventoryFailure extends Schema.TaggedError<InventoryFailure>()("InventoryFailure", {
+  cause: Schema.optionalKey(Schema.Defect()),
   code: Schema.Literals(["stack_module_invalid", "stack_compilation_failed"]),
   detail: Schema.String,
   stack: Schema.String,
@@ -47,7 +48,7 @@ function inventoryFailure(
   stack: string,
   cause: unknown,
 ): InventoryFailure {
-  return new InventoryFailure({ code, detail: describeInventoryCause(cause), stack });
+  return new InventoryFailure({ cause, code, detail: describeInventoryCause(cause), stack });
 }
 
 const BindingEntry = Schema.Struct({

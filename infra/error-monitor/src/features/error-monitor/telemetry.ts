@@ -82,9 +82,9 @@ const queryBody = (queryWindow: QueryWindow, offsetBy: number): string =>
   });
 
 const telemetryFailure =
-  (code: ErrorMonitorFailure["code"]): (() => ErrorMonitorFailure) =>
-  () =>
-    new ErrorMonitorFailure({ code, keys: [] });
+  (code: ErrorMonitorFailure["code"]): ((cause?: unknown) => ErrorMonitorFailure) =>
+  (cause) =>
+    new ErrorMonitorFailure(cause === undefined ? { code, keys: [] } : { cause, code, keys: [] });
 
 const queryTelemetry = ({
   fetchImpl,
@@ -131,6 +131,7 @@ const fetchPage = Effect.fn("fetchPage")(function* fetchPage(
     Effect.mapError(
       (decodeError) =>
         new ErrorMonitorFailure({
+          cause: decodeError,
           code: "telemetry_response_invalid",
           keys: schemaMismatches(decodeError.issue),
         }),

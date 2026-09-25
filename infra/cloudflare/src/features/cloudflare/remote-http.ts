@@ -17,8 +17,11 @@ const RawResponse = Schema.Struct({
   success: Schema.Literal(true),
 });
 
-const queryFailed = (): RemoteFailure => {
-  return new RemoteFailure({ code: "REMOTE_QUERY_FAILED" });
+const queryFailed = (cause?: unknown): RemoteFailure => {
+  return new RemoteFailure({
+    ...(cause === undefined ? {} : { cause }),
+    code: "REMOTE_QUERY_FAILED",
+  });
 };
 
 const d1Http = Layer.merge(

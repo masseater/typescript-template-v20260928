@@ -8,7 +8,7 @@ import { failOnBrokenSourceMaps } from "./private-source-maps.ts";
 
 class BrokenSourceMapCheck extends Schema.TaggedError<BrokenSourceMapCheck>()(
   "BrokenSourceMapCheck",
-  { message: Schema.String },
+  { cause: Schema.Defect(), message: Schema.String },
 ) {}
 
 const bundleEntry = paths.join(
@@ -23,6 +23,7 @@ describe("failOnBrokenSourceMaps", () => {
         Effect.tryPromise({
           catch: (buildFailure: unknown) =>
             new BrokenSourceMapCheck({
+              cause: buildFailure,
               message: buildFailure instanceof Error ? buildFailure.message : "unknown failure",
             }),
           try: () =>

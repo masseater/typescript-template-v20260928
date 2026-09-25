@@ -64,7 +64,7 @@ function readBounded(
 
 function fileOf(bytes: Bytes, contentType: string): Effect.Effect<Bytes, PhotoMissing> {
   return Effect.tryPromise({
-    catch: () => new PhotoMissing(),
+    catch: (cause) => new PhotoMissing({ cause }),
     try: (): Promise<Bytes | undefined> =>
       new Response(bytes, {
         headers: { "content-type": contentType },

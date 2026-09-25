@@ -8,6 +8,7 @@ import { layer } from "./platform.ts";
 class PrepareBrowserFailure extends Schema.TaggedError<PrepareBrowserFailure>()(
   "PrepareBrowserFailure",
   {
+    cause: Schema.optionalKey(Schema.Defect()),
     reason: Schema.Literals([
       "browser_cli_missing",
       "file_io_failed",
@@ -26,13 +27,13 @@ function resolvePackageDirectory(
   reason: "browser_cli_missing" | "playwright_cli_missing",
 ): Effect.Effect<string, PrepareBrowserFailure> {
   return Effect.try({
-    catch: () => new PrepareBrowserFailure({ reason }),
+    catch: (cause) => new PrepareBrowserFailure({ cause, reason }),
     try: () => new URL(import.meta.resolve(`${specifier}/package.json`)),
   }).pipe(
     Effect.flatMap((url) =>
       path.fromFileUrl(url).pipe(
         Effect.map((resolved) => path.dirname(resolved)),
-        Effect.mapError(() => new PrepareBrowserFailure({ reason })),
+        Effect.mapError((cause) => new PrepareBrowserFailure({ cause, reason })),
       ),
     ),
   );
@@ -48,11 +49,17 @@ const program = Effect.gen(function* prepareBrowser() {
   );
   for (const name of yield* fs
     .readDirectory(agentDirectory)
-    .pipe(Effect.mapError(() => new PrepareBrowserFailure({ reason: "file_io_failed" })))) {
+    .pipe(
+      Effect.mapError((cause) => new PrepareBrowserFailure({ cause, reason: "file_io_failed" })),
+    )) {
     if (/^agent-browser-(?:darwin|linux(?:-musl)?)-(?:arm64|x64)$/u.test(name)) {
       yield* fs
         .chmod(path.join(agentDirectory, name), EXECUTABLE_MODE)
-        .pipe(Effect.mapError(() => new PrepareBrowserFailure({ reason: "file_io_failed" })));
+        .pipe(
+          Effect.mapError(
+            (cause) => new PrepareBrowserFailure({ cause, reason: "file_io_failed" }),
+          ),
+        );
     }
   }
   const cli = path.join(
@@ -70,10 +77,14 @@ const program = Effect.gen(function* prepareBrowser() {
         }),
       )
       .pipe(
-        Effect.mapError(() => new PrepareBrowserFailure({ reason: "playwright_install_failed" })),
+        Effect.mapError(
+          (cause) => new PrepareBrowserFailure({ cause, reason: "playwright_install_failed" }),
+        ),
       );
     const stdout = yield* Stream.mkString(Stream.decodeText(handle.stdout)).pipe(
-      Effect.mapError(() => new PrepareBrowserFailure({ reason: "playwright_install_failed" })),
+      Effect.mapError(
+        (cause) => new PrepareBrowserFailure({ cause, reason: "playwright_install_failed" }),
+      ),
     );
     if (!Schema.is(Schema.String)(stdout)) {
       return yield* new PrepareBrowserFailure({ reason: "playwright_install_failed" });

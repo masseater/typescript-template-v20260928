@@ -38,13 +38,16 @@ describe.for([
   [{ SERVICE_MEMBER_ORIGIN: "http://app.example.com" }],
   [{ INTERNAL_DASHBOARD_ORIGIN: "https://app.example.com/docs" }],
 ] as const)("invalid settings %s", ([override]) => {
-  const it = test.extend("configFailure", () =>
-    Effect.runPromise(Effect.flip(parseHealthMonitorConfig({ ...valid, ...override }))));
+  const it = test.extend("configFailureCode", () =>
+    Effect.runPromise(
+      parseHealthMonitorConfig({ ...valid, ...override }).pipe(
+        Effect.flip,
+        Effect.map((configFailure) => configFailure.code),
+      ),
+    ));
 
-  it("refuses the configuration", ({ configFailure }) => {
-    expect(configFailure).toStrictEqual(
-      new HealthMonitorFailure({ code: "health_monitor_config_invalid" }),
-    );
+  it("refuses the configuration", ({ configFailureCode }) => {
+    expect(configFailureCode).toBe("health_monitor_config_invalid");
   });
 });
 

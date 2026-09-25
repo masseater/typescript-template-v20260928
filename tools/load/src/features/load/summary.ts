@@ -68,17 +68,16 @@ const readSummary = (file: string): Effect.Effect<Report, Schema.SchemaError> =>
     return summarise(summary.metrics);
   }).pipe(Effect.provide(NodeServices.layer));
 
-class SummaryNotDiscarded extends Schema.TaggedError<SummaryNotDiscarded>()(
-  "SummaryNotDiscarded",
-  {},
-) {}
+class SummaryNotDiscarded extends Schema.TaggedError<SummaryNotDiscarded>()("SummaryNotDiscarded", {
+  cause: Schema.optionalKey(Schema.Defect()),
+}) {}
 
 const discardSummary = (file: string): Effect.Effect<void, SummaryNotDiscarded> =>
   Effect.gen(function* discardMeasuredSummary() {
     const filesystem = yield* FileSystem.FileSystem;
     yield* filesystem
       .remove(file, { force: true })
-      .pipe(Effect.mapError(() => new SummaryNotDiscarded()));
+      .pipe(Effect.mapError((cause) => new SummaryNotDiscarded({ cause })));
   }).pipe(Effect.provide(NodeServices.layer));
 
 export { discardSummary, readSummary };

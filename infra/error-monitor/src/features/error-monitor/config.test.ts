@@ -1,7 +1,7 @@
 import { Effect, Redacted } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { ErrorMonitorFailure, parseErrorMonitorConfig } from "./config.ts";
+import { parseErrorMonitorConfig } from "./config.ts";
 
 const ACCOUNT_ID_LENGTH = 32;
 const TOKEN_LENGTH = 40;
@@ -31,12 +31,15 @@ describe.for([
   [{ CLOUDFLARE_ACCOUNT_ID: "private-not-an-account" }],
   [{ OBSERVABILITY_TOKEN: "short" }],
 ] as const)("invalid settings %s", ([override]) => {
-  const it = test.extend("configFailure", () =>
-    Effect.runPromise(Effect.flip(parseErrorMonitorConfig({ ...valid, ...override }))));
+  const it = test.extend("reportedFailure", () =>
+    Effect.runPromise(
+      parseErrorMonitorConfig({ ...valid, ...override }).pipe(
+        Effect.flip,
+        Effect.map(({ code, keys }) => ({ code, keys })),
+      ),
+    ));
 
-  it("refuses without echoing the invalid value", ({ configFailure }) => {
-    expect(configFailure).toStrictEqual(
-      new ErrorMonitorFailure({ code: "error_monitor_config_invalid", keys: [] }),
-    );
+  it("refuses without echoing the invalid value", ({ reportedFailure }) => {
+    expect(reportedFailure).toStrictEqual({ code: "error_monitor_config_invalid", keys: [] });
   });
 });

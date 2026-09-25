@@ -7,6 +7,7 @@ import { isNotFound, layer } from "./platform.ts";
 import { projectName } from "./project.ts";
 
 class SecretsFileFailure extends Schema.TaggedError<SecretsFileFailure>()("SecretsFileFailure", {
+  cause: Schema.optionalKey(Schema.Defect()),
   code: Schema.Literals([
     "secrets_file_missing",
     "secrets_file_readable_by_others",
@@ -17,12 +18,12 @@ class SecretsFileFailure extends Schema.TaggedError<SecretsFileFailure>()("Secre
   keys: Schema.Array(Schema.String),
 }) {}
 
-function missing(): SecretsFileFailure {
-  return new SecretsFileFailure({ code: "secrets_file_missing", keys: [] });
+function missing(cause: unknown): SecretsFileFailure {
+  return new SecretsFileFailure({ cause, code: "secrets_file_missing", keys: [] });
 }
 
-function unreadable(): SecretsFileFailure {
-  return new SecretsFileFailure({ code: "secrets_file_unreadable", keys: [] });
+function unreadable(cause: unknown): SecretsFileFailure {
+  return new SecretsFileFailure({ cause, code: "secrets_file_unreadable", keys: [] });
 }
 
 function symlinkForbidden(): SecretsFileFailure {
@@ -37,7 +38,7 @@ const verifySecretsFile = Effect.fn("verifySecretsFile")(function* verifySecrets
   const directoryPath = paths.dirname(filename);
   const parentLinked = yield* filesystem.readLink(directoryPath).pipe(
     Effect.as(true),
-    Effect.catch((error) => (isNotFound(error) ? missing() : Effect.succeed(false))),
+    Effect.catch((error) => (isNotFound(error) ? missing(error) : Effect.succeed(false))),
   );
   if (parentLinked) {
     return yield* symlinkForbidden();
@@ -48,7 +49,7 @@ const verifySecretsFile = Effect.fn("verifySecretsFile")(function* verifySecrets
   }
   const fileLinked = yield* filesystem.readLink(filename).pipe(
     Effect.as(true),
-    Effect.catch((error) => (isNotFound(error) ? missing() : Effect.succeed(false))),
+    Effect.catch((error) => (isNotFound(error) ? missing(error) : Effect.succeed(false))),
   );
   if (fileLinked) {
     return yield* symlinkForbidden();

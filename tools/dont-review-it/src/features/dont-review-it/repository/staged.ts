@@ -13,6 +13,7 @@ import {
 } from "./secrets.ts";
 
 class IndexUnreadable extends Schema.TaggedError<IndexUnreadable>()("IndexUnreadable", {
+  cause: Schema.optionalKey(Schema.Defect()),
   command: Schema.optional(Schema.String),
   exitCode: Schema.optional(Schema.Int),
   files: Schema.optional(Schema.Array(Schema.String)),
@@ -44,7 +45,9 @@ const gitOutput = (
 ): IndexRead<string> => {
   const command = args.join(" ");
   return capturedProcess(ChildProcess.make("git", [...args], { cwd: root, stdin: "ignore" })).pipe(
-    Effect.mapError(() => new IndexUnreadable({ command, reason: "git-command-failed" })),
+    Effect.mapError(
+      (cause) => new IndexUnreadable({ cause, command, reason: "git-command-failed" }),
+    ),
     Effect.flatMap(({ exitCode, stdout }) => {
       if (exitCode === 0) {
         return Effect.succeed(stdout);

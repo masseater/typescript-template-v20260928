@@ -20,6 +20,7 @@ interface VerificationTarget {
 }
 
 class VerificationFailure extends Schema.TaggedError<VerificationFailure>()("VerificationFailure", {
+  cause: Schema.optionalKey(Schema.Defect()),
   reason: Schema.Literals([
     "arguments_invalid",
     "request_failed",
@@ -39,8 +40,8 @@ const VerifyInput = Schema.Struct({
   service: Schema.Literals(applications.map((application) => `${application}-server` as const)),
 });
 
-function fail(reason: VerificationFailure["reason"]): VerificationFailure {
-  return new VerificationFailure({ reason });
+function fail(reason: VerificationFailure["reason"], cause?: unknown): VerificationFailure {
+  return new VerificationFailure(cause === undefined ? { reason } : { cause, reason });
 }
 
 const correlated = Effect.fn("correlated")(function* correlated(target: VerificationTarget) {
@@ -98,9 +99,9 @@ const requestApp = Effect.fn("requestApp")(function* requestApp(app: Readonly<UR
   const response = yield* HttpClient.get(app).pipe(
     Effect.timeout(appTimeoutMilliseconds),
     Effect.provide(FetchHttpClient.layer),
-    Effect.mapError(() => fail("request_failed")),
+    Effect.mapError((cause) => fail("request_failed", cause)),
   );
-  yield* response.arrayBuffer.pipe(Effect.mapError(() => fail("request_failed")));
+  yield* response.arrayBuffer.pipe(Effect.mapError((cause) => fail("request_failed", cause)));
   const requestId = response.headers["x-request-id"] ?? "";
   if (requestId === "" || response.status >= httpStatus.internalServerError) {
     return yield* fail("correlation_headers_missing");
@@ -115,7 +116,7 @@ const verify = Effect.fn("verify")(function* verify(parsed: {
   const input = yield* Schema.decodeUnknownEffect(VerifyInput)({
     app: Option.getOrUndefined(parsed.app),
     service: parsed.service,
-  }).pipe(Effect.mapError(() => fail("arguments_invalid")));
+  }).pipe(Effect.mapError((cause) => fail("arguments_invalid", cause)));
   const app = yield* explorerOrigin(input.app);
   const { requestId, status } = yield* requestApp(app);
   const verified = yield* waitForCorrelation(

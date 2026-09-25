@@ -55,7 +55,7 @@ const decodeEvents = Schema.decodeUnknownEffect(
 export type BrowserEvent = typeof BrowserEventSchema.Type;
 class BrowserEventsInvalid extends Schema.TaggedError<BrowserEventsInvalid>()(
   "BrowserEventsInvalid",
-  {},
+  { cause: Schema.optionalKey(Schema.Defect()) },
 ) {}
 export const parseBrowserEvents = (received: {
   readonly body: unknown;
@@ -63,7 +63,7 @@ export const parseBrowserEvents = (received: {
   readonly receivedAt: number;
 }): Effect.Effect<readonly BrowserEvent[], BrowserEventsInvalid> => {
   return decodeEvents(received.body).pipe(
-    Effect.mapError(() => new BrowserEventsInvalid()),
+    Effect.mapError((cause) => new BrowserEventsInvalid({ cause })),
     Effect.filterOrFail(
       (browserEvents) =>
         browserEvents.every(

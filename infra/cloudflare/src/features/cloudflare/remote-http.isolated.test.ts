@@ -12,6 +12,7 @@ import { setupServer } from "msw/node";
 import { describe, expect, test } from "vite-plus/test";
 
 import { runRemoteDatabaseCommand } from "./remote-command.ts";
+import { describeFailure } from "./secrets.ts";
 
 const { user } = schema;
 
@@ -53,17 +54,18 @@ describe("the remote database connection", () => {
         d1Api.close();
       });
       return Effect.runPromise(
-        Effect.flip(
-          runRemoteDatabaseCommand(
-            ["bootstrap", "--execute", "--confirm-database", d1Target.databaseId],
-            { ...d1Target, email: "private@example.test" },
-          ),
+        runRemoteDatabaseCommand(
+          ["bootstrap", "--execute", "--confirm-database", d1Target.databaseId],
+          { ...d1Target, email: "private@example.test" },
+        ).pipe(
+          Effect.flip,
+          Effect.map((queryFailure) => describeFailure(queryFailure, [])),
         ),
       );
     });
 
-    it("fails without carrying the provider body or the token", ({ queryFailure }) => {
-      expect(queryFailure).toStrictEqual(new RemoteFailure({ code: "REMOTE_QUERY_FAILED" }));
+    it("reports the failure without the provider body or the token", ({ queryFailure }) => {
+      expect(queryFailure).toStrictEqual({ code: "REMOTE_QUERY_FAILED" });
     });
   });
 });

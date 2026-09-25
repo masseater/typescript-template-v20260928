@@ -38,7 +38,7 @@ const verifyMember = Effect.fn("verifyMember")(function* verifyMember(
     return yield* failure("command_unsupported");
   }
   const browser = yield* Effect.tryPromise({
-    catch: () => failure("browser_start_failed"),
+    catch: (cause) => failure("browser_start_failed", cause),
     try: () =>
       chromium.launch({
         args: ["--disable-dev-shm-usage", "--enable-features=WebAuthentication"],
@@ -46,7 +46,7 @@ const verifyMember = Effect.fn("verifyMember")(function* verifyMember(
   });
   const headers = browserHeaders();
   const browserSession = yield* Effect.tryPromise({
-    catch: () => failure("browser_start_failed"),
+    catch: (cause) => failure("browser_start_failed", cause),
     try: () =>
       browser.newContext({
         extraHTTPHeaders: headers,
@@ -55,15 +55,15 @@ const verifyMember = Effect.fn("verifyMember")(function* verifyMember(
       }),
   });
   const page = yield* openVerifiedPage(browserSession).pipe(
-    Effect.mapError(() => failure("browser_start_failed")),
+    Effect.mapError((cause) => failure("browser_start_failed", cause)),
   );
   const verified = yield* runVerifyMember({
     mail,
     origin: resolved.memberOrigin,
     page,
-  }).pipe(Effect.mapError(() => failure("browser_authentication_failed")));
+  }).pipe(Effect.mapError((cause) => failure("browser_authentication_failed", cause)));
   yield* closeBrowserSession(browserSession, browser).pipe(
-    Effect.mapError(() => failure("browser_start_failed")),
+    Effect.mapError((cause) => failure("browser_start_failed", cause)),
   );
   return {
     environment: resolved.environment,

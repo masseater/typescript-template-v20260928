@@ -12,8 +12,8 @@ import { runRemoteDatabaseCommand } from "./remote-command.ts";
 const FIRST_USER_ARGUMENT_INDEX = 2;
 const EVENT = "cloudflare.database_command_rejected";
 
-function inputInvalid(): CloudflareFailure {
-  return new CloudflareFailure({ code: "database_input_invalid", keys: [] });
+function inputInvalid(cause: unknown): CloudflareFailure {
+  return new CloudflareFailure({ cause, code: "database_input_invalid", keys: [] });
 }
 
 const readBootstrapEmail = Effect.callback<string, CloudflareFailure>((resume) => {
@@ -21,8 +21,8 @@ const readBootstrapEmail = Effect.callback<string, CloudflareFailure>((resume) =
   process.stdin.on("data", (chunk: Buffer) => {
     chunks.push(chunk);
   });
-  process.stdin.on("error", () => {
-    resume(inputInvalid());
+  process.stdin.on("error", (cause) => {
+    resume(inputInvalid(cause));
   });
   process.stdin.on("end", () => {
     resume(Effect.succeed(Buffer.concat(chunks).toString("utf-8").trim()));

@@ -19,6 +19,7 @@ import { layer } from "./platform.ts";
 import { descendantPids, killQuietly, processRows } from "./process-tree.ts";
 
 class DevStartFailure extends Schema.TaggedError<DevStartFailure>()("DevStartFailure", {
+  cause: Schema.optionalKey(Schema.Defect()),
   reason: Schema.String,
 }) {}
 
@@ -203,7 +204,9 @@ function report(app: string, reasons: readonly string[]): Effect.Effect<void> {
 
 const program = Effect.gen(function* program() {
   const app = yield* Schema.decodeUnknownEffect(Application)(workspaceName()).pipe(
-    Effect.mapError(() => new DevStartFailure({ reason: "not an application workspace" })),
+    Effect.mapError(
+      (cause) => new DevStartFailure({ cause, reason: "not an application workspace" }),
+    ),
   );
   const origin = yield* listeningOrigin;
   const paths = [...new Set(["/api/health", applicationReadyPaths[app]])];

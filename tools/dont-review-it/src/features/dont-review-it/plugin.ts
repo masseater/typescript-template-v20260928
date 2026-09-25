@@ -24,6 +24,7 @@ import { noWeakenedProtectedRule } from "./lint/oxlint/rules/governance/no-weake
 import { noArrayMutation } from "./lint/oxlint/rules/mutation-and-failure/no-array-mutation--derive-new-array.ts";
 import { createNoClassAsMutableCell } from "./lint/oxlint/rules/mutation-and-failure/no-class-as-mutable-cell--decide-in-an-iife.ts";
 import { noDiscardedFailure } from "./lint/oxlint/rules/mutation-and-failure/no-discarded-failure--receive-and-surface-it.ts";
+import { noDroppedCause } from "./lint/oxlint/rules/mutation-and-failure/no-dropped-cause--pass-the-failure-as-cause.ts";
 import { noFloatingPromise } from "./lint/oxlint/rules/mutation-and-failure/no-floating-promise--await-the-result.ts";
 import { noHandRolledServerRead } from "./lint/oxlint/rules/mutation-and-failure/no-hand-rolled-server-read--use-tanstack-query.ts";
 import { noLoggedAndContinuedFailure } from "./lint/oxlint/rules/mutation-and-failure/no-logged-and-continued-failure--stop-or-recover.ts";
@@ -190,6 +191,7 @@ const plugin: Plugin = {
     [noDetachedRationale.name]: noDetachedRationale,
     [noDetachedTestFile.name]: noDetachedTestFile,
     [noDiscardedFailure.name]: noDiscardedFailure,
+    [noDroppedCause.name]: noDroppedCause,
     [noDoubleTypeAssertion.name]: noDoubleTypeAssertion,
     [noDryTestSetup.name]: noDryTestSetup,
     [noDuplicateValueDeclaration.name]: noDuplicateValueDeclaration,

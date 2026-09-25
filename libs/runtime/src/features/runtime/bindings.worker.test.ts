@@ -1,6 +1,7 @@
 import { ConfigurationInvalid } from "@repo/config";
 import { env } from "cloudflare:workers";
 import { Effect, Redacted } from "effect";
+import { Binding } from "effect-cf";
 import { describe, expect, test } from "vite-plus/test";
 
 import { appEnvironment, fixtureAuthSecret, fixtureOrigin } from "./app-test-fixture.ts";
@@ -81,7 +82,11 @@ describe("readWorkerConfig", () => {
     it("names the missing database", ({ configurationRefusal }) => {
       expect(configurationRefusal).toStrictEqual(
         new ConfigurationInvalid({
-          reason: 'Cloudflare binding "DB" was not found in WorkerEnvironment',
+          cause: new Binding.BindingNotFoundError({
+            binding: "DB",
+            message: 'Cloudflare binding "DB" was not found in WorkerEnvironment',
+          }),
+          reason: "Cloudflare binding is invalid",
         }),
       );
     });

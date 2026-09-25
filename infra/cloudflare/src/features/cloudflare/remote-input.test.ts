@@ -1,4 +1,3 @@
-import { RemoteFailure } from "@repo/db/migrations";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
@@ -51,11 +50,16 @@ describe("parseRemoteInput", () => {
       "REMOTE_INPUT_INVALID",
     ],
   ] as const)("%s", ([, commandArguments, input, expectedCode]) => {
-    const it = test.extend("refusal", () =>
-      Effect.runPromise(Effect.flip(parseRemoteInput(commandArguments, input))));
+    const it = test.extend("refusalCode", () =>
+      Effect.runPromise(
+        parseRemoteInput(commandArguments, input).pipe(
+          Effect.flip,
+          Effect.map((refusal) => refusal.code),
+        ),
+      ));
 
-    it("is refused with the code that names what is wrong", ({ refusal }) => {
-      expect(refusal).toStrictEqual(new RemoteFailure({ code: expectedCode }));
+    it("is refused with the code that names what is wrong", ({ refusalCode }) => {
+      expect(refusalCode).toBe(expectedCode);
     });
   });
 

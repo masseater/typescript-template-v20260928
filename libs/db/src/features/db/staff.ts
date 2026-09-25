@@ -28,7 +28,7 @@ const protectLastEditor = <Value, Requirements>(
 ): Effect.Effect<Value, DatabaseFailure | LastEditorRequired, Requirements> =>
   effect.pipe(
     Effect.mapError((failure) =>
-      mentionsLastEditor(failure.cause) ? new LastEditorRequired() : failure,
+      mentionsLastEditor(failure.cause) ? new LastEditorRequired({ cause: failure }) : failure,
     ),
   );
 

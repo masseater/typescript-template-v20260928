@@ -94,11 +94,16 @@ describe("a worker without an AI binding", () => {
 });
 
 describe("an AI binding with no run", () => {
-  const it = test.extend("refusal", () =>
-    Effect.runPromise(readAi({ ...local, AI: {} }).pipe(Effect.flip)));
+  const it = test.extend("refusedReason", () =>
+    Effect.runPromise(
+      readAi({ ...local, AI: {} }).pipe(
+        Effect.flip,
+        Effect.map((refusal) => refusal.reason),
+      ),
+    ));
 
-  it("names the AI binding", ({ refusal }) => {
-    expect(refusal).toStrictEqual(new ConfigurationInvalid({ reason: 'Expected Ai\n  at ["AI"]' }));
+  it("names the AI binding", ({ refusedReason }) => {
+    expect(refusedReason).toBe('Expected Ai\n  at ["AI"]');
   });
 });
 
@@ -115,26 +120,30 @@ describe("readJobs", () => {
 });
 
 describe("jobs without a queue", () => {
-  const it = test.extend("refusal", () =>
+  const it = test.extend("refusedReason", () =>
     Effect.runPromise(
       readJobs({ ...local, PROCESS: { create: queueMicrotask, get: structuredClone } }).pipe(
         Effect.flip,
+        Effect.map((refusal) => refusal.reason),
       ),
     ));
 
-  it("names the jobs queue", ({ refusal }) => {
-    expect(refusal).toStrictEqual(
-      new ConfigurationInvalid({ reason: 'Missing key\n  at ["JOBS"]' }),
-    );
+  it("names the jobs queue", ({ refusedReason }) => {
+    expect(refusedReason).toBe('Missing key\n  at ["JOBS"]');
   });
 });
 
 describe.for(brokenBindings)("%s", ([, broken, reasonText]) => {
-  const it = test.extend("refusal", () =>
-    Effect.runPromise(readConfig({ ...local, ...workerBindings, ...broken }).pipe(Effect.flip)));
+  const it = test.extend("refusedReason", () =>
+    Effect.runPromise(
+      readConfig({ ...local, ...workerBindings, ...broken }).pipe(
+        Effect.flip,
+        Effect.map((refusal) => refusal.reason),
+      ),
+    ));
 
-  it("names the binding it rejects", ({ refusal }) => {
-    expect(refusal).toStrictEqual(new ConfigurationInvalid({ reason: reasonText }));
+  it("names the binding it rejects", ({ refusedReason }) => {
+    expect(refusedReason).toBe(reasonText);
   });
 });
 
@@ -213,8 +222,13 @@ describe("wiki worker environment", () => {
   const it = test
     .extend("site", () =>
       Effect.runPromise(readSiteEnvironment({ APP_RELEASE: "1.2.3", ASSETS: assets })))
-    .extend("missingRelease", () =>
-      Effect.runPromise(readSiteEnvironment({ ASSETS: assets }).pipe(Effect.flip)),
+    .extend("missingReleaseReason", () =>
+      Effect.runPromise(
+        readSiteEnvironment({ ASSETS: assets }).pipe(
+          Effect.flip,
+          Effect.map((refusal) => refusal.reason),
+        ),
+      ),
     )
     .extend("insecureCollector", () =>
       Effect.runPromise(
@@ -230,10 +244,8 @@ describe("wiki worker environment", () => {
     expect(site).toStrictEqual({ APP_RELEASE: "1.2.3", ASSETS: assets });
   });
 
-  it("requires the release", ({ missingRelease }) => {
-    expect(missingRelease).toStrictEqual(
-      new ConfigurationInvalid({ reason: 'Missing key\n  at ["APP_RELEASE"]' }),
-    );
+  it("requires the release", ({ missingReleaseReason }) => {
+    expect(missingReleaseReason).toBe('Missing key\n  at ["APP_RELEASE"]');
   });
 
   it("requires HTTPS for the collector outside localhost", ({ insecureCollector }) => {
@@ -248,17 +260,20 @@ describe("dashboard wiki bindings", () => {
   const it = test
     .extend("bound", () =>
       Effect.runPromise(readWikiBindings({ WIKI: wikiService, WIKI_API: wikiService })))
-    .extend("missingApi", () =>
-      Effect.runPromise(readWikiBindings({ WIKI: wikiService }).pipe(Effect.flip)),
+    .extend("missingApiReason", () =>
+      Effect.runPromise(
+        readWikiBindings({ WIKI: wikiService }).pipe(
+          Effect.flip,
+          Effect.map((refusal) => refusal.reason),
+        ),
+      ),
     );
 
   it("keeps both bindings", ({ bound }) => {
     expect(bound).toStrictEqual({ WIKI: wikiService, WIKI_API: wikiService });
   });
 
-  it("refuses without the RPC binding", ({ missingApi }) => {
-    expect(missingApi).toStrictEqual(
-      new ConfigurationInvalid({ reason: 'Missing key\n  at ["WIKI_API"]' }),
-    );
+  it("refuses without the RPC binding", ({ missingApiReason }) => {
+    expect(missingApiReason).toBe('Missing key\n  at ["WIKI_API"]');
   });
 });

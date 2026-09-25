@@ -5,7 +5,7 @@ import {
   httpStatus,
 } from "@repo/config";
 import { withSpan } from "@repo/observability";
-import { Effect, Redacted, Schema } from "effect";
+import { Effect, Redacted, Result, Schema } from "effect";
 import { FetchHttpClient, HttpBody, HttpClient, HttpClientResponse } from "effect/unstable/http";
 
 import { WikiPublishFailed } from "./wiki-publish-failed.ts";
@@ -56,22 +56,28 @@ const gitHubRequest = <Decoded extends Schema.Top & { readonly DecodingServices:
         step: call.step,
       });
     }
-    const refused = (message: string): WikiPublishFailed =>
-      new WikiPublishFailed({ message, status: response.status, step: call.step });
+    const refused = (message: string, cause?: unknown): WikiPublishFailed =>
+      new WikiPublishFailed({
+        ...(cause === undefined ? {} : { cause }),
+        message,
+        status: response.status,
+        step: call.step,
+      });
     if (response.status < gitHubSuccessStatus.first || response.status > gitHubSuccessStatus.last) {
       const answer = yield* HttpClientResponse.schemaBodyJson(GitHubError)(response).pipe(
-        Effect.orElseSucceed((): typeof GitHubError.Type => ({
-          message: "GitHub gave no message",
-        })),
+        Effect.result,
       );
+      if (Result.isFailure(answer)) {
+        return yield* refused("GitHub gave no message", answer.failure);
+      }
       const message =
-        answer.documentation_url === undefined
-          ? answer.message
-          : `${answer.message} (${answer.documentation_url})`;
+        answer.success.documentation_url === undefined
+          ? answer.success.message
+          : `${answer.success.message} (${answer.success.documentation_url})`;
       return yield* refused(message);
     }
     return yield* HttpClientResponse.schemaBodyJson(schema)(response).pipe(
-      Effect.mapError((issue) => refused(issue.message)),
+      Effect.mapError((issue) => refused(issue.message, issue)),
     );
   }).pipe(withSpan("wiki.publish.github", { attributes: { step: call.step } }));
 

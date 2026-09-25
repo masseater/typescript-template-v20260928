@@ -95,7 +95,7 @@ function run(
     );
     const exitCode = yield* (
       options.timeout === undefined ? spawned : spawned.pipe(Effect.timeout(options.timeout))
-    ).pipe(Effect.mapError(() => failure("process_failed")));
+    ).pipe(Effect.mapError((cause) => failure("process_failed", cause)));
     if (exitCode !== 0) {
       return yield* failure("process_failed");
     }
@@ -112,7 +112,7 @@ function running(
 
 function application(value: string | undefined): Effect.Effect<App, LocalCommandFailure> {
   return Schema.decodeUnknownEffect(AppName)(value).pipe(
-    Effect.mapError(() => failure("app_invalid")),
+    Effect.mapError((cause) => failure("app_invalid", cause)),
   );
 }
 
@@ -121,7 +121,7 @@ const readCredentials = Effect.fn("readCredentials")(function* readCredentials()
   const path = yield* urlPath(credentialsFile);
   const text = yield* withFileSystem((fs) => fs.readFileString(path));
   return yield* Schema.decodeEffect(Schema.fromJsonString(CredentialsFile))(text).pipe(
-    Effect.mapError(() => failure("credentials_invalid")),
+    Effect.mapError((cause) => failure("credentials_invalid", cause)),
   );
 });
 

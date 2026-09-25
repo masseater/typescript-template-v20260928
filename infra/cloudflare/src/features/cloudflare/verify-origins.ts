@@ -10,6 +10,7 @@ import { encodeJson } from "./platform.ts";
 const EVENT = "cloudflare.origin_verify_rejected";
 
 class OriginVerifyFailure extends Schema.TaggedError<OriginVerifyFailure>()("OriginVerifyFailure", {
+  cause: Schema.optionalKey(Schema.Defect()),
   code: Schema.Literals(["origin_unreachable", "origin_unhealthy"]),
   keys: Schema.Array(Schema.String),
 }) {}
@@ -23,14 +24,18 @@ const probeOrigin = Effect.fn("probeOrigin")(function* probeOrigin(
   }).pipe(
     Effect.timeout(Duration.seconds(15)),
     Effect.provide(FetchHttpClient.layer),
-    Effect.mapError(() => new OriginVerifyFailure({ code: "origin_unreachable", keys: [service] })),
+    Effect.mapError(
+      (cause) => new OriginVerifyFailure({ cause, code: "origin_unreachable", keys: [service] }),
+    ),
   );
   if (response.status < 200 || response.status > 299) {
     return yield* new OriginVerifyFailure({ code: "origin_unhealthy", keys: [service] });
   }
   const health = yield* response.json.pipe(
     Effect.flatMap(Schema.decodeUnknownEffect(HealthView)),
-    Effect.mapError(() => new OriginVerifyFailure({ code: "origin_unhealthy", keys: [service] })),
+    Effect.mapError(
+      (cause) => new OriginVerifyFailure({ cause, code: "origin_unhealthy", keys: [service] }),
+    ),
   );
   if (health.service !== service) {
     return yield* new OriginVerifyFailure({ code: "origin_unhealthy", keys: [service] });

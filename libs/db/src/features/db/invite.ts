@@ -36,7 +36,9 @@ const rejectConsumed = <Value, Requirements>(
 ): Effect.Effect<Value, DatabaseFailure | InviteRejected, Requirements> =>
   effect.pipe(
     Effect.mapError((failure) =>
-      mentionsConsumed(failure.cause) ? new InviteRejected({ reason: "missing" }) : failure,
+      mentionsConsumed(failure.cause)
+        ? new InviteRejected({ cause: failure, reason: "missing" })
+        : failure,
     ),
   );
 
