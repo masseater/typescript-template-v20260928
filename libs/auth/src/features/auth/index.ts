@@ -34,5 +34,6 @@ export {
   verifySessionOrApiKey,
   verifySessionWriter,
 } from "./member-api-key.ts";
+export { sessionIsLive } from "./policy.ts";
 export { verifiedSessionId, verifySession } from "./session.ts";
 export type { AuthOptions, BetterAuthInstance } from "./create-auth.ts";
