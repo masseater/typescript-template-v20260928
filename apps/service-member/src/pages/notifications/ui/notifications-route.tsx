@@ -1,14 +1,13 @@
-import { getRouteApi } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
 
+import { notificationsOptions } from "#pages/notifications/api/notifications.ts";
 import { NotificationsPage } from "./notifications-page.tsx";
 
 import type { ReactElement } from "react";
 
-const route = getRouteApi("/_member/notifications");
-
 function NotificationsRoute(): ReactElement {
-  const { items } = route.useLoaderData();
-  return <NotificationsPage initialItems={items} />;
+  const { data: items } = useSuspenseQuery(notificationsOptions);
+  return <NotificationsPage items={items} />;
 }
 
 export { NotificationsRoute };

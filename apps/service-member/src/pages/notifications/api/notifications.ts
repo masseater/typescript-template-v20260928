@@ -1,4 +1,5 @@
 import { apiData } from "@repo/runtime/client";
+import { queryOptions } from "@tanstack/react-query";
 
 import { userClient } from "#shared/api/index.ts";
 import { FollowMember, NotificationList } from "#shared/contracts/index.ts";
@@ -10,6 +11,12 @@ function loadNotifications(): Promise<readonly NotificationEntry[]> {
     api.notifications.get().then((response) => apiData(NotificationList, response).items),
   );
 }
+
+const notificationsOptions = queryOptions({
+  queryFn: loadNotifications,
+  queryKey: ["notifications"],
+  retry: false,
+});
 
 function markNotificationRead(id: string): Promise<void> {
   return Promise.resolve(userClient()).then(({ api }) =>
@@ -27,4 +34,4 @@ function markAllNotificationsRead(): Promise<void> {
   );
 }
 
-export { loadNotifications, markAllNotificationsRead, markNotificationRead };
+export { markAllNotificationsRead, markNotificationRead, notificationsOptions };

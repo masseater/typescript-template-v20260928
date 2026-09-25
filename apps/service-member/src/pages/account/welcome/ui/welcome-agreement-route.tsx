@@ -1,13 +1,13 @@
-import { getRouteApi } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
 
+import { agreementsOptions } from "#entities/agreement/index.ts";
 import { AgreementPage } from "./agreement-page.tsx";
 
 import type { ReactElement } from "react";
 
-const route = getRouteApi("/_welcome/welcome/agreement");
-
 function WelcomeAgreementRoute(): ReactElement {
-  return <AgreementPage agreements={route.useLoaderData()} />;
+  const { data } = useSuspenseQuery(agreementsOptions);
+  return <AgreementPage agreements={data} />;
 }
 
 export { WelcomeAgreementRoute };
