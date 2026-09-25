@@ -2,6 +2,7 @@ import { NodeServices } from "@effect/platform-node";
 import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
+import { matchesAnchoredGlobPath } from "../lint/oxlint/lib/glob-path-match.ts";
 import { overridePluginMismatches } from "./lint-test-fixture.ts";
 import {
   awaitingPresetPackages,
@@ -67,6 +68,55 @@ const missingWorkspaceGlobs = (patterns: readonly string[]): string[] => {
   return patterns
     .map(globPrefix)
     .filter((prefix) => prefix.includes("/") && !directories.has(prefix))
+    .toSorted();
+};
+
+const trackedFiles: readonly string[] = Object.keys(
+  import.meta.glob(["../../../../../../**/*", "!**/.*/**", "!**/dist/**", "!**/node_modules/**"]),
+).map(workspacePath);
+
+type OverrideFiles = { readonly files?: readonly string[]; readonly rules?: unknown };
+
+const isGlob = (file: string): boolean => /[*{]/u.test(file);
+
+const matchedFiles = (pattern: string, files: readonly string[]): ReadonlySet<string> =>
+  new Set(files.filter((relativePath) => matchesAnchoredGlobPath({ relativePath, pattern })));
+
+const globsMatchingNothing = (
+  overrides: readonly OverrideFiles[],
+  files: readonly string[],
+): readonly string[] =>
+  [
+    ...new Set(
+      overrides
+        .flatMap((override) => override.files ?? [])
+        .filter((file) => isGlob(file) && matchedFiles(file, files).size === 0),
+    ),
+  ].toSorted();
+
+const coveredGlobs = (
+  overrides: readonly OverrideFiles[],
+  files: readonly string[],
+): readonly string[] => {
+  const groups = new Map<string, Set<string>>();
+  for (const override of overrides) {
+    const key = JSON.stringify(override.rules ?? {});
+    groups.set(key, new Set([...(groups.get(key) ?? []), ...(override.files ?? [])]));
+  }
+  return [...groups.values()]
+    .flatMap((entries) =>
+      [...entries].filter(isGlob).flatMap((glob) => {
+        const matched = matchedFiles(glob, files);
+        return [...entries]
+          .filter(
+            (other) =>
+              other !== glob &&
+              matched.size > 0 &&
+              [...matched].every((file) => matchedFiles(other, [file]).size === 1),
+          )
+          .map((other) => `${glob} is covered by ${other}`);
+      }),
+    )
     .toSorted();
 };
 
@@ -183,6 +233,34 @@ describe("inspection coverage", () => {
         expect(missing.flat()).toStrictEqual([]);
       }).pipe(Effect.provide(NodeServices.layer)),
     ));
+
+  it("points every lint override glob at a tracked file no sibling glob already covers", () => {
+    expect.hasAssertions();
+    expect(globsMatchingNothing(lintOptions.overrides, trackedFiles)).toStrictEqual([]);
+    expect(coveredGlobs(lintOptions.overrides, trackedFiles)).toStrictEqual([]);
+  });
+
+  it("reports an override glob that matches nothing or sits inside a sibling glob", () => {
+    expect.hasAssertions();
+    const files = [
+      "apps/service-member/src/shared/server-api/billing-api.ts",
+      "infra/local/src/features/local/stack.ts",
+      "infra/local/src/features/local/stack.test.ts",
+    ];
+    const rules = { "eslint/max-params": "off" };
+    expect(
+      globsMatchingNothing([{ files: ["apps/*/src/**/api.ts", "apps/*/src/**/*-api.ts"] }], files),
+    ).toStrictEqual(["apps/*/src/**/api.ts"]);
+    expect(
+      coveredGlobs(
+        [
+          { files: ["infra/local/**"], rules },
+          { files: ["infra/local/**/*.test.ts"], rules },
+        ],
+        files,
+      ),
+    ).toStrictEqual(["infra/local/**/*.test.ts is covered by infra/local/**"]);
+  });
 
   it("does not declare built-in plugin rules under an override that dropped that plugin", () => {
     expect.hasAssertions();

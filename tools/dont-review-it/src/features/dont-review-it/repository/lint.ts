@@ -16,7 +16,18 @@ import {
   uiSharedPartFiles,
 } from "./ui-lint-settings.ts";
 
-const midPresetEffectPackages = ["libs/db/**", "libs/runtime/**", "libs/observability/**"];
+const midPresetEffectPackages = [
+  "libs/db/**",
+  "libs/runtime/**",
+  "libs/observability/**",
+  "libs/vite-config/**",
+  "libs/monitor/**",
+  "infra/local/**",
+  "infra/error-monitor/**",
+  "infra/health-monitor/**",
+  "libs/config/**/*.test.ts",
+  "infra/budget-monitor/**/*.test.ts",
+];
 
 const midPresetEffectRules = Object.fromEntries(
   Object.keys(effectRecommended.rules ?? {}).map((ruleName) => [ruleName, LINT_SEVERITY.OFF]),
@@ -210,7 +221,6 @@ const templateWorkspaces = [
 ];
 
 const apiBoundaryFiles = [
-  "apps/*/src/**/api.ts",
   "apps/*/src/**/*-api.ts",
   "tools/*/src/**/*-api.ts",
   "libs/runtime/src/features/runtime/account.ts",
@@ -411,10 +421,6 @@ const lintOptions = {
       },
     },
     {
-      files: midPresetEffectPackages,
-      rules: midPresetEffectRules,
-    },
-    {
       files: [
         "libs/db/src/features/db/security.ts",
         "libs/db/src/features/db/local-platform.test.ts",
@@ -501,26 +507,7 @@ const lintOptions = {
       },
     },
     {
-      files: [
-        "libs/vite-config/**",
-        "infra/local/**",
-        "infra/error-monitor/**",
-        "infra/health-monitor/**",
-        "libs/monitor/**",
-      ],
-      rules: midPresetEffectRules,
-    },
-    {
-      files: [
-        "libs/config/**/*.test.ts",
-        "infra/local/**/*.test.ts",
-        "infra/error-monitor/**/*.test.ts",
-        "infra/health-monitor/**/*.test.ts",
-        "infra/budget-monitor/**/*.test.ts",
-        "infra/budget-monitor/**/*.worker.test.ts",
-        "libs/monitor/**/*.test.ts",
-        "libs/vite-config/**/*.test.ts",
-      ],
+      files: midPresetEffectPackages,
       rules: midPresetEffectRules,
     },
     {
