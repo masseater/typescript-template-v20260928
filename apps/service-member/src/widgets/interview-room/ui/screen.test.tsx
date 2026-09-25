@@ -1,5 +1,6 @@
 import { RegistryProvider } from "@effect/atom-react";
 import { AppProviders } from "@repo/ui/shell";
+import { primaryActions } from "@repo/ui/testing";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 
@@ -97,5 +98,22 @@ describe("interview screen", () => {
     expect(html).toContain("今日はこれ以上話せません。");
     expect(html).toContain("再試行");
     expect(html).toContain('data-speaker="member"');
+  });
+
+  it.for([
+    ["a free answer", screenView("asking", "なんて呼べばいいですか？")],
+    [
+      "a multiple choice",
+      {
+        ...screenView("asking", "興味のあることを選んでください。"),
+        reply: { kind: "multiple", options: ["読書", "料理"] },
+      },
+    ],
+    ["the summary", screenView("summary", "ここまでの内容をまとめました。")],
+    ["the history consent", screenView("history_consent", "保存しました。")],
+    ["the saved sheet", screenView("saved", "保存しました。")],
+  ] as const)("shows one primary action at most on %s", ([, view]) => {
+    expect.hasAssertions();
+    expect(primaryActions(renderScreen(view))).toBeLessThanOrEqual(1);
   });
 });

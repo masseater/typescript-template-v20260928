@@ -9,9 +9,11 @@ const useDraft = localState("");
 
 function InterviewComposer({
   disabled,
+  leads,
   onSay,
 }: Readonly<{
   disabled: boolean;
+  leads: boolean;
   onSay: (utterance: MemberUtterance) => void;
 }>): ReactElement {
   const [draft, setDraft] = useDraft();
@@ -34,7 +36,11 @@ function InterviewComposer({
         onValueChange={setDraft}
         value={draft}
       />
-      <Button disabled={disabled || draft.trim() === ""} type="submit" variant="primary">
+      <Button
+        disabled={disabled || draft.trim() === ""}
+        type="submit"
+        variant={leads ? "primary" : "secondary"}
+      >
         送信
       </Button>
     </form>

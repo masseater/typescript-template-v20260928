@@ -1,5 +1,5 @@
 import { GROUP_JOIN_POLICY } from "@repo/config";
-import { renderedAt } from "@repo/ui/testing";
+import { primaryActions, renderedAt } from "@repo/ui/testing";
 import { describe, expect, it } from "vite-plus/test";
 
 import { GroupPanel } from "./group-panel.tsx";
@@ -92,6 +92,15 @@ describe("group panel", () => {
     expect(html).toContain('id="group-members-heading"');
     expect(html).toContain('href="/users/member-1"');
     expect(rendered(group)).not.toContain("group-members-heading");
+  });
+
+  it.for([
+    ["a visitor", group],
+    ["a member", { ...group, isMember: true }],
+    ["the owner", { ...group, isMember: true, isOwner: true }],
+  ] as const)("shows %s at most one primary action", ([, shown]) => {
+    expect.hasAssertions();
+    expect(primaryActions(rendered(shown))).toBeLessThanOrEqual(1);
   });
 
   it("shows each failed action", () => {

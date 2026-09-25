@@ -16,7 +16,6 @@ const InvitationBoard = ({
       <div>
         <Button
           type="button"
-          variant="primary"
           aria-expanded={inviting}
           onClick={() => {
             setInviting((open) => !open);

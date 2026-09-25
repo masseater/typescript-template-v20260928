@@ -41,7 +41,7 @@ function PlanView({
       )}
       <FormColumn>
         {summary.upgradable && (
-          <ButtonLink to="/upgrade" variant="primary">
+          <ButtonLink to="/upgrade" variant={summary.manageable ? "secondary" : "primary"}>
             有料プランを見る
           </ButtonLink>
         )}

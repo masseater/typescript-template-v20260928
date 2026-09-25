@@ -42,6 +42,13 @@ function InterviewRestart({
   );
 }
 
+function composerLeads(view: InterviewViewData): boolean {
+  if (view.phase === "summary") {
+    return false;
+  }
+  return view.phase !== "asking" || view.reply?.kind !== "multiple";
+}
+
 function InterviewActions({
   busy,
   failure,
@@ -78,7 +85,9 @@ function InterviewActions({
         <HistoryConsentPanel blocked={busy} error={failure} onRespond={onConsent} />
       )}
       {view.phase === "saved" && <InterviewRestart busy={busy} onRestart={onRestart} />}
-      {view.phase !== "history_consent" && <InterviewComposer disabled={busy} onSay={onSay} />}
+      {view.phase !== "history_consent" && (
+        <InterviewComposer disabled={busy} leads={composerLeads(view)} onSay={onSay} />
+      )}
     </div>
   );
 }

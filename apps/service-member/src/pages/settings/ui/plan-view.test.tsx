@@ -1,4 +1,4 @@
-import { actionState, renderedAt } from "@repo/ui/testing";
+import { actionState, primaryActions, renderedAt } from "@repo/ui/testing";
 import { describe, expect, it } from "vite-plus/test";
 
 import { PlanView } from "./plan-view.tsx";
@@ -65,5 +65,22 @@ describe("plan view", () => {
     expect(html).toContain("支払い事業者の管理ページ");
     expect(html).toContain("管理ページへ移動しています。");
     expect(html).not.toContain('href="/upgrade"');
+  });
+
+  it.for([
+    ["a free member", free],
+    ["a paying member", paid],
+    ["a member with a contract but no paid plan", { ...free, manageable: true }],
+  ] as const)("shows %s one primary action", ([, summary]) => {
+    expect.hasAssertions();
+    expect(primaryActions(rendered(summary, true))).toBe(1);
+  });
+
+  it("keeps managing the contract primary when the paid plans are offered too", () => {
+    expect.hasAssertions();
+    const html = rendered({ ...free, manageable: true }, false);
+    const upgradeLink = /<a[^>]*href="\/upgrade"[^>]*>/u.exec(html)?.[0] ?? "";
+    expect(upgradeLink).toContain('data-variant="secondary"');
+    expect(primaryActions(html)).toBe(1);
   });
 });

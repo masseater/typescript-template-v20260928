@@ -22,6 +22,7 @@ const ButtonAnchor = ({
     return (
       <BaseButton
         data-slot="button-link"
+        data-variant={variant}
         kind={kindByVariant[variant]}
         size={sizeBySize[size]}
         href={href ?? null}
@@ -34,6 +35,7 @@ const ButtonAnchor = ({
   return (
     <BaseButton
       data-slot="button-link"
+      data-variant={variant}
       kind={kindByVariant[variant]}
       size={sizeBySize[size]}
       href={href ?? null}

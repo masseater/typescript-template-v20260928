@@ -132,7 +132,7 @@ function RenameSection({
           value={rename.name}
           onValueChange={onNameChange}
         />
-        <Button type="submit" variant="primary" disabled={rename.blocked}>
+        <Button type="submit" disabled={rename.blocked}>
           保存する
         </Button>
         <FailureStatus error={rename.error} />
