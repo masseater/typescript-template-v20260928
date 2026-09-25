@@ -13,9 +13,8 @@ import {
   MemberView,
   ProfileUpdate,
   ProfileView,
-  memberPageSize,
 } from "#shared/contracts/index.ts";
-import { getMember, getProfile, listMembers, updateProfile } from "#shared/members/index.ts";
+import { getMember, getProfile, listMemberPage, updateProfile } from "#shared/members/index.ts";
 import { agreementApi, consentGate } from "./agreement-api.ts";
 import { billingApi } from "./billing-api.ts";
 import { boardApi } from "./board-api.ts";
@@ -101,14 +100,10 @@ function memberApi(
           Effect.gen(function* handleRequest() {
             const { user } = yield* verifySessionOrApiKey(request.headers);
             yield* requirePaid(user.id);
-            const { keyword, page } = yield* readSearchParams(MemberListQuery, request);
-            const offset = (page - 1) * memberPageSize;
-            const list = yield* listMembers(user.id, {
-              keyword,
-              limit: memberPageSize,
-              offset,
-            });
-            return { ...list, pageSize: memberPageSize };
+            return yield* listMemberPage(
+              user.id,
+              yield* readSearchParams(MemberListQuery, request),
+            );
           }),
         failures,
       ),

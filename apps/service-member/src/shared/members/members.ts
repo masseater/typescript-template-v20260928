@@ -16,6 +16,7 @@ import {
 } from "@repo/db";
 import { DateTime, Effect } from "effect";
 
+import { memberPageSize, type MemberList } from "#shared/contracts/index.ts";
 import { photoVersion } from "#shared/photo/index.ts";
 import { baselineProfileLayout, interviewProfileLayout } from "#shared/profile-layout/default.ts";
 import { readSavedSheet } from "#shared/profile-layout/saved-sheet.ts";
@@ -208,6 +209,19 @@ const listMembers = Effect.fn("listMembers")(function* listMembers(
   return { members: presented, total };
 });
 
+const listMemberPage = Effect.fn("listMemberPage")(function* listMemberPage(
+  viewerId: string,
+  { keyword, page }: Readonly<{ keyword?: string | undefined; page: number }>,
+) {
+  const list = yield* listMembers(viewerId, {
+    keyword,
+    limit: memberPageSize,
+    offset: (page - 1) * memberPageSize,
+  });
+  const listed: typeof MemberList.Type = { ...list, pageSize: memberPageSize };
+  return listed;
+});
+
 const getProfile = Effect.fn("getProfile")(function* getProfile(userId: string) {
   const [profile] = yield* query((database) =>
     database.select(profileColumns).from(user).where(eq(user.id, userId)).limit(1),
@@ -237,4 +251,4 @@ const updateProfile = Effect.fn("updateProfile")(function* updateProfile(
   return ownProfile(profile);
 });
 
-export { getMember, getProfile, listMembers, updateProfile };
+export { getMember, getProfile, listMemberPage, listMembers, updateProfile };

@@ -4,8 +4,13 @@ import { and, eq, query, requirePaid, schema } from "@repo/db";
 import { mcpEndpoint, toolFailure, toolRunner } from "@repo/runtime";
 import { Clock, Effect, Schema } from "effect";
 
-import { ProfileUpdate, maximumMessageBodyLength } from "#shared/contracts/index.ts";
-import { getProfile, listMembers, updateProfile } from "#shared/members/index.ts";
+import {
+  ConversationOpen,
+  MemberListQuery,
+  MessageSend,
+  ProfileUpdate,
+} from "#shared/contracts/index.ts";
+import { getProfile, listMemberPage, updateProfile } from "#shared/members/index.ts";
 import { MessagingMemberRequired } from "#shared/server-api/messaging-member-required.ts";
 import { openDirectConversation, sendDirectMessage } from "#shared/server-api/messaging.ts";
 import { authorizeMcpRequest } from "./authorize-mcp.ts";
@@ -15,26 +20,11 @@ import type { MemberMcpActor } from "./authorize-mcp.ts";
 
 const { session, user } = schema;
 const mcpVersion = "1.0.0";
-const defaultPageSize = 20;
 
-const MemberSearch = Schema.toStandardJSONSchemaV1(
-  Schema.toStandardSchemaV1(
-    Schema.Struct({
-      keyword: Schema.optionalKey(Schema.String),
-      limit: Schema.optionalKey(Schema.Int),
-      offset: Schema.optionalKey(Schema.Int),
-    }),
-  ),
-);
+const MemberSearch = Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(MemberListQuery));
 const ProfileInput = Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(ProfileUpdate));
 const MessageInput = Schema.toStandardJSONSchemaV1(
-  Schema.toStandardSchemaV1(
-    Schema.Struct({
-      body: Schema.String.check(Schema.isLengthBetween(1, maximumMessageBodyLength)),
-      conversationId: Schema.optionalKey(Schema.String),
-      recipientId: Schema.optionalKey(Schema.String),
-    }),
-  ),
+  Schema.toStandardSchemaV1(Schema.Union([MessageSend, ConversationOpen])),
 );
 
 const failureCodes: ReadonlyMap<string, string> = new Map([
@@ -131,24 +121,15 @@ function createServer(actor: MemberMcpActor, runMember: RunApp): McpServer {
       description: "List or search members who opted into search. Paid members only.",
       inputSchema: MemberSearch,
     },
-    (filters) => {
+    (search) => {
       if (!actor.scopes.has(MEMBER_MCP_SCOPE.search)) {
         return denied(MEMBER_MCP_SCOPE.search);
-      }
-      const limit = filters.limit ?? defaultPageSize;
-      const offset = filters.offset ?? 0;
-      if (limit < 1 || limit > 50 || offset < 0) {
-        return toolFailure("target_unavailable");
       }
       return run(
         Effect.gen(function* program() {
           const id = yield* signedInMember;
           yield* requirePaid(id);
-          return yield* listMembers(id, {
-            ...(filters.keyword === undefined ? {} : { keyword: filters.keyword }),
-            limit,
-            offset,
-          });
+          return yield* listMemberPage(id, search);
         }),
       );
     },
@@ -161,25 +142,22 @@ function createServer(actor: MemberMcpActor, runMember: RunApp): McpServer {
         "Send a direct message. Opening a new conversation requires a paid plan. Replying does not.",
       inputSchema: MessageInput,
     },
-    ({ body, conversationId, recipientId }) => {
+    (message) => {
       if (!actor.scopes.has(MEMBER_MCP_SCOPE.messageSend)) {
         return denied(MEMBER_MCP_SCOPE.messageSend);
       }
-      if (conversationId !== undefined) {
+      if ("conversationId" in message) {
         return run(
           Effect.gen(function* program() {
             const id = yield* signedInMember;
-            return yield* sendDirectMessage(id, conversationId, body);
+            return yield* sendDirectMessage(id, message.conversationId, message.body);
           }),
         );
-      }
-      if (recipientId === undefined) {
-        return toolFailure("target_unavailable");
       }
       return run(
         Effect.gen(function* program() {
           const id = yield* signedInMember;
-          const sent = yield* openDirectConversation(id, recipientId, body);
+          const sent = yield* openDirectConversation(id, message.recipientId, message.body);
           return { conversationId: sent.conversationId, id: sent.messageId };
         }),
       );
