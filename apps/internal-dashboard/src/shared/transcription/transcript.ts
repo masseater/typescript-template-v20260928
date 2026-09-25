@@ -16,9 +16,9 @@ type TranscribedWord = typeof TranscribedWord.Type;
 
 const TranscriptionOutput = Schema.Struct({
   results: Schema.Struct({
-    channels: Schema.Array(
+    channels: Schema.NonEmptyArray(
       Schema.Struct({
-        alternatives: Schema.Array(Schema.Struct({ words: Schema.Array(TranscribedWord) })),
+        alternatives: Schema.NonEmptyArray(Schema.Struct({ words: Schema.Array(TranscribedWord) })),
       }),
     ),
   }),
@@ -52,7 +52,9 @@ function continues(segment: Segment, word: TranscribedWord): boolean {
 }
 
 function transcriptOf(output: typeof TranscriptionOutput.Type): Transcript {
-  const words = output.results.channels[0]?.alternatives[0]?.words ?? [];
+  const [channel] = output.results.channels;
+  const [alternative] = channel.alternatives;
+  const { words } = alternative;
   const segments: Segment[] = [];
   for (const word of words) {
     const last = segments.at(-1);
