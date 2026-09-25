@@ -12,9 +12,10 @@ type QueryContract = {
 type RouteSpec<Input extends Decodable, Value, Encoded> = {
   readonly response: Schema.Codec<Value, Encoded>;
 } & (
-  | { readonly body: Input; readonly query?: never }
-  | { readonly body?: never; readonly query: Input & QueryContract }
-  | { readonly body?: never; readonly query?: never }
+  | { readonly body: Input; readonly params?: never; readonly query?: never }
+  | { readonly body?: never; readonly params: Input & QueryContract; readonly query?: never }
+  | { readonly body?: never; readonly params?: never; readonly query: Input & QueryContract }
+  | { readonly body?: never; readonly params?: never; readonly query?: never }
 );
 type Parameters = NonNullable<DocumentDecoration["parameters"]>;
 type RouteDetail = { readonly detail: DocumentDecoration };
@@ -69,13 +70,16 @@ const hidden: RouteDetail = { detail: { hide: true } };
 const jsonSchema = (contract: Decodable): JsonSchema.JsonSchema =>
   Schema.toJsonSchemaDocument(contract, inlined).schema;
 
-const queryParameters = (contract: Decodable & QueryContract): Parameters => {
+const contractParameters = (
+  contract: Decodable & QueryContract,
+  location: Extract<Parameters[number], { in: string }>["in"],
+): Parameters => {
   const { properties, required } = Result.getOrThrow(
     Schema.decodeUnknownResult(ObjectSchema)(jsonSchema(contract)),
   );
   const requiredFields = new Set(required);
   return Object.entries(properties).map(([fieldName, property]) => ({
-    in: "query",
+    in: location,
     name: fieldName,
     required: requiredFields.has(fieldName),
     schema: property as NonNullable<Extract<Parameters[number], { name: string }>["schema"]>,
@@ -103,7 +107,8 @@ const routeDetail = <Input extends Decodable, Value, Encoded>(
     ...(spec.body === undefined
       ? {}
       : { requestBody: { ...jsonContent(spec.body), required: true } }),
-    ...(spec.query === undefined ? {} : { parameters: queryParameters(spec.query) }),
+    ...(spec.params === undefined ? {} : { parameters: contractParameters(spec.params, "path") }),
+    ...(spec.query === undefined ? {} : { parameters: contractParameters(spec.query, "query") }),
     responses: {
       ...failureResponses(failures),
       [httpStatus.ok]: { ...jsonContent(spec.response), description: successDescription },

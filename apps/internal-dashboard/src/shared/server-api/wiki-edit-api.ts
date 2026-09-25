@@ -15,8 +15,15 @@ import {
 import { annotateSpan } from "@repo/observability";
 import { FileStore } from "@repo/runtime";
 import { sessionFailures } from "@repo/runtime/account";
-import { createApi, readJsonBody, readSearchParams, type ApiRoutes } from "@repo/runtime/http";
-import { Effect, Encoding } from "effect";
+import {
+  createApi,
+  readJsonBody,
+  readPathParams,
+  readSearchParams,
+  type ApiRoutes,
+  type RouteParams,
+} from "@repo/runtime/http";
+import { Effect, Encoding, Schema } from "effect";
 
 import {
   WikiDraftDiscard,
@@ -170,9 +177,14 @@ const readImage = Effect.fn("readWikiImage")(function* readImage(name: string) {
   return { bytes: new Uint8Array(image.bytes), name };
 });
 
-const getImage = Effect.fn("serveWikiImage")(function* getImage(request: Request) {
+const WikiImagePath = Schema.Struct({ name: Schema.String });
+
+const getImage = Effect.fn("serveWikiImage")(function* getImage(
+  request: Request,
+  params: RouteParams,
+) {
   yield* verifySession(request.headers);
-  const name = new URL(request.url).pathname.split("/").at(-1) ?? "";
+  const { name } = yield* readPathParams(WikiImagePath, params);
   const extension = imageNamePattern.exec(name)?.groups?.["extension"];
   const contentType = extension === undefined ? undefined : imageTypes.get(extension);
   if (contentType === undefined) {

@@ -40,8 +40,16 @@ type InputHandler<Input, Value, Failures, Requirements> = (
   request: Request,
   input: Input,
 ) => Effect.Effect<Value, Failures, Requirements>;
+type RouteParams = Readonly<Record<string, string>>;
+type RawHandler<Failures, Requirements> = (
+  request: Request,
+  params: RouteParams,
+) => Effect.Effect<Response, Failures, Requirements>;
 interface ElysiaContext {
   readonly request: Request;
+}
+interface ElysiaRouteContext extends ElysiaContext {
+  readonly params: RouteParams;
 }
 interface ElysiaStreamContext extends ElysiaContext {
   readonly set: {
@@ -73,16 +81,16 @@ interface SiteRoutes<Requirements> {
     failures: ExactFailureTable<Failures>,
   ) => Guard;
   readonly raw: <Failures extends Tagged>(
-    handler: Handler<Response, Failures, Requirements>,
+    handler: RawHandler<Failures, Requirements>,
     failures: ExactFailureTable<Failures>,
-  ) => readonly [RouteDetail, ElysiaHandler];
+  ) => readonly [RouteDetail, (context: ElysiaRouteContext) => Promise<Response>];
 }
 interface ApiRoutes<Requirements> extends SiteRoutes<Requirements> {
   readonly route: <Input extends Decodable, Value, Encoded, Failures extends Tagged>(
     spec: RouteSpec<Input, Value, Encoded>,
     handler: InputHandler<Input["Type"], Value, Failures, Requirements>,
     failures: ExactFailureTable<Failures>,
-  ) => readonly [RouteDetail, (context: ElysiaContext) => Promise<Encoded | Failed>];
+  ) => readonly [RouteDetail, (context: ElysiaRouteContext) => Promise<Encoded | Failed>];
 }
 
 const missingMessage = "見つかりませんでした。";
@@ -94,7 +102,7 @@ function decodeInput<Contract extends Decodable>(
   input: unknown,
 ): Effect.Effect<Contract["Type"], InputInvalid> {
   return Schema.decodeUnknownEffect(schema, { onExcessProperty: "error" })(input).pipe(
-    Effect.mapError(() => new InputInvalid()),
+    Effect.mapError((cause) => new InputInvalid({ cause })),
   );
 }
 
@@ -118,6 +126,13 @@ function readSearchParams<Contract extends Decodable>(
   request: Request,
 ): Effect.Effect<Contract["Type"], InputInvalid> {
   return decodeInput(schema, Object.fromEntries(new URL(request.url).searchParams));
+}
+
+function readPathParams<Contract extends Decodable>(
+  schema: Contract,
+  params: RouteParams,
+): Effect.Effect<Contract["Type"], InputInvalid> {
+  return decodeInput(schema, params);
 }
 
 const apiRoot = "/api";
@@ -210,11 +225,11 @@ function passed(): undefined {
 }
 
 function respondRaw<Failures extends Tagged, Requirements>(
-  handler: Handler<Response, Failures, Requirements>,
+  handler: RawHandler<Failures, Requirements>,
   failures: AnyFailureTable,
-): (request: Request) => Effect.Effect<Response, never, Requirements> {
-  return (request) =>
-    handler(request).pipe(Effect.catchCause((cause) => failureResponse(failures, cause)));
+): (request: Request, params: RouteParams) => Effect.Effect<Response, never, Requirements> {
+  return (request, params) =>
+    handler(request, params).pipe(Effect.catchCause((cause) => failureResponse(failures, cause)));
 }
 
 function respondGuard<Failures extends Tagged, Requirements>(
@@ -230,12 +245,12 @@ function respondGuard<Failures extends Tagged, Requirements>(
 
 function respondValue<Value, Encoded, Failures extends Tagged, Requirements>(
   response: Schema.Codec<Value, Encoded>,
-  handler: Handler<Value, Failures, Requirements>,
+  handler: (request: Request, params: RouteParams) => Effect.Effect<Value, Failures, Requirements>,
   failures: AnyFailureTable,
-): (request: Request) => Effect.Effect<Encoded | Failed, never, Requirements> {
+): (request: Request, params: RouteParams) => Effect.Effect<Encoded | Failed, never, Requirements> {
   const encode = Schema.encodeEffect(response);
-  return (request) =>
-    handler(request).pipe(
+  return (request, params) =>
+    handler(request, params).pipe(
       Effect.flatMap((value) => Effect.orDie(encode(value))),
       Effect.catchCause((cause) => reportedFailure(failures, cause).pipe(Effect.map(failedStatus))),
     );
@@ -247,17 +262,27 @@ function inputKind<Input extends Decodable, Value, Encoded>(
   if (spec.body !== undefined) {
     return "body";
   }
+  if (spec.params !== undefined) {
+    return "params";
+  }
   return spec.query === undefined ? "none" : "query";
 }
 
 function withInput<Input extends Decodable, Value, Encoded, Failures, Requirements>(
   spec: RouteSpec<Input, Value, Encoded>,
   handler: InputHandler<Input["Type"], Value, Failures, Requirements>,
-): Handler<Value, Failures | RequestRejected | InputInvalid, Requirements | AppOrigin> {
-  const { body, query } = spec;
+): (
+  request: Request,
+  params: RouteParams,
+) => Effect.Effect<Value, Failures | RequestRejected | InputInvalid, Requirements | AppOrigin> {
+  const { body, params: pathParams, query } = spec;
   if (body !== undefined) {
     return (request) =>
       readJsonBody(body, request).pipe(Effect.flatMap((input) => handler(request, input)));
+  }
+  if (pathParams !== undefined) {
+    return (request, params) =>
+      readPathParams(pathParams, params).pipe(Effect.flatMap((input) => handler(request, input)));
   }
   if (query !== undefined) {
     return (request) =>
@@ -361,14 +386,18 @@ function siteRoutes<Services>(
     return (context) => settle(context, program, (cause) => unavailableResponse(cause, reporting));
   }
   function raw<Failures extends Tagged>(
-    handler: Handler<Response, Failures, Services>,
+    handler: RawHandler<Failures, Services>,
     failures: ExactFailureTable<Failures>,
-  ): readonly [RouteDetail, ElysiaHandler] {
+  ): readonly [RouteDetail, (context: ElysiaRouteContext) => Promise<Response>] {
     const program = respondRaw(handler, { ...inputFailures.body, ...failures });
     return [
       hidden,
       (context): Promise<Response> =>
-        settle(context, program, (cause) => unavailableResponse(cause, reporting)),
+        settle(
+          context,
+          (request) => program(request, context.params),
+          (cause) => unavailableResponse(cause, reporting),
+        ),
     ];
   }
   function events<Value, Encoded extends ServerSentEvent, Failures extends Tagged>(
@@ -405,14 +434,18 @@ function apiRoutes<Requirements>(
     spec: RouteSpec<Input, Value, Encoded>,
     handler: InputHandler<Input["Type"], Value, Failures, Services>,
     failures: ExactFailureTable<Failures>,
-  ): readonly [RouteDetail, (context: ElysiaContext) => Promise<Encoded | Failed>] {
+  ): readonly [RouteDetail, (context: ElysiaRouteContext) => Promise<Encoded | Failed>] {
     const documented: AnyFailureTable = { ...inputFailures[inputKind(spec)], ...failures };
     const table: AnyFailureTable = { ...inputFailures.body, ...failures };
     const program = respondValue(spec.response, withInput(spec, handler), table);
     return [
       routeDetail(spec, documented),
       (context): Promise<Encoded | Failed> =>
-        settle(context, program, (cause) => unavailableStatus(cause, reporting)),
+        settle(
+          context,
+          (request) => program(request, context.params),
+          (cause) => unavailableStatus(cause, reporting),
+        ),
     ];
   }
   return { ...siteRoutes(runtime, reporting), route };
@@ -430,6 +463,7 @@ export {
   createApi,
   elysiaServer,
   readJsonBody,
+  readPathParams,
   readSearchParams,
   siteRoutes,
 };
@@ -438,12 +472,14 @@ export type {
   Decodable,
   ElysiaContext,
   ElysiaHandler,
+  ElysiaRouteContext,
   ElysiaStreamContext,
   EventStream,
   Failed,
   FailedEvent,
   Handler,
   InputHandler,
+  RouteParams,
   ServerSentEvent,
   SiteRoutes,
 };

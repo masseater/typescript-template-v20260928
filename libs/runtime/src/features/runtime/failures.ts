@@ -101,6 +101,7 @@ const bodyFailures: FailureTable<InputFailure> = {
 const inputFailures = {
   body: bodyFailures,
   none: {},
+  params: queryFailures,
   query: queryFailures,
 } as const satisfies Readonly<Record<string, AnyFailureTable>>;
 type InputKind = keyof typeof inputFailures;
