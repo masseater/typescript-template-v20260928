@@ -6,6 +6,10 @@ import { Identifier, MemberReference } from "./member.ts";
 
 const maximumGroupNameLength = 100;
 
+const GroupName = Schema.Trim.check(Schema.isLengthBetween(1, maximumGroupNameLength)).pipe(
+  Schema.brand("GroupName"),
+);
+
 const GroupJoinPolicy = Schema.Literals(groupJoinPolicies);
 
 const GroupOwner = MemberReference;
@@ -36,7 +40,7 @@ const GroupQuery = Schema.Struct({
 
 const GroupCreate = Schema.Struct({
   joinPolicy: GroupJoinPolicy,
-  name: Schema.Trim.check(Schema.isLengthBetween(1, maximumGroupNameLength)),
+  name: GroupName,
 });
 
 const GroupCreated = Schema.Struct({
@@ -58,7 +62,7 @@ const GroupLeft = CreatedResource;
 
 const GroupRename = Schema.Struct({
   id: Identifier,
-  name: Schema.Trim.check(Schema.isLengthBetween(1, maximumGroupNameLength)),
+  name: GroupName,
 });
 
 const GroupRenamed = CreatedResource;
@@ -76,8 +80,10 @@ export {
   GroupJoined,
   GroupLeave,
   GroupLeft,
+  GroupName,
   GroupQuery,
   GroupRename,
   GroupRenamed,
   GroupView,
+  maximumGroupNameLength,
 };

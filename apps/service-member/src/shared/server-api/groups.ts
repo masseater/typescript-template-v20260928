@@ -17,12 +17,12 @@ import { GroupLimitReached } from "./group-limit-reached.ts";
 import { GroupNotFound } from "./group-not-found.ts";
 import { clockDate, requireMessagingMember } from "./verified-member.ts";
 
+import type { GroupName } from "#shared/contracts/index.ts";
 import type { MemberReference } from "./verified-member.ts";
 
 const { conversation, conversationParticipant, groupInvite, groupMembership, memberGroup, user } =
   schema;
 
-const maximumGroupNameLength = 100;
 const maximumGroupMembers = 100;
 const maximumGroupsOwned = 20;
 const maximumGroupsJoined = 50;
@@ -45,14 +45,6 @@ interface GroupView {
   readonly members: readonly GroupMemberView[];
   readonly name: string;
   readonly owner: MemberReference;
-}
-
-function trimGroupName(name: string): string {
-  const trimmed = name.trim();
-  if (trimmed.length === 0 || trimmed.length > maximumGroupNameLength) {
-    return "";
-  }
-  return trimmed;
 }
 
 const membershipOf = Effect.fn("membershipOf")(function* membershipOf(
@@ -153,17 +145,14 @@ const createGroup = Effect.fn("createGroup")(function* createGroup(
   ownerId: string,
   draft: {
     readonly joinPolicy: typeof GROUP_JOIN_POLICY.invite | typeof GROUP_JOIN_POLICY.open;
-    readonly name: string;
+    readonly name: typeof GroupName.Type;
   },
 ) {
   const owner = yield* requireMessagingMember(ownerId);
   if (!(yield* mayCreateGroup(ownerId))) {
     return yield* new GroupNotFound();
   }
-  const name = trimGroupName(draft.name);
-  if (name === "") {
-    return yield* new GroupNotFound();
-  }
+  const { name } = draft;
   const [owned] = yield* query((database) =>
     database
       .select({ count: count() })
@@ -353,19 +342,15 @@ const leaveGroup = Effect.fn("leaveGroup")(function* leaveGroup(viewerId: string
 const renameGroup = Effect.fn("renameGroup")(function* renameGroup(
   viewerId: string,
   groupId: string,
-  name: string,
+  name: typeof GroupName.Type,
 ) {
   yield* requireMessagingMember(viewerId);
-  const trimmed = trimGroupName(name);
-  if (trimmed === "") {
-    return yield* new GroupNotFound();
-  }
   const membership = yield* membershipOf(viewerId, groupId);
   if (membership?.role !== GROUP_MEMBERSHIP_ROLE.owner) {
     return yield* new GroupNotFound();
   }
   yield* query((database) =>
-    database.update(memberGroup).set({ name: trimmed }).where(eq(memberGroup.id, groupId)),
+    database.update(memberGroup).set({ name }).where(eq(memberGroup.id, groupId)),
   );
 });
 

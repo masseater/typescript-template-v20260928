@@ -5,6 +5,7 @@ import { TestDatabase } from "@repo/db/testing";
 import { Effect, DateTime, Schema } from "effect";
 import { TestClock } from "effect/testing";
 
+import { GroupName } from "#shared/contracts/index.ts";
 import { createGroup, findGroup, joinGroup, leaveGroup, renameGroup } from "./groups.ts";
 
 const maximumGroupMembers = 100;
@@ -15,6 +16,8 @@ import { findConversation, listInbox, sendConversationMessage } from "./messagin
 import type { Database, DatabaseFailure } from "@repo/db";
 
 const { user } = schema;
+const groupName = (name: string): Effect.Effect<typeof GroupName.Type> =>
+  Schema.decodeEffect(GroupName)(name).pipe(Effect.orDie);
 const recordedAt = DateTime.toDate(DateTime.makeUnsafe("2026-01-01T00:00:00.000Z"));
 const wholePage = { limit: 50, offset: 0 };
 
@@ -56,7 +59,7 @@ const openGroup = Effect.fn("openGroup")(function* openGroup(
     | typeof GROUP_JOIN_POLICY.open = GROUP_JOIN_POLICY.invite,
 ) {
   yield* TestClock.adjust("1 minute");
-  return yield* createGroup(ownerId, { joinPolicy, name });
+  return yield* createGroup(ownerId, { joinPolicy, name: yield* groupName(name) });
 });
 
 describe("who may use groups", () => {
@@ -74,7 +77,10 @@ describe("who may use groups", () => {
       );
       assert.strictEqual(
         yield* failureTag(
-          createGroup(userId, { joinPolicy: GROUP_JOIN_POLICY.open, name: "新規" }),
+          createGroup(userId, {
+            joinPolicy: GROUP_JOIN_POLICY.open,
+            name: yield* groupName("新規"),
+          }),
         ),
         "MessagingMemberRequired",
       );
@@ -218,10 +224,10 @@ describe("ownership and posting", () => {
       yield* addUser({ userId: "guest" });
       const created = yield* openGroup("owner", "旧名", GROUP_JOIN_POLICY.open);
       yield* joinGroup("guest", created.groupId);
-      yield* renameGroup("owner", created.groupId, "新名");
+      yield* renameGroup("owner", created.groupId, yield* groupName("新名"));
       assert.strictEqual((yield* findGroup("guest", created.groupId)).name, "新名");
       assert.strictEqual(
-        yield* failureTag(renameGroup("guest", created.groupId, "勝手に変える")),
+        yield* failureTag(renameGroup("guest", created.groupId, yield* groupName("勝手に変える"))),
         "GroupNotFound",
       );
     }).pipe(Effect.provide(TestDatabase)),
@@ -282,7 +288,10 @@ describe("limits", () => {
       }
       assert.strictEqual(
         yield* failureTag(
-          createGroup("owner", { joinPolicy: GROUP_JOIN_POLICY.open, name: "上限超え" }),
+          createGroup("owner", {
+            joinPolicy: GROUP_JOIN_POLICY.open,
+            name: yield* groupName("上限超え"),
+          }),
         ),
         "GroupLimitReached",
       );

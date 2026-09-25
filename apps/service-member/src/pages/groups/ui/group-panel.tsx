@@ -10,6 +10,7 @@ import {
   TextLink,
 } from "@repo/ui";
 
+import { maximumGroupNameLength } from "#shared/contracts/index.ts";
 import { GroupBody } from "./group-body.tsx";
 
 import type { GroupView } from "#shared/contracts/index.ts";
@@ -128,7 +129,7 @@ function RenameSection({
         <Field
           label="グループ名"
           name="name"
-          maxLength={100}
+          maxLength={maximumGroupNameLength}
           value={rename.name}
           onValueChange={onNameChange}
         />
