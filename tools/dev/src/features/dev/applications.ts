@@ -122,7 +122,7 @@ const launch = Effect.fn("launch")(function* launch(app: App) {
   const command = `exec ${vp} run --filter @repo/${app} preview >> ${quotedLog} 2>&1`;
   return yield* run(
     "tmux",
-    ["-L", socket, "new-session", "-d", "-s", app, "-c", root, "fish", "-c", command],
+    ["-L", socket, "new-session", "-d", "-s", app, "-c", root, "sh", "-c", command],
     { cwd: root },
   );
 });

@@ -17,6 +17,7 @@ import { lazyMotionVisitor } from "./lazy-motion.ts";
 import { filename, reportViolation, type LintContext, type Node } from "./lint-context.ts";
 import { modularImportsVisitor } from "./modular-imports.ts";
 import { modularLayersVisitor } from "./modular-layers.ts";
+import { portableExecutableVisitor } from "./portable-executable.ts";
 import {
   cliImplementation,
   exitCodeImplementation,
@@ -324,6 +325,12 @@ const projectPlugin = definePlugin({
       create: gitEnvironmentVisitor,
       meta: metadata(
         "テストと fixture から git を起動するときは env を明示してください。継承した GIT_DIR・GIT_INDEX_FILE・GIT_WORK_TREE を持ったままの git init・git config・git add は、一時ディレクトリではなくこのリポジトリの設定と index を書き換えます。",
+      ),
+    },
+    "portable-executable": {
+      create: portableExecutableVisitor,
+      meta: metadata(
+        "子プロセスは PATH から名前で探せる実行ファイルで起動し、シェルを挟むときは sh -c にしてください。特定のアプリに同梱された絶対パスや fish・zsh を前提にすると、それを入れていない環境ではコマンドが見つからないか、tmux のセッションなどが黙って終わります。",
       ),
     },
     layers: {

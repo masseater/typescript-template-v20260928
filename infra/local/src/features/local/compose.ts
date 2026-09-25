@@ -2,7 +2,7 @@
 import { NodeServices } from "@effect/platform-node";
 import { causeRecord, firstUserArgumentIndex, runCli } from "@repo/cli";
 import { repositoryRoot } from "@repo/config/repository-root";
-import { Effect, FileSystem, Schema } from "effect";
+import { Effect, Schema } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
 class LocalServicesFailure extends Schema.TaggedError<LocalServicesFailure>()(
@@ -11,7 +11,6 @@ class LocalServicesFailure extends Schema.TaggedError<LocalServicesFailure>()(
 ) {}
 
 const composeFile = new URL("../../../compose.yaml", import.meta.url).pathname;
-const bundledCompose = "/Applications/OrbStack.app/Contents/MacOS/xbin/docker-compose";
 const [requestedAction] = process.argv.slice(firstUserArgumentIndex);
 const actions: Readonly<Record<string, readonly string[]>> = {
   config: ["config", "--quiet"],
@@ -33,15 +32,11 @@ const composeArguments = (
 };
 
 const runCompose = Effect.fn("runCompose")(function* runCompose(composeArgs: readonly string[]) {
-  const filesystem = yield* FileSystem.FileSystem;
-  const bundled = yield* filesystem.exists(bundledCompose).pipe(Effect.orElseSucceed(() => false));
   const failed = new LocalServicesFailure({ code: "compose_command_failed" });
-  const command = bundled ? bundledCompose : "docker";
-  const commandArgs = [...(bundled ? [] : ["compose"]), "-f", composeFile, ...composeArgs];
   const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
   const exitCode = yield* spawner
     .exitCode(
-      ChildProcess.make(command, commandArgs, {
+      ChildProcess.make("docker", ["compose", "-f", composeFile, ...composeArgs], {
         cwd: repositoryRoot,
         stderr: "inherit",
         stdin: "inherit",
