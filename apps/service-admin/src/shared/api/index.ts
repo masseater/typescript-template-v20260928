@@ -1,2 +1,2 @@
 export { adminClient } from "./client.ts";
-export { pendingCountAtom } from "./inquiries.ts";
+export { inquiriesKey, pendingCountOptions } from "./inquiries.ts";

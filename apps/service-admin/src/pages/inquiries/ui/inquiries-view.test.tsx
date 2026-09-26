@@ -24,17 +24,26 @@ function rendered(
   state: Readonly<{
     error?: string;
     inquiries?: readonly AdminInquirySummary[];
+    page?: number;
     pendingCount?: number;
     status?: InquiryStatus;
+    total?: number;
   }>,
 ): string {
+  const list =
+    state.inquiries === undefined
+      ? undefined
+      : { inquiries: state.inquiries, total: state.total ?? state.inquiries.length };
   return renderedAt(
     <InquiriesView
       error={state.error}
-      inquiries={state.inquiries}
+      list={list}
       onToggle={() => undefined}
       pendingCount={state.pendingCount}
-      status={state.status}
+      search={{
+        ...(state.page === undefined ? {} : { page: state.page }),
+        ...(state.status === undefined ? {} : { status: state.status }),
+      }}
     />,
     ["/inquiries", "/inquiries/$id"],
   );
@@ -90,6 +99,24 @@ describe("inquiry list", () => {
   it("names the member who asked", () => {
     expect(rendered({ inquiries: [inquiry], pendingCount: 1 })).toContain(
       '<td class="p-2">山田</td>',
+    );
+  });
+
+  it("counts every inquiry, not only the ones on this page", () => {
+    expect(rendered({ inquiries: [inquiry], pendingCount: 1, total: 51 })).toContain(
+      "51 件中 1〜1 件",
+    );
+  });
+
+  it("offers the second page when there are more inquiries than one page holds", () => {
+    expect(rendered({ inquiries: [inquiry], pendingCount: 1, total: 51 })).toContain(
+      'aria-label="2 ページ目"',
+    );
+  });
+
+  it("counts from the first inquiry of the second page", () => {
+    expect(rendered({ inquiries: [inquiry], page: 2, pendingCount: 1, total: 51 })).toContain(
+      "51 件中 51〜51 件",
     );
   });
 });
