@@ -9,7 +9,7 @@ import type { AuditFilterForm } from "#pages/audit/model/audit-filter.ts";
 import type { StaffAuditPageView } from "#shared/contracts/index.ts";
 
 const filter: AuditFilterForm = {
-  action: "",
+  action: undefined,
   actorId: "staff-1",
   handleActionChange: () => undefined,
   handleActorIdChange: () => undefined,
@@ -32,7 +32,10 @@ const auditPage = {
 } as const satisfies StaffAuditPageView;
 
 function rendered(error: string | undefined, page: StaffAuditPageView | undefined): string {
-  return renderedAt(<AuditView audit={filter} error={error} page={page} />, ["/"]);
+  return renderedAt(<AuditView audit={filter} error={error} page={page} search={{}} />, [
+    "/",
+    "/audit",
+  ]);
 }
 
 describe("audit log", () => {
@@ -64,10 +67,18 @@ describe("audit log", () => {
     );
   });
 
-  it("shows the total", () => {
-    expect(rendered(undefined, auditPage)).toContain(
-      '<p class="text-sm text-muted-foreground">全 1 件</p>',
-    );
+  it("shows the total and the range on this page", () => {
+    expect(rendered(undefined, auditPage)).toContain("1 件中 1〜1 件");
+  });
+
+  it("offers the next page when the log runs past one page", () => {
+    expect(rendered(undefined, { ...auditPage, total: 51 })).toContain('aria-label="2 ページ目"');
+  });
+
+  it("offers only the known actions and everything as the action filter", () => {
+    const html = rendered(undefined, auditPage);
+    expect(html).toContain("すべて");
+    expect(html).not.toContain('name="action" type="text"');
   });
 
   it("lists each event target", () => {

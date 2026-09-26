@@ -1,66 +1,37 @@
-import { useAtomValue } from "@effect/atom-react";
-import { auditActions } from "@repo/config";
-import { localState, requestAtom, type RequestResult } from "@repo/ui";
-import { Schema } from "effect";
+import { useAtom } from "@effect/atom-react";
+import { useNavigate } from "@tanstack/react-router";
 import { Atom } from "effect/unstable/reactivity";
 
-import { loadAuditPage } from "#pages/audit/api/audit.ts";
+import { filterOf, normalizeAuditSearch, searchOf } from "./audit-search.ts";
 
-import type { StaffAuditPageView } from "#shared/contracts/index.ts";
-import type { AuditPage } from "@repo/config/paging";
 import type { AuditFilter, AuditFilterForm } from "./audit-filter.ts";
+import type { AuditSearch } from "./audit-search.ts";
 
-interface AuditList extends AuditFilterForm {
-  readonly listing: RequestResult<StaffAuditPageView>;
-}
-
-const auditPageSize = 50;
-const AuditAction = Schema.Literals(auditActions);
-
-const emptyFilter: AuditFilter = { action: "", actorId: "", targetId: "" };
-
-function auditPageQuery(filter: AuditFilter): typeof AuditPage.Type {
-  return {
-    ...(Schema.is(AuditAction)(filter.action) ? { action: filter.action } : {}),
-    ...(filter.actorId.length > 0 ? { actorId: filter.actorId } : {}),
-    limit: auditPageSize,
-    offset: 0,
-    ...(filter.targetId.length > 0 ? { targetId: filter.targetId } : {}),
-  };
-}
-
-const auditPageAtom = Atom.family((filter: AuditFilter) =>
-  requestAtom(() => loadAuditPage(auditPageQuery(filter))),
+const draftAtom = Atom.family((applied: string) =>
+  Atom.make<AuditFilter>(filterOf(normalizeAuditSearch(JSON.parse(applied)))),
 );
 
-const useDraftFilter = localState<AuditFilter>(emptyFilter);
-const useAppliedFilter = localState<AuditFilter>(emptyFilter);
-
-function useAuditList(): AuditList {
-  const [draft, setDraft] = useDraftFilter();
-  const [applied, setApplied] = useAppliedFilter();
-  const listing = useAtomValue(auditPageAtom(applied));
+function useAuditFilter(search: AuditSearch): AuditFilterForm {
+  const navigate = useNavigate();
+  const applied = searchOf(filterOf(search));
+  const [draft, setDraft] = useAtom(draftAtom(JSON.stringify(applied)));
   function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
     event.preventDefault();
-    setApplied(draft);
-  }
-  function handleActionChange(action: string): void {
-    setDraft((current) => ({ ...current, action }));
-  }
-  function handleActorIdChange(actorId: string): void {
-    setDraft((current) => ({ ...current, actorId }));
-  }
-  function handleTargetIdChange(targetId: string): void {
-    setDraft((current) => ({ ...current, targetId }));
+    void navigate({ search: searchOf(draft), to: "/audit" });
   }
   return {
     ...draft,
-    handleActionChange,
-    handleActorIdChange,
+    handleActionChange: (action) => {
+      setDraft({ ...draft, action });
+    },
+    handleActorIdChange: (actorId) => {
+      setDraft({ ...draft, actorId });
+    },
     handleSubmit,
-    handleTargetIdChange,
-    listing,
+    handleTargetIdChange: (targetId) => {
+      setDraft({ ...draft, targetId });
+    },
   };
 }
 
-export { useAuditList };
+export { useAuditFilter };
