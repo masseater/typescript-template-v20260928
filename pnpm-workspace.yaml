@@ -80,7 +80,7 @@ catalog:
   otpauth: 9.5.2
   "@inlang/paraglide-js": 2.25.4
   oxlint: 1.82.0
-  oxlint-tsgolint: 7.0.2001
+  oxlint-tsgolint: 7.0.2003
   playwright: 1.63.0
   react: 19.3.0
   react-dom: 19.3.0
