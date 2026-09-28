@@ -81,7 +81,7 @@ describe("dontReviewItCommand", () => {
               }),
             );
             process.exitCode = 0;
-            return stderr.text().includes("entry-composition");
+            return stderr.text();
           }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
         ),
       );
@@ -97,7 +97,7 @@ describe("dontReviewItCommand", () => {
     it("names the entry-composition check on standard error", ({
       theEntryCompositionCheckIsNamedOnStandardErrorForANamedAnnotation,
     }) => {
-      expect(theEntryCompositionCheckIsNamedOnStandardErrorForANamedAnnotation).toBe(true);
+      expect(theEntryCompositionCheckIsNamedOnStandardErrorForANamedAnnotation).toContain("entry-composition");
     });
   });
 
@@ -152,7 +152,7 @@ describe("dontReviewItCommand", () => {
             );
             yield* Effect.promise(() => runCommand(dontReviewItCommand, { rawArgs: ["check"] }));
             process.exitCode = 0;
-            return stdout.text().includes('required "guard" entry must not be missing');
+            return stdout.text();
           }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
         ),
       )
@@ -178,7 +178,7 @@ describe("dontReviewItCommand", () => {
             );
             yield* Effect.promise(() => runCommand(dontReviewItCommand, { rawArgs: ["check"] }));
             process.exitCode = 0;
-            return stderr.text().includes("canonical-values");
+            return stderr.text();
           }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
         ),
       )
@@ -212,7 +212,7 @@ describe("dontReviewItCommand", () => {
                   runCommand(dontReviewItCommand, { rawArgs: ["check"] }),
                 );
                 process.exitCode = 0;
-                return stderr.text().includes("entry-composition");
+                return stderr.text();
               },
             ).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
           ),
@@ -225,19 +225,19 @@ describe("dontReviewItCommand", () => {
     it("names the guard entry the working directory is missing on standard output", ({
       theMissingGuardEntryIsNamedOnStandardOutput,
     }) => {
-      expect(theMissingGuardEntryIsNamedOnStandardOutput).toBe(true);
+      expect(theMissingGuardEntryIsNamedOnStandardOutput).toContain('required "guard" entry must not be missing');
     });
 
     it("scans the workspace the working directory holds", ({
       theWorkspaceOfTheWorkingDirectoryIsScanned,
     }) => {
-      expect(theWorkspaceOfTheWorkingDirectoryIsScanned).toBe(true);
+      expect(theWorkspaceOfTheWorkingDirectoryIsScanned).toContain("canonical-values");
     });
 
     it("names the entry-composition check on standard error", ({
       theEntryCompositionCheckIsNamedOnStandardErrorWithoutARepositoryRoot,
     }) => {
-      expect(theEntryCompositionCheckIsNamedOnStandardErrorWithoutARepositoryRoot).toBe(true);
+      expect(theEntryCompositionCheckIsNamedOnStandardErrorWithoutARepositoryRoot).toContain("entry-composition");
     });
   });
 
@@ -304,7 +304,7 @@ describe("dontReviewItCommand", () => {
             );
             yield* Effect.promise(() => runCommand(dontReviewItCommand, { rawArgs: ["check"] }));
             process.exitCode = 0;
-            return stdout.text().includes("src/order.ts:1");
+            return stdout.text();
           }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
         ),
       )
@@ -341,7 +341,7 @@ describe("dontReviewItCommand", () => {
                   runCommand(dontReviewItCommand, { rawArgs: ["check"] }),
                 );
                 process.exitCode = 0;
-                return stderr.text().includes("entry-composition");
+                return stderr.text();
               },
             ).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
           ),
@@ -354,13 +354,13 @@ describe("dontReviewItCommand", () => {
     it("names the declaration site the working directory holds", ({
       theDeclarationSiteInTheWorkingDirectoryIsNamedOnStandardOutput,
     }) => {
-      expect(theDeclarationSiteInTheWorkingDirectoryIsNamedOnStandardOutput).toBe(true);
+      expect(theDeclarationSiteInTheWorkingDirectoryIsNamedOnStandardOutput).toContain("src/order.ts:1");
     });
 
     it("names the entry-composition check on standard error", ({
       theEntryCompositionCheckIsNamedOnStandardErrorForTheWorkingDirectory,
     }) => {
-      expect(theEntryCompositionCheckIsNamedOnStandardErrorForTheWorkingDirectory).toBe(true);
+      expect(theEntryCompositionCheckIsNamedOnStandardErrorForTheWorkingDirectory).toContain("entry-composition");
     });
   });
 
@@ -434,7 +434,7 @@ describe("dontReviewItCommand", () => {
                   }),
                 );
                 process.exitCode = 0;
-                return stderr.text().includes("entry-composition");
+                return stderr.text();
               },
             ).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
           ),
@@ -451,7 +451,7 @@ describe("dontReviewItCommand", () => {
     it("names the entry-composition check on standard error", ({
       theEntryCompositionCheckIsNamedOnStandardErrorForAGluedRepositoryRoot,
     }) => {
-      expect(theEntryCompositionCheckIsNamedOnStandardErrorForAGluedRepositoryRoot).toBe(true);
+      expect(theEntryCompositionCheckIsNamedOnStandardErrorForAGluedRepositoryRoot).toContain("entry-composition");
     });
   });
 
@@ -516,7 +516,7 @@ describe("dontReviewItCommand", () => {
               runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
             );
             process.exitCode = 0;
-            return stdout.text().includes("warning: ");
+            return stdout.text();
           }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
         ),
       )
@@ -556,7 +556,7 @@ describe("dontReviewItCommand", () => {
                   }),
                 );
                 process.exitCode = 0;
-                return stderr.text().includes("entry-composition");
+                return stderr.text();
               },
             ).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
           ),
@@ -569,13 +569,13 @@ describe("dontReviewItCommand", () => {
     it("prints the disagreement as a warning", ({
       theWarningOfAVersionDisagreementIsNamedOnStandardOutput,
     }) => {
-      expect(theWarningOfAVersionDisagreementIsNamedOnStandardOutput).toBe(true);
+      expect(theWarningOfAVersionDisagreementIsNamedOnStandardOutput).toContain("warning: ");
     });
 
     it("names the entry-composition check on standard error", ({
       theEntryCompositionCheckIsNamedOnStandardErrorForAVersionDisagreement,
     }) => {
-      expect(theEntryCompositionCheckIsNamedOnStandardErrorForAVersionDisagreement).toBe(true);
+      expect(theEntryCompositionCheckIsNamedOnStandardErrorForAVersionDisagreement).toContain("entry-composition");
     });
   });
 
@@ -644,7 +644,7 @@ describe("dontReviewItCommand", () => {
               runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
             );
             process.exitCode = 0;
-            return stdout.text().includes("src/order.ts:1");
+            return stdout.text();
           }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
         ),
       )
@@ -671,7 +671,7 @@ describe("dontReviewItCommand", () => {
                   }),
                 );
                 process.exitCode = 0;
-                return stderr.text().includes("entry-composition");
+                return stderr.text();
               },
             ).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
           ),
@@ -693,13 +693,13 @@ describe("dontReviewItCommand", () => {
     it("names the declaration site on standard output", ({
       theDeclarationSiteOfAnUnnamedAnnotationIsNamedOnStandardOutput,
     }) => {
-      expect(theDeclarationSiteOfAnUnnamedAnnotationIsNamedOnStandardOutput).toBe(true);
+      expect(theDeclarationSiteOfAnUnnamedAnnotationIsNamedOnStandardOutput).toContain("src/order.ts:1");
     });
 
     it("names the entry-composition check on standard error", ({
       theEntryCompositionCheckIsNamedOnStandardErrorForAnUnnamedAnnotation,
     }) => {
-      expect(theEntryCompositionCheckIsNamedOnStandardErrorForAnUnnamedAnnotation).toBe(true);
+      expect(theEntryCompositionCheckIsNamedOnStandardErrorForAnUnnamedAnnotation).toContain("entry-composition");
     });
   });
 
@@ -724,7 +724,7 @@ describe("dontReviewItCommand", () => {
               runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
             );
             process.exitCode = 0;
-            return stdout.text().includes(".config/broken.ts:1");
+            return stdout.text();
           }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
         ),
     );
@@ -732,7 +732,7 @@ describe("dontReviewItCommand", () => {
     it("names the declaration site the scan reached", ({
       theDeclarationSiteInADotDirectoryIsNamedOnStandardOutput,
     }) => {
-      expect(theDeclarationSiteInADotDirectoryIsNamedOnStandardOutput).toBe(true);
+      expect(theDeclarationSiteInADotDirectoryIsNamedOnStandardOutput).toContain(".config/broken.ts:1");
     });
   });
 
@@ -779,7 +779,7 @@ describe("dontReviewItCommand", () => {
               runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
             );
             process.exitCode = 0;
-            return stdout.text().includes("scripts/legacy.mjs:1");
+            return stdout.text();
           }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
         ),
       )
@@ -801,7 +801,7 @@ describe("dontReviewItCommand", () => {
               runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
             );
             process.exitCode = 0;
-            return stdout.text().includes(RETIRED_ANNOTATION_TAGS[0] ?? "");
+            return stdout.text();
           }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
         ),
       );
@@ -813,11 +813,11 @@ describe("dontReviewItCommand", () => {
     it("names the declaration site on standard output", ({
       theDeclarationSiteOfARetiredAnnotationTagIsNamedOnStandardOutput,
     }) => {
-      expect(theDeclarationSiteOfARetiredAnnotationTagIsNamedOnStandardOutput).toBe(true);
+      expect(theDeclarationSiteOfARetiredAnnotationTagIsNamedOnStandardOutput).toContain("scripts/legacy.mjs:1");
     });
 
     it("names the retired tag on standard output", ({ theRetiredTagIsNamedOnStandardOutput }) => {
-      expect(theRetiredTagIsNamedOnStandardOutput).toBe(true);
+      expect(theRetiredTagIsNamedOnStandardOutput).toContain(RETIRED_ANNOTATION_TAGS[0] ?? "");
     });
   });
 
@@ -903,7 +903,7 @@ describe("dontReviewItCommand", () => {
                   }),
                 );
                 process.exitCode = 0;
-                return stderr.text().includes("entry-composition");
+                return stderr.text();
               },
             ).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
           ),
@@ -922,7 +922,7 @@ describe("dontReviewItCommand", () => {
     it("names the entry-composition check on standard error", ({
       theEntryCompositionCheckIsNamedOnStandardErrorForAConceptATestFileRepeats,
     }) => {
-      expect(theEntryCompositionCheckIsNamedOnStandardErrorForAConceptATestFileRepeats).toBe(true);
+      expect(theEntryCompositionCheckIsNamedOnStandardErrorForAConceptATestFileRepeats).toContain("entry-composition");
     });
   });
 
@@ -977,7 +977,7 @@ describe("dontReviewItCommand", () => {
               runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
             );
             process.exitCode = 0;
-            return stdout.text().includes("article.status");
+            return stdout.text();
           }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
         ),
       )
@@ -1003,7 +1003,7 @@ describe("dontReviewItCommand", () => {
               runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
             );
             process.exitCode = 0;
-            return stdout.text().includes("order.status");
+            return stdout.text();
           }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
         ),
       );
@@ -1015,13 +1015,13 @@ describe("dontReviewItCommand", () => {
     it("names the first concept that declares it", ({
       theArticleConceptIsNamedOnStandardOutput,
     }) => {
-      expect(theArticleConceptIsNamedOnStandardOutput).toBe(true);
+      expect(theArticleConceptIsNamedOnStandardOutput).toContain("article.status");
     });
 
     it("names the second concept that declares it", ({
       theOrderConceptIsNamedOnStandardOutput,
     }) => {
-      expect(theOrderConceptIsNamedOnStandardOutput).toBe(true);
+      expect(theOrderConceptIsNamedOnStandardOutput).toContain("order.status");
     });
   });
 
@@ -1129,7 +1129,7 @@ describe("dontReviewItCommand", () => {
               }),
             );
             process.exitCode = 0;
-            return stderr.text().includes("missing");
+            return stderr.text();
           }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
         ),
       );
@@ -1145,7 +1145,7 @@ describe("dontReviewItCommand", () => {
     it("names the root it could not read on standard error", ({
       theMissingRepositoryRootIsNamedOnStandardError,
     }) => {
-      expect(theMissingRepositoryRootIsNamedOnStandardError).toBe(true);
+      expect(theMissingRepositoryRootIsNamedOnStandardError).toContain("missing");
     });
   });
 
@@ -1279,7 +1279,7 @@ describe("dontReviewItCommand", () => {
               runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
             );
             process.exitCode = 0;
-            return stderr.text().includes("entry-composition");
+            return stderr.text();
           }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
         ),
       );
@@ -1295,7 +1295,7 @@ describe("dontReviewItCommand", () => {
     it("names the entry-composition check on standard error", ({
       theEntryCompositionCheckIsNamedOnStandardErrorForDistinctBodies,
     }) => {
-      expect(theEntryCompositionCheckIsNamedOnStandardErrorForDistinctBodies).toBe(true);
+      expect(theEntryCompositionCheckIsNamedOnStandardErrorForDistinctBodies).toContain("entry-composition");
     });
   });
 
@@ -1350,7 +1350,7 @@ describe("dontReviewItCommand", () => {
               runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
             );
             process.exitCode = 0;
-            return stdout.text().includes("src/doubled.ts:1 (doubled)");
+            return stdout.text();
           }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
         ),
       )
@@ -1376,7 +1376,7 @@ describe("dontReviewItCommand", () => {
               runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
             );
             process.exitCode = 0;
-            return stdout.text().includes("src/twice.ts:1 (twice)");
+            return stdout.text();
           }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
         ),
       );
@@ -1386,11 +1386,11 @@ describe("dontReviewItCommand", () => {
     });
 
     it("names the site that repeated the body", ({ theDoubledSiteIsNamedOnStandardOutput }) => {
-      expect(theDoubledSiteIsNamedOnStandardOutput).toBe(true);
+      expect(theDoubledSiteIsNamedOnStandardOutput).toContain("src/doubled.ts:1 (doubled)");
     });
 
     it("names the site that already held the body", ({ theTwiceSiteIsNamedOnStandardOutput }) => {
-      expect(theTwiceSiteIsNamedOnStandardOutput).toBe(true);
+      expect(theTwiceSiteIsNamedOnStandardOutput).toContain("src/twice.ts:1 (twice)");
     });
   });
 
@@ -1559,7 +1559,7 @@ describe("dontReviewItCommand", () => {
                   }),
                 );
                 process.exitCode = 0;
-                return stderr.text().includes("entry-composition");
+                return stderr.text();
               },
             ).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
           ),
@@ -1592,9 +1592,7 @@ describe("dontReviewItCommand", () => {
               }),
             );
             process.exitCode = 0;
-            return (yield* filesystem.readFileString(paths.join(root, "package.json"))).includes(
-              "throttle --timeout 1800 -- spool -- vp check",
-            );
+            return (yield* filesystem.readFileString(paths.join(root, "package.json")));
           }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
         ),
       );
@@ -1610,11 +1608,11 @@ describe("dontReviewItCommand", () => {
     it("names the entry-composition check on standard error", ({
       theEntryCompositionCheckIsNamedOnStandardErrorForARepairedEntryComposition,
     }) => {
-      expect(theEntryCompositionCheckIsNamedOnStandardErrorForARepairedEntryComposition).toBe(true);
+      expect(theEntryCompositionCheckIsNamedOnStandardErrorForARepairedEntryComposition).toContain("entry-composition");
     });
 
     it("wraps the guard script the repository declares", ({ theRepairedGuardScript }) => {
-      expect(theRepairedGuardScript).toBe(true);
+      expect(theRepairedGuardScript).toContain("throttle --timeout 1800 -- spool -- vp check");
     });
   });
 
@@ -1728,7 +1726,7 @@ describe("dontReviewItCommand", () => {
               }),
             );
             process.exitCode = 0;
-            return stdout.text().includes("packages/web/package.json");
+            return stdout.text();
           }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
         ),
       )
@@ -1765,7 +1763,7 @@ describe("dontReviewItCommand", () => {
                   }),
                 );
                 process.exitCode = 0;
-                return stderr.text().includes("entry-composition");
+                return stderr.text();
               },
             ).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
           ),
@@ -1778,14 +1776,14 @@ describe("dontReviewItCommand", () => {
     it("names the manifest it must not repair", ({
       theUnrepairableManifestIsNamedOnStandardOutput,
     }) => {
-      expect(theUnrepairableManifestIsNamedOnStandardOutput).toBe(true);
+      expect(theUnrepairableManifestIsNamedOnStandardOutput).toContain("packages/web/package.json");
     });
 
     it("names the entry-composition check on standard error", ({
       theEntryCompositionCheckIsNamedOnStandardErrorForAnUnrepairableEntryComposition,
     }) => {
-      expect(theEntryCompositionCheckIsNamedOnStandardErrorForAnUnrepairableEntryComposition).toBe(
-        true,
+      expect(theEntryCompositionCheckIsNamedOnStandardErrorForAnUnrepairableEntryComposition).toContain(
+        "entry-composition",
       );
     });
   });
@@ -1844,8 +1842,7 @@ describe("dontReviewItCommand", () => {
             );
             process.exitCode = 0;
             return stderr
-              .text()
-              .includes("package.json exists but does not parse as a JSON object");
+              .text();
           }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
         ),
       );
@@ -1861,7 +1858,7 @@ describe("dontReviewItCommand", () => {
     it("names the manifest it could not read on standard error", ({
       theUnparsableManifestIsNamedOnStandardError,
     }) => {
-      expect(theUnparsableManifestIsNamedOnStandardError).toBe(true);
+      expect(theUnparsableManifestIsNamedOnStandardError).toContain("package.json exists but does not parse as a JSON object");
     });
   });
 
@@ -1905,8 +1902,7 @@ describe("dontReviewItCommand", () => {
             );
             process.exitCode = 0;
             return stderr
-              .text()
-              .includes("package.json exists but does not parse as a JSON object");
+              .text();
           }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
         ),
       );
@@ -1918,7 +1914,7 @@ describe("dontReviewItCommand", () => {
     it("names the manifest it could not read on standard error", ({
       theUnparsableManifestIsNamedOnStandardErrorWhileWriting,
     }) => {
-      expect(theUnparsableManifestIsNamedOnStandardErrorWhileWriting).toBe(true);
+      expect(theUnparsableManifestIsNamedOnStandardErrorWhileWriting).toContain("package.json exists but does not parse as a JSON object");
     });
   });
 
@@ -1969,7 +1965,7 @@ describe("dontReviewItCommand", () => {
               runCommand(dontReviewItCommand, { rawArgs: ["check", "--repository-root", root] }),
             );
             process.exitCode = 0;
-            return stdout.text().includes(".github/workflows/ci.yml:3");
+            return stdout.text();
           }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
         ),
       );
@@ -1981,7 +1977,7 @@ describe("dontReviewItCommand", () => {
     it("names the line that narrowed the start", ({
       theNarrowedWorkflowStartIsNamedOnStandardOutput,
     }) => {
-      expect(theNarrowedWorkflowStartIsNamedOnStandardOutput).toBe(true);
+      expect(theNarrowedWorkflowStartIsNamedOnStandardOutput).toContain(".github/workflows/ci.yml:3");
     });
   });
 
@@ -2064,7 +2060,7 @@ describe("dontReviewItCommand", () => {
                   }),
                 );
                 process.exitCode = 0;
-                return stderr.text().includes("entry-composition");
+                return stderr.text();
               },
             ).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
           ),
@@ -2081,7 +2077,7 @@ describe("dontReviewItCommand", () => {
     it("names the entry-composition check on standard error", ({
       theEntryCompositionCheckIsNamedOnStandardErrorForADisciplinedWorkflow,
     }) => {
-      expect(theEntryCompositionCheckIsNamedOnStandardErrorForADisciplinedWorkflow).toBe(true);
+      expect(theEntryCompositionCheckIsNamedOnStandardErrorForADisciplinedWorkflow).toContain("entry-composition");
     });
   });
 });

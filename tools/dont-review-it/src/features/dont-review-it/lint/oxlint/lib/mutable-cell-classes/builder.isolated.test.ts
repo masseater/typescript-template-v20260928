@@ -115,7 +115,7 @@ layer(NodeServices.layer)("loadRepositoryCellClassIndex", (it) => {
   });
 
   describe("the index of a repository", () => {
-    const fixture = Effect.gen(function* sameIndexOnASecondAsk() {
+    const fixture = Effect.gen(function* indexesOfTwoAsks() {
       const filesystem = yield* FileSystem.FileSystem;
       const paths = yield* Path.Path;
       const root = yield* filesystem.makeTempDirectoryScoped({
@@ -124,16 +124,16 @@ layer(NodeServices.layer)("loadRepositoryCellClassIndex", (it) => {
 
       yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
       yield* filesystem.writeFileString(paths.join(root, "src", "a.ts"), TALLY);
-      return (
-        loadRepositoryCellClassIndex({ repositoryRoot: root }) ===
-        loadRepositoryCellClassIndex({ repositoryRoot: root })
-      );
+      return {
+        firstAsk: loadRepositoryCellClassIndex({ repositoryRoot: root }),
+        secondAsk: loadRepositoryCellClassIndex({ repositoryRoot: root }),
+      };
     });
 
     it.effect("is built once and handed back on every later ask", () =>
       Effect.gen(function* program() {
-        const sameIndexOnASecondAsk = yield* fixture;
-        expect(sameIndexOnASecondAsk).toBe(true);
+        const { firstAsk, secondAsk } = yield* fixture;
+        expect(secondAsk).toBe(firstAsk);
       }),
     );
   });
