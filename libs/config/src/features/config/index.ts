@@ -28,15 +28,6 @@ export {
 } from "./applications.ts";
 export type { Application, Capability, CapabilityOf, ServiceName } from "./applications.ts";
 export {
-  architectureKindOf,
-  architectureKinds,
-  fsdLayers,
-  fsdPackages,
-  modularBudgets,
-  modularLayers,
-} from "./architecture.ts";
-export type { ArchitectureKind, FsdLayer, ModularLayer } from "./architecture.ts";
-export {
   ACCOUNT_STATE,
   ADMIN_PERMISSION,
   AUTHENTICATION_METHOD,

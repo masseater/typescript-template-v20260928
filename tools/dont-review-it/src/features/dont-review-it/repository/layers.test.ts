@@ -1,9 +1,10 @@
 import { NodeServices } from "@effect/platform-node";
-import { architectureKindOf, buildTargets } from "@repo/config";
+import { buildTargets } from "@repo/config";
 import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
 import { directoryEntries } from "../platform/directory-entries.ts";
+import { architectureKindOf } from "./architecture.ts";
 import { reported } from "./lint-harness-test-fixture.ts";
 import { isPublicApiIndex } from "./modular-budgets.ts";
 import { commands, workspaceDirectories } from "./tasks-test-fixture.ts";
@@ -105,6 +106,8 @@ describe("feature-sliced layers", () => {
     "apps/service-admin/src/users-search.ts",
     "apps/internal-dashboard/src/lib/source.ts",
     "apps/internal-dashboard/src/start.ts",
+    "apps/internal-wiki/src/loose.ts",
+    "apps/internal-wiki/src/components/wiki-page.tsx",
   ])("rejects %s outside the layers", (name) => {
     expect.hasAssertions();
     expect(reported("layers", { code: source, filename: name })).toBe(true);
@@ -116,6 +119,7 @@ describe("feature-sliced layers", () => {
     "apps/service-member/vite.config.ts",
     "apps/service-admin/src/pages/users/ui/users-page.tsx",
     "apps/internal-dashboard/src/shared/content/source.ts",
+    "apps/internal-wiki/src/app/server.ts",
   ])("allows %s", (name) => {
     expect.hasAssertions();
     expect(reported("layers", { code: source, filename: name })).toBe(false);

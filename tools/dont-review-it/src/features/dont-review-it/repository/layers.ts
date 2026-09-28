@@ -1,24 +1,15 @@
-import { applications } from "@repo/config";
-
+import { fsdLayers, fsdPackages } from "./architecture.ts";
 import { reportViolation, type LintContext, type Node } from "./lint-context.ts";
 
 import type { Visitor } from "vite-plus/lint/plugins";
 
-const layeredApps: readonly string[] = applications;
-const layers: ReadonlySet<string> = new Set([
-  "app",
-  "pages",
-  "widgets",
-  "features",
-  "entities",
-  "shared",
-]);
+const layers: ReadonlySet<string> = new Set(fsdLayers);
 
 const isOutsideLayers = (inspected: string): boolean => {
   const matched = /\/apps\/(?<app>[^/]+)\/src\/(?<inside>.+)$/u.exec(inspected)?.groups;
   const [layer, ...segments] = matched?.inside?.split("/") ?? [];
   return (
-    layeredApps.includes(matched?.app ?? "") && (segments.length === 0 || !layers.has(layer ?? ""))
+    fsdPackages.includes(matched?.app ?? "") && (segments.length === 0 || !layers.has(layer ?? ""))
   );
 };
 
