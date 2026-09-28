@@ -14,8 +14,12 @@ describe("privatePath", () => {
         "tools/dev/src/features/dev/cli.ts",
         "apps/service-admin/src/entry.ts",
         "libs/db/src/features/db/admin.ts",
-        "libs/db/src/features/db/remote-cli.ts",
+        "libs/db/src/features/db/agreement-admin.ts",
+        "libs/db/src/features/db/trust-admin.ts",
+        "libs/db/src/features/db/remote-operations.ts",
         "libs/db/src/features/db/database-test-fixture.ts",
+        "@repo/db/testing",
+        "@repo/db/migrations",
         ".env.local",
         "certs/app.pem",
       ].map((candidatePath) =>
@@ -33,12 +37,15 @@ describe("privatePath", () => {
         repositoryRoot,
       }),
     )
-    .extend("adminDatabaseModule", () =>
-      privatePath({
-        application: APPLICATION.admin,
-        candidatePath: `${repositoryRoot}/libs/db/src/features/db/admin.ts`,
-        repositoryRoot,
-      }),
+    .extend("adminDatabaseModules", () =>
+      ["libs/db/src/features/db/admin.ts", "libs/db/src/features/db/trust-admin.ts"].map(
+        (candidatePath) =>
+          privatePath({
+            application: APPLICATION.admin,
+            candidatePath: `${repositoryRoot}/${candidatePath}`,
+            repositoryRoot,
+          }),
+      ),
     )
     .extend("wikiReadsOfItsHost", () =>
       ["content/docs/index.md", "src/shared/server-api/mcp.ts"].map((candidatePath) =>
@@ -59,7 +66,7 @@ describe("privatePath", () => {
   it("keeps infra, tools, secrets, and other apps off the member surface", ({
     privateCandidates,
   }) => {
-    expect(privateCandidates).toStrictEqual([true, true, true, true, true, true, true, true]);
+    expect(privateCandidates).toStrictEqual(Array.from({ length: 12 }, () => true));
   });
 
   it("lets the wiki read the documents of its host and nothing else there", ({
@@ -72,8 +79,8 @@ describe("privatePath", () => {
     expect(ownApplicationEntry).toBe(false);
   });
 
-  it("lets admin read the admin database module", ({ adminDatabaseModule }) => {
-    expect(adminDatabaseModule).toBe(false);
+  it("lets admin read the admin database modules", ({ adminDatabaseModules }) => {
+    expect(adminDatabaseModules).toStrictEqual([false, false]);
   });
 
   it("treats dev vars as a secret file", ({ devVarsFile }) => {

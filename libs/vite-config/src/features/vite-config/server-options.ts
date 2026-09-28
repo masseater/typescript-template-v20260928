@@ -1,6 +1,7 @@
-import { APPLICATION, hostOf, type BuildTarget } from "@repo/config";
+import { hostOf, type BuildTarget } from "@repo/config";
 
 import { paths } from "./host.ts";
+import { deniedDatabaseFiles } from "./private-database-modules.ts";
 import { applicationsExcept } from "./private-path.ts";
 
 import type { UserConfig } from "vite-plus";
@@ -34,10 +35,8 @@ const serverOptions = ({
         "**/.local/**",
         "**/.local-agents/**",
         ...applicationsExcept(application).map((foreign) => `**/apps/${foreign}/**`),
-        ...(application === APPLICATION.admin ? [] : ["**/libs/db/src/features/db/admin.*"]),
-        "**/libs/db/src/features/db/remote*",
-        "**/libs/db/src/features/db/bootstrap*",
-        "**/libs/db/src/features/db/testing.*",
+        ...deniedDatabaseFiles(application).map((databaseFile) => `**/${databaseFile}`),
+        "**/*-test-fixture.*",
         "**/infra/**",
         "**/tools/**",
       ],

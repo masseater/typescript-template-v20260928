@@ -6,6 +6,12 @@ import { describe, expect, test as baseTest } from "vite-plus/test";
 
 import { devBoundary } from "./dev-boundary.ts";
 import { filesystem, paths } from "./host.ts";
+import {
+  databaseSourceDirectory,
+  deniedDatabaseFiles,
+  deniedDatabaseSpecifiers,
+  privateDatabaseModules,
+} from "./private-database-modules.ts";
 import { applicationsExcept } from "./private-path.ts";
 
 const okStatus = 200;
@@ -13,8 +19,15 @@ const forbiddenStatus = 403;
 const badRequestStatus = 400;
 const hexRadix = 16;
 const refusalText = "Private development resource denied";
-const administratorDatabaseModulePath = "libs/db/src/features/db/admin.ts?raw";
-const administratorDatabaseSource = 'export const label = "private-admin-database";';
+const databaseFiles = [
+  ...new Set(
+    privateDatabaseModules.flatMap((databaseModule) =>
+      databaseModule.files.map((file) => `${databaseSourceDirectory}/${file}`),
+    ),
+  ),
+];
+const databaseSourceOf = (databaseFile: string): string =>
+  `export const label = "${databaseFile}";`;
 const httpLayer = FetchHttpClient.layer;
 
 describe.each(buildTargets)("the %s development server", (application) => {
@@ -33,19 +46,26 @@ describe.each(buildTargets)("the %s development server", (application) => {
     ...[
       ".local/runtime.json",
       `apps/${application}/.dev.vars`,
-      "libs/db/src/features/db/remote-cli.ts",
+      ...deniedDatabaseFiles(application),
       "tools/private.js",
       ...foreignApplications.map((foreign) => `apps/${foreign}/src/private.js`),
     ].flatMap((privateFile) => ["", "?raw", "?import"].map((suffix) => `${privateFile}${suffix}`)),
-    administratorDatabaseModulePath,
+    ...databaseFiles
+      .filter((databaseFile) => !deniedDatabaseFiles(application).includes(databaseFile))
+      .map((databaseFile) => `${databaseFile}?raw`),
   ];
+  const readableDatabaseFiles = new Set(
+    databaseFiles
+      .filter((databaseFile) => !deniedDatabaseFiles(application).includes(databaseFile))
+      .map((databaseFile) => `${databaseFile}?raw`),
+  );
   const servedGuardedFiles = Object.fromEntries(
     guardedFilePaths.map((guardedFile) => [
       guardedFile,
-      guardedFile === administratorDatabaseModulePath && application === "service-admin"
+      readableDatabaseFiles.has(guardedFile)
         ? `${okStatus} export default ${Effect.runSync(
             Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(
-              administratorDatabaseSource,
+              databaseSourceOf(guardedFile.replace("?raw", "")),
             ).pipe(Effect.orDie),
           )};\n`
         : `${forbiddenStatus} ${refusalText}`,
@@ -54,8 +74,7 @@ describe.each(buildTargets)("the %s development server", (application) => {
   const privateModulePaths = [
     "/.dev.vars",
     "/src/alias.json",
-    "/@id/@repo/db/remote",
-    ...(application === "service-admin" ? [] : ["/@id/@repo/db/admin"]),
+    ...deniedDatabaseSpecifiers(application).map((specifier) => `/@id/${specifier}`),
     ...foreignApplications.flatMap((foreign) => [
       `/@id/@repo/${foreign}`,
       `/@fs/{repository}/apps/%${(foreign.codePointAt(0) ?? 0).toString(hexRadix)}${foreign.slice(1)}/src/private.js?raw`,
@@ -109,13 +128,11 @@ describe.each(buildTargets)("the %s development server", (application) => {
                   'export const label = "private-application-module";',
                 ),
               ),
-              filesystem.writeFileString(
-                paths.join(repositoryRoot, "libs/db/src/features/db/remote-cli.ts"),
-                'export const label = "private-remote-database";',
-              ),
-              filesystem.writeFileString(
-                paths.join(repositoryRoot, "libs/db/src/features/db/admin.ts"),
-                administratorDatabaseSource,
+              ...databaseFiles.map((databaseFile) =>
+                filesystem.writeFileString(
+                  paths.join(repositoryRoot, databaseFile),
+                  databaseSourceOf(databaseFile),
+                ),
               ),
               filesystem.writeFileString(
                 paths.join(repositoryRoot, ".local/runtime.json"),

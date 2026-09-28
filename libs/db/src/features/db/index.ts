@@ -152,13 +152,6 @@ export {
   unblockMember,
   viewerBlockedTarget,
 } from "./trust.ts";
-export {
-  dismissReport,
-  listReports,
-  readReport,
-  suspendTarget,
-  warnTarget,
-} from "./trust-admin.ts";
 export { clockDate } from "./clock-date.ts";
 export {
   RecordingNotFound,
