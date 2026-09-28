@@ -53,6 +53,8 @@ class Process extends WorkflowEntrypoint<JobsBindings, JobPayload> {
   }
 }
 const missingInstance = "instance.not_found";
+const isMissingInstance = (cause: unknown): boolean =>
+  cause instanceof Error && cause.message === missingInstance;
 const instanceId = (packet: JobPayload): string => `${packet.ownerId}-${packet.jobId}`;
 const consumeJobs = (batch: Readonly<MessageBatch>, env: JobsBindings): Promise<void> =>
   Effect.runPromise(
@@ -87,10 +89,7 @@ const jobStatus = Effect.fn("jobs.status")(function* jobStatus(
   packet: JobPayload,
 ) {
   const runtimeInstance = yield* Effect.tryPromise({
-    catch: (cause) =>
-      cause instanceof Error && cause.message === missingInstance
-        ? new JobNotFound()
-        : new JobLookupFailed({ cause }),
+    catch: (cause) => (isMissingInstance(cause) ? new JobNotFound() : new JobLookupFailed({ cause })),
     try: () => env[jobsWorkflowBinding].get(instanceId(packet)),
   });
   return yield* Effect.promise(() => runtimeInstance.status());

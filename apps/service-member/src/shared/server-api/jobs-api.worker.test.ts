@@ -164,6 +164,16 @@ describe("jobs api", () => {
     }),
   );
 
+  it.effect("answers a job the workflow never started with not found", () =>
+    Effect.gen(function* program() {
+      yield* migrated;
+      const app = jobsApp();
+      const cookie = yield* signedInMember(app, "owner@example.test");
+      const unknown = yield* send(app, `/jobs/${crypto.randomUUID()}`, { cookie });
+      assert.strictEqual(unknown.status, httpStatus.notFound);
+    }),
+  );
+
   it.effect("runs a member's job and shows its status only to that member", () =>
     Effect.gen(function* program() {
       yield* migrated;

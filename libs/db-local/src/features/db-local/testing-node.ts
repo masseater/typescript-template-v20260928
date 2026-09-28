@@ -70,7 +70,7 @@ const runStatement = (
   Effect.gen(function* statement() {
     const database = yield* TestBinding;
     return yield* Effect.tryPromise({
-      catch: (cause) => new DatabaseFailure({ cause }),
+      catch: (cause) => DatabaseFailure.fromDriver(cause),
       try: () =>
         database
           .prepare(sql)

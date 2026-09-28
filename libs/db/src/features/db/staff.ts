@@ -16,19 +16,16 @@ import { LastEditorRequired } from "./last-editor-required.ts";
 import { liveStaff, requireStaff } from "./privileged-session.ts";
 import { user } from "./schema.ts";
 import { TargetUnavailable } from "./target-unavailable.ts";
+import { TRIGGER_REFUSAL } from "./trigger-refusal.ts";
 
 import type { DatabaseFailure } from "./database-failure.ts";
-
-const mentionsLastEditor = (cause: unknown): boolean =>
-  cause instanceof Error &&
-  (cause.message.includes("LAST_EDITOR_REQUIRED") || mentionsLastEditor(cause.cause));
 
 const protectLastEditor = <Value, Requirements>(
   effect: Effect.Effect<Value, DatabaseFailure, Requirements>,
 ): Effect.Effect<Value, DatabaseFailure | LastEditorRequired, Requirements> =>
   effect.pipe(
     Effect.mapError((failure) =>
-      mentionsLastEditor(failure.cause) ? new LastEditorRequired() : failure,
+      failure.refusal === TRIGGER_REFUSAL.lastEditorRequired ? new LastEditorRequired() : failure,
     ),
   );
 

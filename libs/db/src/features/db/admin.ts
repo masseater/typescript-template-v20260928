@@ -21,6 +21,7 @@ import { LastAdminRequired } from "./last-admin-required.ts";
 import { liveAdmin, requireAdmin } from "./privileged-session.ts";
 import { AUDIT_CHANNEL, user, type AuditChannel } from "./schema.ts";
 import { TargetUnavailable } from "./target-unavailable.ts";
+import { TRIGGER_REFUSAL } from "./trigger-refusal.ts";
 
 import type { DatabaseFailure } from "./database-failure.ts";
 
@@ -32,16 +33,12 @@ export const UserPage = Schema.Struct({
   offset: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
 });
 
-const mentionsLastAdmin = (cause: unknown): boolean =>
-  cause instanceof Error &&
-  (cause.message.includes("LAST_ADMIN_REQUIRED") || mentionsLastAdmin(cause.cause));
-
 const protectLastAdmin = <Value, Requirements>(
   effect: Effect.Effect<Value, DatabaseFailure, Requirements>,
 ): Effect.Effect<Value, DatabaseFailure | LastAdminRequired, Requirements> => {
   return effect.pipe(
     Effect.mapError((failure) =>
-      mentionsLastAdmin(failure.cause) ? new LastAdminRequired() : failure,
+      failure.refusal === TRIGGER_REFUSAL.lastAdminRequired ? new LastAdminRequired() : failure,
     ),
   );
 };

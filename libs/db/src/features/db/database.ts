@@ -23,7 +23,7 @@ const query = <Value>(
   return Effect.gen(function* runQuery() {
     const database = yield* Database;
     return yield* Effect.tryPromise({
-      catch: (cause) => new DatabaseFailure({ cause }),
+      catch: (cause) => DatabaseFailure.fromDriver(cause),
       try: () => Promise.resolve(run(database)),
     });
   });

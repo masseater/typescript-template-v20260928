@@ -12,6 +12,7 @@ import { auditRow, type AuditEntry } from "./audit.ts";
 import { query } from "./database.ts";
 import { InviteRejected } from "./invite-rejected.ts";
 import { account, auditEvent, invite, user } from "./schema.ts";
+import { TRIGGER_REFUSAL } from "./trigger-refusal.ts";
 
 import type { DatabaseFailure } from "./database-failure.ts";
 
@@ -27,16 +28,14 @@ const hashInviteToken = (rawToken: string): Effect.Effect<string> =>
 
 const freshToken = (): string => `${crypto.randomUUID()}${crypto.randomUUID()}`.replaceAll("-", "");
 
-const mentionsConsumed = (cause: unknown): boolean =>
-  cause instanceof Error &&
-  (cause.message.includes("INVITE_CONSUMED") || mentionsConsumed(cause.cause));
-
 const rejectConsumed = <Value, Requirements>(
   effect: Effect.Effect<Value, DatabaseFailure, Requirements>,
 ): Effect.Effect<Value, DatabaseFailure | InviteRejected, Requirements> =>
   effect.pipe(
     Effect.mapError((failure) =>
-      mentionsConsumed(failure.cause) ? new InviteRejected({ reason: "missing" }) : failure,
+      failure.refusal === TRIGGER_REFUSAL.inviteConsumed
+        ? new InviteRejected({ reason: "missing" })
+        : failure,
     ),
   );
 
