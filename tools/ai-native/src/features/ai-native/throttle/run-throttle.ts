@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
 import { joinPath, optionalSetting, temporaryDirectory } from "../host.ts";
-import { runWithSlot } from "./run-command.ts";
+import { HELD_MARKER, runWithSlot } from "./run-command.ts";
 import { ensureSlots, tryAcquireAny, type SlotHold } from "./slots.ts";
 import { parseInvocation } from "./usage.ts";
 import { waitForSlot, type WaitConfiguration } from "./wait-for-slot.ts";
@@ -63,13 +63,21 @@ export const runThrottle = (argv: readonly string[], seams: ThrottleSeams = {}):
         process.stderr.write(`${invocation}\n`);
         return 2;
       }
-      const hold = yield* Effect.promise(() => acquireSlot(resolveConfiguration(seams)));
+      const configuration = resolveConfiguration(seams);
+      if (optionalSetting(HELD_MARKER) === configuration.slotDir) {
+        process.stderr.write(
+          `throttle: refusing to run inside another throttle on ${configuration.slotDir} (${HELD_MARKER} names it). The outer throttle already holds a slot for this command, so waiting here would only use up the wait budget; run ${invocation.commandLine} without throttle.\n`,
+        );
+        return 2;
+      }
+      const hold = yield* Effect.promise(() => acquireSlot(configuration));
       return hold === null
         ? 1
         : yield* Effect.promise(() =>
             runWithSlot({
               invocation,
               hold,
+              heldSlotDir: configuration.slotDir,
               dependencies:
                 seams.killGraceMs === undefined ? {} : { killGraceMs: seams.killGraceMs },
             }),
