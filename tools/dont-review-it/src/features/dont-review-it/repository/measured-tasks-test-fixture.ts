@@ -1,4 +1,5 @@
-import { telemetryEnv, type Tasks } from "@repo/vite-config";
+import { taskInput, telemetryEnv, type Tasks } from "@repo/vite-config";
+import { isEqual } from "es-toolkit";
 
 const unmeasuredTasks = (tasks: Tasks): string[] =>
   Object.entries(tasks).flatMap(([name, task]) => {
@@ -19,4 +20,17 @@ const wildcardEnvTasks = (tasks: Tasks): string[] =>
       .map((variable) => `${name} ${variable}`);
   });
 
-export { unmeasuredTasks, wildcardEnvTasks };
+const tracksAutomatically = (entry: unknown): boolean =>
+  typeof entry === "object" && entry !== null && "auto" in entry && entry.auto === true;
+
+const partialTaskInputTasks = (tasks: Tasks): string[] =>
+  Object.entries(tasks).flatMap(([name, task]) => {
+    if (typeof task === "string" || Array.isArray(task)) return [];
+    const input: readonly unknown[] = task.input ?? [];
+    if (!input.some(tracksAutomatically)) return [];
+    return taskInput.every((shared) => input.some((entry) => isEqual(entry, shared)))
+      ? []
+      : [name];
+  });
+
+export { partialTaskInputTasks, unmeasuredTasks, wildcardEnvTasks };
