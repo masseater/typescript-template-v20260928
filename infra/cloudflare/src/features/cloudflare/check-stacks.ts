@@ -1,26 +1,7 @@
 #!/usr/bin/env node
 
 import { markFailed, reportFailed, runCli } from "@repo/cli";
-import {
-  APPLICATION,
-  aiMeterEventName,
-  aiUsageUnitAmount,
-  appEnvKey,
-  applications,
-  grants,
-  jobsQueueBinding,
-  jobsWorkflowBinding,
-  jobsWorkflowClass,
-  stripeApiVersion,
-  stripeWebhookEvents,
-  userInboxBinding,
-  userInboxClassName,
-  wikiApiBinding,
-  wikiApiEntrypoint,
-  wikiPagesBinding,
-  wikiPublishKey,
-  wikiWorker,
-} from "@repo/config";
+import { APPLICATION, aiMeterEventName, aiUsageUnitAmount, apiRoot, appEnvKey, applications, grants, jobsQueueBinding, jobsWorkflowBinding, jobsWorkflowClass, stripeApiVersion, stripeWebhookEvents, userInboxBinding, userInboxClassName, wikiApiBinding, wikiApiEntrypoint, wikiPagesBinding, wikiPublishKey, wikiWorker } from "@repo/config";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { cacheNamespaceBinding, fileBucketBinding } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
@@ -34,7 +15,7 @@ import {
   healthOriginKey,
 } from "@repo/monitor/workers";
 import { deploymentKey } from "@repo/observability/deployment-keys";
-import { apiRoot } from "@repo/runtime/http";
+
 import { Cause, Console, Effect, Equal, Schema } from "effect";
 
 import { loadArtifacts } from "./artifacts.ts";

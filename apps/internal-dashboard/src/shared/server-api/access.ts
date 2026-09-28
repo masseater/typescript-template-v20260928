@@ -1,3 +1,4 @@
+import { ACCOUNT_API_PATH, mcpPath, oauthMetadataPathPrefix } from "@repo/config";
 import { verifySession } from "@repo/auth";
 import { Effect, Option } from "effect";
 
@@ -13,11 +14,11 @@ type SessionUnavailable = Exclude<
 const publicPaths: ReadonlySet<string> = new Set([
   "/login",
   "/consent",
-  "/mcp",
-  "/api/telemetry",
-  "/api/health",
-  "/api/session",
-  "/api/invite",
+  mcpPath,
+  ACCOUNT_API_PATH.telemetry,
+  ACCOUNT_API_PATH.health,
+  ACCOUNT_API_PATH.session,
+  ACCOUNT_API_PATH.invite,
 ]);
 
 function isPublic(path: string): boolean {
@@ -25,7 +26,7 @@ function isPublic(path: string): boolean {
     publicPaths.has(path) ||
     path.startsWith("/api/auth/") ||
     path.startsWith("/invite/") ||
-    path.startsWith("/.well-known/oauth-")
+    path.startsWith(oauthMetadataPathPrefix)
   );
 }
 

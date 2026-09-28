@@ -1,10 +1,4 @@
-import {
-  APPLICATION,
-  applications,
-  distinctOrigins,
-  HttpsOrigin,
-  type Application,
-} from "@repo/config";
+import { ACCOUNT_API_PATH, APPLICATION, HttpsOrigin, applications, distinctOrigins, type Application } from "@repo/config";
 import { healthMonitorWorker, healthOriginKey } from "@repo/monitor/workers";
 import { Effect, Schema } from "effect";
 
@@ -36,7 +30,7 @@ const parseHealthMonitorConfig = Effect.fn("parseHealthMonitorConfig")(
   },
 );
 
-const healthEndpointFor = (origin: string): string => `${origin}/api/health`;
+const healthEndpointFor = (origin: string): string => `${origin}${ACCOUNT_API_PATH.health}`;
 
 const healthTargets = (
   acceptedConfig: typeof HealthMonitorEnvironment.Type,

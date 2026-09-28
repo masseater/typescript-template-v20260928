@@ -1,4 +1,4 @@
-import { httpStatus } from "@repo/config";
+import { ACCOUNT_API_PATH, apiRoot, httpStatus } from "@repo/config";
 import { TestDatabase, runStatement } from "@repo/db/testing";
 import { recordingSink } from "@repo/observability/testing";
 import { Effect } from "effect";
@@ -7,7 +7,7 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { sessionApi } from "./account.ts";
 import { fixtureOrigin, testClockRuntime } from "./app-test-fixture.ts";
-import { apiRoot, apiRoutes, createApi, elysiaServer } from "./http.ts";
+import { apiRoutes, createApi, elysiaServer } from "./http.ts";
 
 describe("the health route", () => {
   describe("asked twice while the database breaks in between", () => {
@@ -15,7 +15,7 @@ describe("the health route", () => {
       Effect.runPromise(
         Effect.gen(function* healthStatusesProgram() {
           yield* Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase));
-          const runtime = testClockRuntime({ "/api/health": "health" });
+          const runtime = testClockRuntime({ [ACCOUNT_API_PATH.health]: "health" });
           onCleanup(() => runtime.dispose());
           const { ANY: serveRequest } = elysiaServer(
             createApi(apiRoot).use(
@@ -46,7 +46,7 @@ describe("the health route", () => {
         Effect.gen(function* healthStatusesProgram() {
           yield* Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase));
           yield* Effect.orDie(runStatement("drop table `user`"));
-          const runtime = testClockRuntime({ "/api/health": "health" });
+          const runtime = testClockRuntime({ [ACCOUNT_API_PATH.health]: "health" });
           onCleanup(() => runtime.dispose());
           const { ANY: serveRequest } = elysiaServer(
             createApi(apiRoot).use(
@@ -79,7 +79,7 @@ describe("the health route", () => {
       Effect.runPromise(
         Effect.gen(function* healthStatusesProgram() {
           yield* Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase));
-          const runtime = testClockRuntime({ "/api/health": "health" });
+          const runtime = testClockRuntime({ [ACCOUNT_API_PATH.health]: "health" });
           onCleanup(() => runtime.dispose());
           const { ANY: serveRequest } = elysiaServer(
             createApi(apiRoot).use(

@@ -1,10 +1,10 @@
 import { Auth } from "@repo/auth";
 import { AuthApps, authTest, authTestSecret, runWith } from "@repo/auth/testing";
-import { APPLICATION, MEMBER_MCP_SCOPE, SUBSCRIPTION_STATUS, httpStatus } from "@repo/config";
+import { APPLICATION, MEMBER_MCP_SCOPE, SUBSCRIPTION_STATUS, httpStatus, mcpPath, oauthMetadataPathPrefix } from "@repo/config";
 import { eq, query, recordSubscription, schema } from "@repo/db";
-import { unavailable } from "@repo/runtime/account";
+import { mcpApi } from "@repo/runtime/account";
 import { appLayer } from "@repo/runtime/bindings";
-import { apiRoutes, createApi } from "@repo/runtime/http";
+import { apiRoutes } from "@repo/runtime/http";
 import { appEnvironment } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
 import { Context, DateTime, Effect, Layer, Option, Schema } from "effect";
@@ -61,7 +61,7 @@ function memberMcpApp(auth: Parameters<typeof runWith>[0]): {
     ),
   );
   const api = apiRoutes(runtime, reporting);
-  const app = createApi("").all("/mcp", ...api.raw(serveMcp, unavailable));
+  const app = mcpApi(api, serveMcp);
   const fetchMcp = (request: Request): Effect.Effect<Response, never, never> =>
     Effect.promise(() => Promise.resolve(app.fetch(request)));
   return {
@@ -92,7 +92,7 @@ describe("member MCP authorization", () => {
     runWith(auth, () =>
       Effect.gen(function* program() {
         const app = memberMcpApp(auth);
-        const resource = yield* discovery("/.well-known/oauth-protected-resource/mcp");
+        const resource = yield* discovery(`${oauthMetadataPathPrefix}protected-resource${mcpPath}`);
         const server = yield* discovery("/.well-known/oauth-authorization-server/api/auth");
         const challenge = yield* mcpChallenge();
         const header =
@@ -109,7 +109,7 @@ describe("member MCP authorization", () => {
       expect(result.resource.status).toBe(httpStatus.ok);
       expect(result.resource.body).toMatchObject({
         authorization_servers: [`${memberOrigin}/api/auth`],
-        resource: `${memberOrigin}/mcp`,
+        resource: `${memberOrigin}${mcpPath}`,
       });
       expect(result.server.body).toMatchObject({
         issuer: `${memberOrigin}/api/auth`,
@@ -117,7 +117,7 @@ describe("member MCP authorization", () => {
       });
       expect(result.challengeStatus).toBe(httpStatus.unauthorized);
       expect(result.header).toContain(
-        `resource_metadata="${memberOrigin}/.well-known/oauth-protected-resource/mcp"`,
+        `resource_metadata="${memberOrigin}${oauthMetadataPathPrefix}protected-resource${mcpPath}"`,
       );
     }));
 

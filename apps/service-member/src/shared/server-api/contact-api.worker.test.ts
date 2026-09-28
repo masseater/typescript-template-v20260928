@@ -1,9 +1,9 @@
 import { assert, it } from "@effect/vitest";
-import { APPLICATION, httpStatus } from "@repo/config";
+import { APPLICATION, apiRoot, httpStatus } from "@repo/config";
 import { TestDatabase, runStatement } from "@repo/db/testing";
 import { recordingSink } from "@repo/observability/testing";
 import { appLayer, readWorkerConfig } from "@repo/runtime/bindings";
-import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
+import { apiRoutes, createApi } from "@repo/runtime/http";
 import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
 import { env } from "cloudflare:workers";

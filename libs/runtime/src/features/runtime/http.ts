@@ -120,8 +120,6 @@ function readSearchParams<Contract extends Decodable>(
   return decodeInput(schema, Object.fromEntries(new URL(request.url).searchParams));
 }
 
-const apiRoot = "/api";
-
 function createApi<const Prefix extends string>(prefix: Prefix) {
   return new Elysia({ adapter: WebStandardAdapter, prefix })
     .guard({ parse: "none" })
@@ -425,7 +423,6 @@ export { jsonResponse, secureResponse } from "./responses.ts";
 export { failureBy } from "./failures.ts";
 export {
   apiDocs,
-  apiRoot,
   apiRoutes,
   createApi,
   elysiaServer,

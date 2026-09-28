@@ -1,3 +1,4 @@
+import { mcpPath } from "@repo/config";
 import { Data, Effect, Schema } from "effect";
 
 import { AuthApps } from "./auth-test-fixture.ts";
@@ -26,7 +27,7 @@ const authorizeMcpAs = <Value, Failure, Requirements>(
   authorize: (incoming: Request, origin: string) => Effect.Effect<Value, Failure, Requirements>,
 ): Effect.Effect<Value, Failure, Exclude<Requirements, Auth> | AuthApps> => {
   const origin = origins[application];
-  const incoming = new Request(`${origin}/mcp`, {
+  const incoming = new Request(`${origin}${mcpPath}`, {
     headers: { accept: "application/json, text/event-stream", ...bearerHeaders(token) },
     method: "POST",
   });
@@ -39,7 +40,7 @@ const authorizeMcpAs = <Value, Failure, Requirements>(
 const sendMcp = Effect.fn("sendMcp")(function* sendMcp(call: McpCall, rpcEnvelope?: unknown) {
   const encoded =
     rpcEnvelope === undefined ? undefined : yield* Schema.encodeEffect(McpJson)(rpcEnvelope);
-  const outgoing = new Request(`${call.origin}/mcp`, {
+  const outgoing = new Request(`${call.origin}${mcpPath}`, {
     ...(encoded === undefined ? {} : { body: encoded }),
     headers: {
       accept: "application/json, text/event-stream",

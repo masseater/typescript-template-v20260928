@@ -1,4 +1,5 @@
-import { Cause, Effect, Predicate, Schema } from "effect";
+import { reportFailure } from "@repo/observability";
+import { Cause, Effect, Option, Schema } from "effect";
 
 import { AppOrigin } from "./app-origin.ts";
 import { secureResponse } from "./responses.ts";
@@ -11,7 +12,12 @@ type ToolFailure = ToolResult & { isError: true };
 
 type RunApp = <Value>(program: Effect.Effect<Value, unknown, AppServices>) => Promise<Value>;
 
-type ToolRun = <Value, Failure>(
+type ToolFailureCodes = Readonly<Record<string, string>>;
+
+type ToolRun<Codes extends ToolFailureCodes> = <
+  Value,
+  Failure extends { readonly _tag: keyof Codes & string },
+>(
   program: Effect.Effect<Value, Failure, AppServices>,
 ) => Promise<ToolResult>;
 
@@ -30,20 +36,23 @@ const toolText = (toolValue: unknown): Effect.Effect<ToolResult> =>
     Effect.orDie,
   );
 
-const failureTag = (squashed: unknown): string =>
-  Predicate.hasProperty(squashed, "_tag") && typeof squashed._tag === "string" ? squashed._tag : "";
+const unexpectedToolFailure = "unexpected";
 
 const toolRunner =
-  (run: RunApp, failureCodes: ReadonlyMap<string, string>): ToolRun =>
+  <const Codes extends ToolFailureCodes>(run: RunApp, failureCodes: Codes): ToolRun<Codes> =>
   (program) =>
     run(
       program.pipe(
         Effect.flatMap(toolText),
-        Effect.catchCause((cause) =>
-          Effect.succeed(
-            toolFailure(failureCodes.get(failureTag(Cause.squash(cause))) ?? "operation_failed"),
-          ),
-        ),
+        Effect.catchCause((cause) => {
+          const code = Cause.findErrorOption(cause).pipe(
+            Option.flatMap((failure) => Option.fromNullishOr(failureCodes[failure._tag])),
+            Option.filter((mapped) => mapped !== unexpectedToolFailure),
+          );
+          return Option.isSome(code)
+            ? Effect.succeed(toolFailure(code.value))
+            : reportFailure(cause).pipe(Effect.as(toolFailure("operation_failed")));
+        }),
       ),
     );
 

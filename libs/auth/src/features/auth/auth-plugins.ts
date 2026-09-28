@@ -1,6 +1,6 @@
 import { mcp } from "@better-auth/mcp";
 import { passkey } from "@better-auth/passkey";
-import { APPLICATION, type Application } from "@repo/config";
+import { APPLICATION, mcpPath, type Application } from "@repo/config";
 import { findPasskeyUser } from "@repo/db";
 import { jwt, twoFactor } from "better-auth/plugins";
 import { Effect } from "effect";
@@ -75,7 +75,7 @@ const wikiAuthorizationServer = (origin: string): AuthPlugin[] => {
       clientRegistrationDefaultScopes: [...wikiScopes],
       consentPage: "/consent",
       loginPage: "/login",
-      resource: `${origin}/mcp`,
+      resource: `${origin}${mcpPath}`,
       scopes: [...wikiScopes],
     }),
   ];
@@ -91,7 +91,7 @@ const adminAuthorizationServer = (origin: string): AuthPlugin[] => {
       clientRegistrationDefaultScopes: [...adminScopes],
       consentPage: "/consent",
       loginPage: "/login",
-      resource: `${origin}/mcp`,
+      resource: `${origin}${mcpPath}`,
       scopes: [...adminScopes],
     }),
   ];
@@ -107,7 +107,7 @@ const memberAuthorizationServer = (origin: string): AuthPlugin[] => {
       clientRegistrationDefaultScopes: [...memberScopes],
       consentPage: "/consent",
       loginPage: "/login",
-      resource: `${origin}/mcp`,
+      resource: `${origin}${mcpPath}`,
       scopes: [...memberScopes],
     }),
   ];

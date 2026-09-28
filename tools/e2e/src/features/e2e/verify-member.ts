@@ -1,3 +1,4 @@
+import { ACCOUNT_API_PATH } from "@repo/config";
 import { Effect, type Crypto } from "effect";
 
 import { type Account, newAccount } from "./accounts.ts";
@@ -117,7 +118,7 @@ const finalizeVerifyMember = (finalization: {
   Effect.gen(function* finalizeVerification() {
     yield* pageStep(() => finalization.page.goto(`${finalization.origin}/settings/profile`));
     yield* seeText(finalization.page, finalization.biography);
-    const session = yield* readSession(finalization.page, `${finalization.origin}/api/session`);
+    const session = yield* readSession(finalization.page, `${finalization.origin}${ACCOUNT_API_PATH.session}`);
     finalization.capture.stop();
     return {
       biography: finalization.biography,

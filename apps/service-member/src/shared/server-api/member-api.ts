@@ -1,8 +1,8 @@
 import { apiKeyWriteFailure, verifySessionOrApiKey, verifySessionWriter } from "@repo/auth";
-import { APPLICATION } from "@repo/config";
+import { APPLICATION, apiRoot } from "@repo/config";
 import { UserNotFound, requirePaid } from "@repo/db";
 import { accountApi } from "@repo/runtime/account";
-import { apiDocs, apiRoot, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
+import { apiDocs, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
 import { paidFailures } from "#shared/billing/index.ts";

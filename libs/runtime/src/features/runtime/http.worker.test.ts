@@ -1,8 +1,8 @@
-import { httpStatus } from "@repo/config";
+import { apiRoot, httpStatus } from "@repo/config";
 import { Effect, Result } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { apiRoot, createApi, elysiaServer } from "./http.ts";
+import { createApi, elysiaServer } from "./http.ts";
 
 describe("worker api", () => {
   const it = test

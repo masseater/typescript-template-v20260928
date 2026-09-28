@@ -1,7 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
-import { httpStatus } from "@repo/config";
+import { apiRoot, httpStatus } from "@repo/config";
 import { dashboardStaff, type ReadOnlyDashboardStaff } from "@repo/db";
-import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
+import { apiRoutes, createApi } from "@repo/runtime/http";
 import { fixtureOrigin } from "@repo/runtime/testing";
 import { Effect } from "effect";
 

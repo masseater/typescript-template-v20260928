@@ -7,17 +7,10 @@ import {
   runWith,
   signInAs,
 } from "@repo/auth/testing";
-import {
-  APPLICATION,
-  PLAN,
-  SUBSCRIPTION_STATUS,
-  WEBHOOK_DISPOSITION,
-  httpStatus,
-  stripeApiVersion,
-} from "@repo/config";
+import { APPLICATION, PLAN, SUBSCRIPTION_STATUS, WEBHOOK_DISPOSITION, apiRoot, httpStatus, stripeApiVersion } from "@repo/config";
 import { recordingSink } from "@repo/observability/testing";
 import { appLayer } from "@repo/runtime/bindings";
-import { apiRoot, apiRoutes } from "@repo/runtime/http";
+import { apiRoutes } from "@repo/runtime/http";
 import { appEnvironment } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
 import { DateTime, Effect, Layer, Schema } from "effect";

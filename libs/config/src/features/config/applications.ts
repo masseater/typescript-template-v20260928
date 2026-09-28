@@ -28,6 +28,35 @@ export const applicationReadyPaths: Readonly<Record<Application, string>> = {
   "service-member": "/login",
 };
 
+export const apiRoot = "/api";
+/** @canonical-values config.account-api-path */
+export const accountApiPaths = [
+  "/api/health",
+  "/api/invite",
+  "/api/session",
+  "/api/telemetry",
+  "/api/verify-email",
+] as const;
+export const ACCOUNT_API_PATH = {
+  health: accountApiPaths[0],
+  invite: accountApiPaths[1],
+  session: accountApiPaths[2],
+  telemetry: accountApiPaths[3],
+  verifyEmail: accountApiPaths[4],
+} as const;
+type ApiRoute<Path extends string> = Path extends `${typeof apiRoot}${infer Route}` ? Route : never;
+export const ACCOUNT_API_ROUTE = {
+  health: "/health",
+  invite: "/invite",
+  session: "/session",
+  telemetry: "/telemetry",
+  verifyEmail: "/verify-email",
+} as const satisfies {
+  readonly [Name in keyof typeof ACCOUNT_API_PATH]: ApiRoute<(typeof ACCOUNT_API_PATH)[Name]>;
+};
+export const mcpPath = "/mcp";
+export const oauthMetadataPathPrefix = "/.well-known/oauth-";
+
 const capabilities = ["billing", "jobs", "realtime", "storage", "workers-ai"] as const;
 export type Capability = (typeof capabilities)[number];
 const applicationCapabilities = {

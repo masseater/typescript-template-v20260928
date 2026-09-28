@@ -1,9 +1,9 @@
-import { APPLICATION, httpStatus } from "@repo/config";
+import { APPLICATION, apiRoot, httpStatus } from "@repo/config";
 import { Telemetry } from "@repo/observability";
 import { Effect, Layer, Schema } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { AppOrigin, apiDocs, apiRoot, apiRoutes, createApi } from "./http.ts";
+import { AppOrigin, apiDocs, apiRoutes, createApi } from "./http.ts";
 import { workerRuntime } from "./worker-runtime.ts";
 
 const origin = "http://localhost";

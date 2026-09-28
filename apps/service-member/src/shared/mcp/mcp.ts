@@ -37,12 +37,13 @@ const MessageInput = Schema.toStandardJSONSchemaV1(
   ),
 );
 
-const failureCodes: ReadonlyMap<string, string> = new Map([
-  ["MessagingConversationNotFound", "target_unavailable"],
-  ["MessagingMemberRequired", "member_required"],
-  ["PaidPlanRequired", "paid_plan_required"],
-  ["UserNotFound", "target_unavailable"],
-]);
+const failureCodes = {
+  DatabaseFailure: "unexpected",
+  MessagingConversationNotFound: "target_unavailable",
+  MessagingMemberRequired: "member_required",
+  PaidPlanRequired: "paid_plan_required",
+  UserNotFound: "target_unavailable",
+} as const;
 
 const requireMemberSession = Effect.fn("requireMemberSession")(function* requireMemberSession(
   actor: MemberMcpActor,

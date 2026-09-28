@@ -1,3 +1,4 @@
+import { ACCOUNT_API_PATH } from "@repo/config";
 import { Effect, Layer, Option, Schema, Tracer } from "effect";
 import { TestClock } from "effect/testing";
 import { describe, expect, test } from "vite-plus/test";
@@ -201,12 +202,12 @@ describe("ingestBrowser", () => {
   ] as const)("%s", ([, requestInit, expectedStatus, expectedHeaders]) => {
     const it = test.extend("ingressResponse", () =>
       Effect.runPromise(
-        ingestBrowser(new Request(new URL("/api/telemetry", testOrigin), requestInit)).pipe(
+        ingestBrowser(new Request(new URL(ACCOUNT_API_PATH.telemetry, testOrigin), requestInit)).pipe(
           Effect.provide(
             Layer.merge(
               Telemetry.layer({
                 release: "test",
-                routes: { "/": "home", "/api/telemetry": "telemetry" },
+                routes: { "/": "home", [ACCOUNT_API_PATH.telemetry]: "telemetry" },
                 serviceName: "user",
               }),
               fixedEntropy,
@@ -238,7 +239,7 @@ describe("ingestBrowser", () => {
         Effect.gen(function* recordLogs() {
           const logs = recordingSink();
           yield* ingestBrowser(
-            new Request(new URL("/api/telemetry", testOrigin), {
+            new Request(new URL(ACCOUNT_API_PATH.telemetry, testOrigin), {
               body: yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))([
                 { ...requestEvent, spanId, status: answeredStatus },
               ]),
@@ -251,7 +252,7 @@ describe("ingestBrowser", () => {
                 Telemetry.layer({
                   log: logs.sink,
                   release: "test",
-                  routes: { "/": "home", "/api/telemetry": "telemetry" },
+                  routes: { "/": "home", [ACCOUNT_API_PATH.telemetry]: "telemetry" },
                   serviceName: "user",
                 }),
                 fixedEntropy,
@@ -298,7 +299,7 @@ describe("ingestBrowser", () => {
         Effect.gen(function* recordLogs() {
           const logs = recordingSink();
           const resend = ingestBrowser(
-            new Request(new URL("/api/telemetry", testOrigin), {
+            new Request(new URL(ACCOUNT_API_PATH.telemetry, testOrigin), {
               body: yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))([
                 requestEvent,
               ]),
@@ -311,7 +312,7 @@ describe("ingestBrowser", () => {
                 Telemetry.layer({
                   log: logs.sink,
                   release: "test",
-                  routes: { "/": "home", "/api/telemetry": "telemetry" },
+                  routes: { "/": "home", [ACCOUNT_API_PATH.telemetry]: "telemetry" },
                   serviceName: "user",
                 }),
                 fixedEntropy,
@@ -357,7 +358,7 @@ describe("browser events followed by a failing request", () => {
         const logs = recordingSink();
         yield* Effect.gen(function* probe() {
           yield* ingestBrowser(
-            new Request(new URL("/api/telemetry", testOrigin), {
+            new Request(new URL(ACCOUNT_API_PATH.telemetry, testOrigin), {
               body: yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))([
                 { ...requestEvent, spanId: "8888888888888888" },
                 {

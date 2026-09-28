@@ -1,4 +1,4 @@
-import { httpStatus } from "@repo/config";
+import { ACCOUNT_API_PATH, httpStatus } from "@repo/config";
 import { type QueryClient, queryOptions } from "@tanstack/react-query";
 import { Effect } from "effect";
 
@@ -19,7 +19,7 @@ const requestSession = (endpoint: string): Effect.Effect<SessionData | null> =>
     return decodeJson(SessionView, yield* served.json.pipe(Effect.orDie));
   });
 
-const sessionEndpoint = "/api/session";
+const sessionEndpoint = ACCOUNT_API_PATH.session;
 
 const loadBrowserSession = (): Promise<SessionData | null> =>
   Effect.runPromise(requestSession(sessionEndpoint));

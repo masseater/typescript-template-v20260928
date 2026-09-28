@@ -1,10 +1,10 @@
 import { assert, describe, it } from "@effect/vitest";
 import { signedSessionCookie } from "@repo/auth/testing";
-import { APPLICATION, ROLE, STAFF_PERMISSION, httpStatus } from "@repo/config";
+import { APPLICATION, ROLE, STAFF_PERMISSION, apiRoot, httpStatus } from "@repo/config";
 import { AUDIT_CHANNEL, Database } from "@repo/db";
 import { TestDatabase, addSession, addUser, auditActionsOf } from "@repo/db/testing";
 import { recordingSink } from "@repo/observability/testing";
-import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
+import { apiRoutes, createApi } from "@repo/runtime/http";
 import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
 import { env } from "cloudflare:workers";

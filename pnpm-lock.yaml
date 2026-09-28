@@ -1884,6 +1884,9 @@ importers:
       '@effect/atom-react':
         specifier: 'catalog:'
         version: 4.0.0-rc.117(effect@4.0.0-rc.117)(react@19.3.0)(scheduler@0.27.0)
+      '@repo/config':
+        specifier: workspace:*
+        version: link:../config
       '@repo/observability':
         specifier: workspace:*
         version: link:../observability
@@ -1954,9 +1957,6 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-rc.117(effect@4.0.0-rc.117)(vitest@5.0.1)
-      '@repo/config':
-        specifier: workspace:*
-        version: link:../config
       '@repo/telemetry':
         specifier: workspace:*
         version: link:../telemetry
