@@ -5,10 +5,15 @@ description: 挙動は Base UI が持ち、見た目のコンポーネントは�
 
 ボタンの無効化、メニューのキーボード操作、ダイアログのフォーカス移動は Base UI（`@base-ui/react`）が実装する。見た目は持たない。色、角丸、文字は、shadcn がリポジトリへコピーしたコンポーネントの Tailwind のクラスで決まる。画面が指定するのは余白のようなレイアウトだけである。
 
-```tsx
-<Button type="button" variant="primary" disabled>
-  保存
-</Button>
+```tsx title="apps/internal-dashboard/src/pages/recordings/ui/recording-view.tsx"
+          <Button
+            type="button"
+            variant="primary"
+            disabled={actions.blocked}
+            action={actions.handleRetry}
+          >
+            やり直す
+          </Button>
 ```
 
 `disabled` は Base UI の Button に渡る。`variant="primary"` がどのクラスになるかは、コピーしたコンポーネントのファイルに書いてある。shadcn のコンポーネントはパッケージの公開 API として依存せず、そのファイルを編集して見た目を変える。

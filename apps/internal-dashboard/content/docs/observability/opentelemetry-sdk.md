@@ -3,26 +3,9 @@ title: OpenTelemetry SDK
 description: span を作り、Context で親子を繋ぎ、exporter へ渡すライブラリ
 ---
 
-OpenTelemetry SDK は、span を作り、Context で親子を繋ぎ、まとめて exporter へ渡す。`startSpan` は span を開く。`end` するまで、その span は開いたままである。子の span は、親を現在の Context に入れたうえで開く。
-
-```ts
-import { context, trace } from "@opentelemetry/api";
-
-const tracer = trace.getTracer("users");
-const parent = tracer.startSpan("http.server.request");
-const child = tracer.startSpan("user.load", undefined, trace.setSpan(context.active(), parent));
-child.setAttribute("user.id", "123");
-child.end();
-parent.end();
-```
-
-`user.load` の親は `http.server.request` になる。属性は span が開いている間に付ける。属性の名前は Semantic Conventions が決める。HTTP のメソッドは `http.request.method` である。同じ意味をサービスごとに別名にすると、後から一つのクエリにならない。
+OpenTelemetry SDK は、span を作り、Context で親子を繋ぎ、まとめて exporter へ渡す。`startSpan` は span を開く。`end` するまで、その span は開いたままである。子の span は、親を現在の Context に入れたうえで開く。属性は span が開いている間に付ける。属性の名前は Semantic Conventions が決める。HTTP のメソッドは `http.request.method` である。同じ意味をサービスごとに別名にすると、後から一つのクエリにならない。
 
 span の途中の一点は `addEvent` で残し、子 span にはしない。親子でない別の trace を指すときは span link を付ける。
-
-```ts
-parent.addEvent("cache.miss");
-```
 
 Head sampling は、span を開くときに trace id で残すかどうかを決める。その時点では、要求が遅くなるかはまだ分からない。終わった trace から遅いものとエラーだけを残すのは、[OpenTelemetry Collector](/observability/collector) の tail sampling である。
 

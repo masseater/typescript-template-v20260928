@@ -5,16 +5,7 @@ description: アプリケーションを Workers として実行し、外部依�
 
 実行環境は Cloudflare Workers である。リクエストを待っているプロセスは無く、`fetch` が応答を返したあとのメモリは残らない。開発時も同じ workerd で動く。
 
-Worker の外にあるデータベースは、接続文字列ではなく binding で渡す。D1 はその binding の先にある SQLite である。接続先をソースに書くと、宣言を変えても文字列の側は変わらない。
-
-```ts
-export default {
-  async fetch(_request, env) {
-    const row = await env.DB.prepare("select name from user where id = ?").bind(id).first();
-    return Response.json(row);
-  },
-};
-```
+Worker の外にあるデータベースは、接続文字列ではなく binding で渡す。D1 はその binding の先にある SQLite である。接続先をソースに書くと、宣言を変えても文字列の側は変わらない。アプリは D1 の binding を直接読まず、[Drizzle](/tech-stack/drizzle) を通す。
 
 同じ id へのアクセスを同じオブジェクトへ届け、リクエストが終わったあともそのオブジェクトが状態を持つときは Durable Objects を使う。`fetch` のローカル変数には、その状態は残せない。
 
@@ -23,7 +14,7 @@ export default {
 | 見ているもの | 採る前 | 採ったあと |
 | --- | --- | --- |
 | 応答を返したあと | プロセスがメモリを持ち続ける | そのメモリは残らない。開発時も同じ workerd で動く |
-| `user` の `name` | 接続文字列をソースに書き、`fetch` がそれを使って繋ぐ | `env.DB.prepare` の binding の先が D1 で、結果は `Response.json(row)` で返す。接続先をソースに書くと、宣言を変えても文字列の側は変わらない |
+| データベース | 接続文字列をソースに書き、`fetch` がそれを使って繋ぐ | binding の先が D1 になる。接続先をソースに書くと、宣言を変えても文字列の側は変わらない |
 | 同じ id の状態 | `fetch` のローカル変数は、次のリクエストに残らない | Durable Objects が、その id のオブジェクトに状態を残す |
 
 ## 参考文献

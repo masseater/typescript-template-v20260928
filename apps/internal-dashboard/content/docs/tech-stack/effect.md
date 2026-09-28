@@ -5,36 +5,26 @@ description: 成功値、失敗の種類、必要なサービスを型に持つ�
 
 Effect は、成功の値と失敗と必要なサービスを型に載せた値を作り、その値を作った時点では処理を実行しない。文書とサンプルは v4 を見る。v3 の `Effect.gen` や Service の書き方は、この形と揃わない。
 
-```ts
-import { Context, Effect, Schema } from "effect";
-
-class UserNotFound extends Schema.TaggedError<UserNotFound>()("UserNotFound", {
-  id: Schema.String,
-}) {}
-
-class Database extends Context.Service<
-  Database,
-  {
-    readonly find: (id: string) => Effect.Effect<{ readonly name: string } | undefined>;
-  }
->()("Database") {}
-
-const findUser = Effect.fn("findUser")(function* (id: string) {
-  const db = yield* Database;
-  const user = yield* db.find(id);
-  if (user === undefined) {
-    return yield* new UserNotFound({ id });
-  }
-  return user;
-});
+```ts title="libs/db/src/features/db/inquiry-not-found.ts"
+class InquiryNotFound extends Schema.TaggedError<InquiryNotFound>()("InquiryNotFound", {}) {}
 ```
 
-`findUser("123")` は `Effect` を返すだけで、`find` はまだ呼ばれない。`Effect.runPromise` したときに `find` が呼ばれ、行が無ければ `UserNotFound` が結果になる。例外にはならない。`Database` を渡さない `runPromise` は、その型の時点で TypeScript がコンパイルを失敗させる。どの失敗を成功の値に変えて、どれを失敗のまま返すかは、呼び出し側が型を見て決める。
+```ts title="libs/db/src/features/db/inquiry.ts"
+const replyAsAdmin = Effect.fn("replyAsAdmin")(function* replyAsAdmin({
+  const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.operator);
+  const [existing] = yield* query((database) =>
+  if (!existing) {
+    return yield* new InquiryNotFound();
+  }
+```
 
-`findUser("123")` の戻り値を yield も `runPromise` もしていない呼び出しは、TypeScript だけでは通る。それを失敗させるのが `effect-tsgo`（`@effect/tsgo`）である。TypeScript のネイティブコンパイラに Effect の診断を足した実行ファイルで、`tsgo` と並べては使わない。未処理の失敗が残っていること、必要なサービスがまだ型に残っていること、yield していない Effect は、実行が始まる前にここで出る。TypeScript 7 では、エディタ側のプラグイン名は `tsconfig` の `@effect/language-service` のままで、中身は `@effect/tsgo` が提供する。`@effect/language-service` パッケージは TypeScript 7 より前向けである。
+`replyAsAdmin(...)` は `Effect` を返すだけで、`query` はまだ実行されない。`Effect.runPromise` したときに `query` が実行され、行が無ければ `InquiryNotFound` が結果になる。例外にはならない。`query` が必要とするデータベースのサービスを渡さない `runPromise` は、その型の時点で TypeScript がコンパイルを失敗させる。どの失敗を成功の値に変えて、どれを失敗のまま返すかは、呼び出し側が型を見て決める。
 
-```sh
-effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning
+`replyAsAdmin(...)` の戻り値を yield も `runPromise` もしていない呼び出しは、TypeScript だけでは通る。それを失敗させるのが `effect-tsgo`（`@effect/tsgo`）である。TypeScript のネイティブコンパイラに Effect の診断を足した実行ファイルで、`tsgo` と並べては使わない。未処理の失敗が残っていること、必要なサービスがまだ型に残っていること、yield していない Effect は、実行が始まる前にここで出る。TypeScript 7 では、エディタ側のプラグイン名は `tsconfig` の `@effect/language-service` のままで、中身は `@effect/tsgo` が提供する。`@effect/language-service` パッケージは TypeScript 7 より前向けである。
+
+```ts title="libs/config/src/features/config/effect-typecheck.ts"
+const effectTsgoNoEmit = (project: string): string =>
+  `"$(effect-tsgo get-exe-path)" --pretty false --noEmit -p ${project}`;
 ```
 
 JSON のように外から来た値は、`Schema.decodeUnknownEffect` が成功するまでフィールドを読まない。
@@ -45,9 +35,9 @@ JSON のように外から来た値は、`Schema.decodeUnknownEffect` が成功�
 
 | 見ているもの | 採る前 | 採ったあと |
 | --- | --- | --- |
-| `findUser("123")` | 呼んだ時点で `find` が呼ばれ、行が無ければ例外になる | 呼んだ時点では `Effect` が返るだけ。`runPromise` したときに `find` が呼ばれ、行が無ければ `UserNotFound` になる |
-| `Database` を渡さない | 実行してから、必要なサービスが無いことに気づく | その `runPromise` は、型の時点でコンパイルが失敗する |
-| yield も `runPromise` もしていない呼び出し | TypeScript は通る | `effect-tsgo diagnostics` が、実行が始まる前に失敗させる |
+| `replyAsAdmin(...)` | 呼んだ時点で問い合わせが読まれ、行が無ければ例外になる | 呼んだ時点では `Effect` が返るだけ。`runPromise` したときに `query` が実行され、行が無ければ `InquiryNotFound` になる |
+| データベースのサービスを渡さない | 実行してから、必要なサービスが無いことに気づく | その `runPromise` は、型の時点でコンパイルが失敗する |
+| yield も `runPromise` もしていない呼び出し | TypeScript は通る | `effect-tsgo` が、実行が始まる前に失敗させる |
 
 ## 参考文献
 

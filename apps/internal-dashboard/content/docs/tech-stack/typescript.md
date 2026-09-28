@@ -5,19 +5,11 @@ description: 画面からインフラの宣言までを同一の型チェック�
 
 画面、サーバー、インフラの宣言は同じ TypeScript を通る。クライアントとサーバーが同じ型を参照するので、API の形を別の仕様として持たない。
 
+コンパイラの設定は `tsconfig.base.json` にある。
+
 `noUncheckedIndexedAccess` では、添字アクセスの型が `T | undefined` になる。`ids[0]` を `string` として使うには、要素があることを先に確認する。
 
-```ts
-const ids = ["u1", "u2"];
-const first: string | undefined = ids[0];
-```
-
-`exactOptionalPropertyTypes` では、プロパティを省略することと `undefined` を代入することが別の型になる。下の代入は失敗する。`{}` は `Profile` として通る。
-
-```ts
-type Profile = { name?: string };
-const assigned: Profile = { name: undefined };
-```
+`exactOptionalPropertyTypes` では、プロパティを省略することと `undefined` を代入することが別の型になる。`name?: string` のプロパティへ `undefined` を代入すると失敗し、省略した `{}` は通る。
 
 `verbatimModuleSyntax` では、型だけの名前を `import type` で入れる。`import { User }` のように値の import と混ぜると、型チェックが失敗する。
 
@@ -28,7 +20,7 @@ const assigned: Profile = { name: undefined };
 | 見ているもの | 採る前 | 採ったあと |
 | --- | --- | --- |
 | `ids[0]` | `string` として通る | `string \| undefined` になる。`string` として使うには、要素があることを先に確認する |
-| `{ name: undefined }` | `name?` を省略した `{}` と同じ型になる | `Profile` への代入が失敗する。`{}` は `Profile` として通る |
+| `{ name: undefined }` | `name?` を省略した `{}` と同じ型になる | `name?: string` への代入が失敗する。`{}` は通る |
 | `import { User }` | 型だけの名前が、値の import に残る | `import type` で入れない場合、型チェックが失敗する |
 | 外から来た JSON | フィールドを読んだあとで、欠けに気づく | `Schema.decodeUnknownEffect` が成功するまでフィールドを読まない |
 

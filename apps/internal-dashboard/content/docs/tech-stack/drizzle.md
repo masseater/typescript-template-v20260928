@@ -5,27 +5,23 @@ description: SQL に近い TypeScript で SQLite のテーブルとクエリを�
 
 Drizzle では、テーブル定義が行の型になり、Drizzle Kit がその定義からマイグレーションを生成する。接続先は SQLite で、Cloudflare では [D1](/tech-stack/cloudflare) に繋ぐ。
 
-```ts
-const user = sqliteTable("user", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
+```ts title="libs/db/src/features/db/billing-schema.ts"
+const stripeEvent = sqliteTable("stripe_event", {
+  id: text("id").primaryKey().notNull(),
+  receivedAt: integer("received_at", { mode: "timestamp_ms" }).notNull(),
+  type: text("type").notNull(),
 });
-
-const rows = await db.select().from(user).where(eq(user.id, id));
 ```
 
-`rows` の要素は `{ id: string; name: string }` になる。列を変えると、この型と、Kit が出すマイグレーションの両方が変わる。
+`stripeEvent` から select した行の要素は `{ id: string; receivedAt: Date; type: string }` になる。列を変えると、この型と、Kit が出すマイグレーションの両方が変わる。
 
 D1 は、先行する文の結果を見てから次の文を送る対話的なトランザクションを持たない。送る文が先に揃っているときは `batch` にまとめる。
 
-```ts
-await db.batch([
-  db.insert(user).values({ id, name }),
-  db.update(user).set({ name }).where(eq(user.id, id)),
-]);
+```ts title="libs/db/src/features/db/admin.ts"
+    return database.batch([audit, transition] as const);
 ```
 
-テーブルから Effect Schema を出すときは `createSelectSchema(user)` を使う。検証に失敗した値をどこで止めるかは [Effect](/tech-stack/effect) に書く。
+テーブルから Effect Schema を出すときは `createSelectSchema(stripeEvent)` を使う。検証に失敗した値をどこで止めるかは [Effect](/tech-stack/effect) に書く。
 
 ## マイグレーション
 
@@ -35,10 +31,9 @@ await db.batch([
 
 SQLite では、ファイルに書いた複数の文をまとめて実行しない。文のあいだに `--> statement-breakpoint` を置く。
 
-```sql
-ALTER TABLE `user` RENAME COLUMN `bio` TO `profile`;
---> statement-breakpoint
-UPDATE `user` SET `profile` = '' WHERE `profile` IS NULL;
+```sql title="libs/db/migrations/20260919070000_rename_audiences_and_roles/migration.sql"
+UPDATE `session` SET `audience` = 'service-member' WHERE `audience` = 'user';--> statement-breakpoint
+UPDATE `session` SET `audience` = 'service-admin' WHERE `audience` = 'admin';--> statement-breakpoint
 ```
 
 適用済みのフォルダは変えない。`__drizzle_migrations` がフォルダ名と SQL のハッシュを記録していて、中身を変えると一致しなくなる。次の変更は新しいフォルダにする。適用順はフォルダ名の時刻順で、時刻は generate が付ける。`drizzle-kit check` は、同じ snapshot から別々に生成されたマイグレーションの衝突を見る。
@@ -47,9 +42,9 @@ UPDATE `user` SET `profile` = '' WHERE `profile` IS NULL;
 
 | 見ているもの | 採る前 | 採ったあと |
 | --- | --- | --- |
-| `db.select().from(user)` | 戻り値の形を、テーブルとは別に `{ id: string; name: string }` と書く | `sqliteTable` の列が `rows` の要素の型になる |
-| `name` の隣に列を足す | SQL を手で書き、TypeScript の型は別の場所に残る | `sqliteTable` を変えて `drizzle-kit generate` すると、型と `migrations/<時刻>_<名前>/migration.sql` の両方が変わる |
-| D1 で insert のあと update する | 先行する文の結果を見てから次の文を送る対話的なトランザクションは無い | 送る文が先に揃っているときは `db.batch` にまとめる |
+| `stripe_event` を読む | 戻り値の形を、テーブルとは別に `{ id: string; receivedAt: Date; type: string }` と書く | `sqliteTable` の列が select した行の型になる |
+| `type` の隣に列を足す | SQL を手で書き、TypeScript の型は別の場所に残る | `sqliteTable` を変えて `drizzle-kit generate` すると、型と `migrations/<時刻>_<名前>/migration.sql` の両方が変わる |
+| D1 で監査の記録と状態の変更を書く | 先行する文の結果を見てから次の文を送る対話的なトランザクションは無い | 送る文が先に揃っているときは `db.batch` にまとめる |
 | 列の名前を `bio` から `profile` にする | SQL の意図と、Kit が見る差が別々になる | generate の確認でリネームだと答えないと、Kit は列を作り直す。`snapshot.json` は手で直さない |
 
 ## 参考文献

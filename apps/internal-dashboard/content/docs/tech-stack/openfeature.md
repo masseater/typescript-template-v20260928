@@ -7,18 +7,7 @@ OpenFeature は、機能フラグの評価 API を共通にする CNCF の仕様
 
 本テンプレートは **Cloudflare Flagship** を provider に使う。[Cloudflare](/tech-stack/cloudflare) の Worker には `FLAGS` binding が渡る。`@cloudflare/flagship/server` の `FlagshipServerProvider` が binding を OpenFeature に接続する。ローカル開発で `FLAGS` が無いときだけ、`@openfeature/server-sdk` の `TypedInMemoryProvider` が定義に書いた既定の variation を返す。デプロイした Worker に `FLAGS` が無ければ、起動を設定エラーで止める。フラグのキーと variation は型付きの定義として持つ。管理画面から Flagship の値を書き換えるときは、Flagship の REST API を使う。
 
-```ts
-import { FlagshipServerProvider } from "@cloudflare/flagship/server";
-import { OpenFeature } from "@openfeature/server-sdk";
-
-await OpenFeature.setProviderAndWait(new FlagshipServerProvider({ binding: env.FLAGS }));
-
-const client = OpenFeature.getClient();
-
-const details = await client.getBooleanDetails("new-checkout", false);
-```
-
-`setProviderAndWait` が終わるまで `getBooleanDetails` は provider を通らない。`env.FLAGS` は [Alchemy](/tech-stack/alchemy) が Worker に渡す Flagship binding である。評価に失敗すると `details` は `errorCode` を持つ。そのときは値を使わず、機能を OFF として扱う。第二引数の `false` も同じ理由で OFF にしてある。
+`setProviderAndWait` が終わるまで評価は provider を通らない。`FLAGS` は [Alchemy](/tech-stack/alchemy) が Worker に渡す Flagship binding である。評価に失敗すると評価の詳細は `errorCode` を持つ。そのときは値を使わず、機能を OFF として扱う。評価の既定値も同じ理由で OFF にしてある。
 
 サーバー側の取得と切り替えは [Effect](/tech-stack/effect) の `FeatureFlags` サービスが OpenFeature client を包む。呼び出し側は `getBoolean` で ON / OFF だけを受け取るか、`evaluateBoolean` で評価できたか失敗して OFF にしたかを受け取る。
 
