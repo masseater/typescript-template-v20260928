@@ -1,4 +1,5 @@
 import { apiData } from "@repo/runtime/client";
+import { queryOptions } from "@tanstack/react-query";
 
 import { wikiClient } from "#shared/api/index.ts";
 import {
@@ -29,4 +30,28 @@ function loadInquiry(id: string): Promise<typeof StaffInquiryThread.Type> {
   );
 }
 
-export { loadInquiry, loadInquiryCounts, loadMemberInquiries };
+const inquiryCountsOptions = queryOptions({
+  queryFn: loadInquiryCounts,
+  queryKey: ["staff-inquiries", "counts"],
+  retry: false,
+});
+
+function memberInquiriesOptions(memberId: string | undefined) {
+  return queryOptions({
+    enabled: memberId !== undefined,
+    queryFn: () => loadMemberInquiries(memberId ?? ""),
+    queryKey: ["staff-inquiries", "member", memberId] as const,
+    retry: false,
+  });
+}
+
+function inquiryOptions(inquiryId: string | undefined) {
+  return queryOptions({
+    enabled: inquiryId !== undefined,
+    queryFn: () => loadInquiry(inquiryId ?? ""),
+    queryKey: ["staff-inquiries", "thread", inquiryId] as const,
+    retry: false,
+  });
+}
+
+export { inquiryCountsOptions, inquiryOptions, memberInquiriesOptions };

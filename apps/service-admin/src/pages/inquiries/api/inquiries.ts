@@ -1,6 +1,7 @@
 import { apiData } from "@repo/runtime/client";
+import { queryOptions } from "@tanstack/react-query";
 
-import { adminClient } from "#shared/api/index.ts";
+import { adminClient, inquiriesKey } from "#shared/api/index.ts";
 import {
   AdminInquiryList,
   AdminInquiryThread,
@@ -39,4 +40,34 @@ function closeInquiry(id: string): Promise<typeof AdminInquiryThread.Type> {
     .then((response) => apiData(AdminInquiryThread, response));
 }
 
-export { closeInquiry, loadInquiry, loadInquiries, loadMemberSummary, replyToInquiry };
+function inquiryListOptions(query: typeof InquiryListQuery.Type) {
+  return queryOptions({
+    queryFn: () => loadInquiries(query),
+    queryKey: [...inquiriesKey, "list", query] as const,
+    retry: false,
+  });
+}
+
+function inquiryThreadOptions(id: string) {
+  return queryOptions({
+    queryFn: () => loadInquiry(id),
+    queryKey: [...inquiriesKey, "thread", id] as const,
+    retry: false,
+  });
+}
+
+function memberSummaryOptions(memberId: string) {
+  return queryOptions({
+    queryFn: () => loadMemberSummary(memberId),
+    queryKey: ["admin-inquiry-member", memberId] as const,
+    retry: false,
+  });
+}
+
+export {
+  closeInquiry,
+  inquiryListOptions,
+  inquiryThreadOptions,
+  memberSummaryOptions,
+  replyToInquiry,
+};

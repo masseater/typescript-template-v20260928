@@ -1,4 +1,5 @@
 import { apiData } from "@repo/runtime/client";
+import { queryOptions } from "@tanstack/react-query";
 
 import { userClient } from "#shared/api/index.ts";
 import { InterviewView } from "#shared/interview/index.ts";
@@ -37,8 +38,14 @@ function respondHistoryConsent(accept: boolean): Promise<InterviewViewData> {
   );
 }
 
+const interviewOptions = queryOptions({
+  queryFn: loadInterview,
+  queryKey: ["interview"],
+  retry: false,
+});
+
 export {
-  loadInterview,
+  interviewOptions,
   respondHistoryConsent,
   restartInterviewSession,
   saveInterviewSheet,

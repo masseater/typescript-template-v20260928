@@ -1,39 +1,22 @@
-import { useAtomValue } from "@effect/atom-react";
-import { localState, requestAtom, type RequestResult } from "@repo/ui";
-import { Option } from "effect";
-import { Atom } from "effect/unstable/reactivity";
+import { inquiryStatuses } from "@repo/config";
+import { adminPageSize, laterPage, maximumAdminPage, searchNormalizer } from "@repo/config/paging";
+import { Schema } from "effect";
 
-import { loadInquiries } from "#pages/inquiries/api/inquiries.ts";
+import type { InquiryListQuery } from "#shared/contracts/index.ts";
 
-import type { AdminInquirySummary } from "./inquiry.ts";
-import type { InquiryStatus } from "./status-label.ts";
+const InquiriesSearchParams = Schema.Struct({
+  page: Schema.optionalKey(laterPage(maximumAdminPage)),
+  status: Schema.optionalKey(Schema.Literals(inquiryStatuses)),
+});
 
-const listPageSize = 50;
+type InquiriesSearch = typeof InquiriesSearchParams.Type;
 
-const inquiryListAtom = Atom.family((status: InquiryStatus | undefined) =>
-  requestAtom((): Promise<readonly AdminInquirySummary[]> => {
-    const query = { limit: listPageSize, offset: 0 } as const;
-    return loadInquiries(status === undefined ? query : { ...query, status }).then(
-      (list) => list.inquiries,
-    );
-  }),
-);
+const normalizeInquiriesSearch = searchNormalizer(InquiriesSearchParams);
 
-const useStatusFilter = localState(Option.none<InquiryStatus>());
-
-function useInquiryList(status?: InquiryStatus): RequestResult<readonly AdminInquirySummary[]> {
-  return useAtomValue(inquiryListAtom(status));
+function inquiryListQuery(search: InquiriesSearch): typeof InquiryListQuery.Type {
+  const query = { limit: adminPageSize, offset: ((search.page ?? 1) - 1) * adminPageSize };
+  return search.status === undefined ? query : { ...query, status: search.status };
 }
 
-function useInquiryStatusFilter(): Readonly<{
-  status: InquiryStatus | undefined;
-  toggle: (value: InquiryStatus) => void;
-}> {
-  const [status, setStatus] = useStatusFilter();
-  function toggle(value: InquiryStatus): void {
-    setStatus((current) => (Option.contains(current, value) ? Option.none() : Option.some(value)));
-  }
-  return { status: Option.getOrUndefined(status), toggle };
-}
-
-export { useInquiryList, useInquiryStatusFilter };
+export { inquiryListQuery, normalizeInquiriesSearch };
+export type { InquiriesSearch };

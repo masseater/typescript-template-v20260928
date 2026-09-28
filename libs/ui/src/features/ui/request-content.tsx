@@ -1,5 +1,4 @@
-import { resultError } from "./request";
-import { settledValue, type ResultValue } from "./request-value";
+import { fetchedFailure, settledData, type FetchedValue } from "./fetched-value";
 import { RetryableFailure } from "./retryable-failure";
 import { StatusMessage } from "./shared/ui/status";
 import { STATUS_VARIANT } from "./shared/ui/status-variants.ts";
@@ -7,18 +6,18 @@ import { STATUS_VARIANT } from "./shared/ui/status-variants.ts";
 import type { ReactElement } from "react";
 import type { UiNode } from "./shared/ui/types";
 
-const RequestContent = <Settled extends object>({
+const RequestContent = <Value,>({
   children,
   failureTitle,
   onRetry,
   fetched,
 }: Readonly<{
-  children: (loaded: ResultValue<Settled>) => UiNode;
+  children: (loaded: Value) => UiNode;
   failureTitle: string;
   onRetry: () => void;
-  fetched: Settled;
+  fetched: FetchedValue<Value>;
 }>): ReactElement => {
-  const failure = resultError(fetched);
+  const failure = fetchedFailure(fetched);
   if (failure !== undefined) {
     return (
       <RetryableFailure onRetry={onRetry}>
@@ -27,7 +26,7 @@ const RequestContent = <Settled extends object>({
       </RetryableFailure>
     );
   }
-  const loaded = settledValue(fetched);
+  const loaded = settledData(fetched);
   if (loaded === undefined) {
     return <StatusMessage variant={STATUS_VARIANT.pending}>{"読み込み中です。"}</StatusMessage>;
   }

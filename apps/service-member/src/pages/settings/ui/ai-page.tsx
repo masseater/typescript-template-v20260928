@@ -1,4 +1,3 @@
-import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
 import { MEMBER_MCP_SCOPE } from "@repo/config";
 import {
   type ActionState,
@@ -12,18 +11,15 @@ import {
   STATUS_VARIANT,
   StatusMessage,
   localState,
-  requestAtom,
-  resultError,
 } from "@repo/ui";
-import { AsyncResult } from "effect/unstable/reactivity";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { loadApiKeys, revokeApiKey, type ListedApiKey } from "#pages/settings/api/api-keys.ts";
+import { apiKeysOptions, revokeApiKey, type ListedApiKey } from "#pages/settings/api/api-keys.ts";
 import { useApiKeyForm } from "#pages/settings/model/api-key-form.ts";
 import { scopeLabel } from "#shared/contracts/index.ts";
 
 import type { ReactElement } from "react";
 const useRevokeConfirming = localState(false);
-const apiKeysAtom = requestAtom(loadApiKeys);
 function ApiKeyItem({
   action,
   entry,
@@ -100,10 +96,12 @@ function issuedNotice(issued: Readonly<{ key: string }> | undefined): string | u
     : `発行した API キー（この画面を離れると再表示できません）: ${issued.key}`;
 }
 function AiPage(): ReactElement {
-  const listed = useAtomValue(apiKeysAtom);
-  const reload = useAtomRefresh(apiKeysAtom);
+  const listed = useQuery(apiKeysOptions);
+  const queries = useQueryClient();
+  function reload(): void {
+    void queries.invalidateQueries({ queryKey: apiKeysOptions.queryKey });
+  }
   const form = useApiKeyForm(reload);
-  const keys = AsyncResult.isSuccess(listed) ? listed.value : undefined;
   return (
     <Page title="AI と API">
       <FormColumn>
@@ -136,8 +134,8 @@ function AiPage(): ReactElement {
       </FormColumn>
       <ApiKeyEntries
         action={form.action}
-        failure={resultError(listed)}
-        keys={keys}
+        failure={listed.error?.message}
+        keys={listed.data}
         onRevoked={reload}
       />
     </Page>

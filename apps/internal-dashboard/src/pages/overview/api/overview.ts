@@ -1,4 +1,5 @@
 import { apiData } from "@repo/runtime/client";
+import { queryOptions } from "@tanstack/react-query";
 
 import { wikiClient } from "#shared/api/index.ts";
 import { StaffOverview } from "#shared/contracts/index.ts";
@@ -9,4 +10,10 @@ function loadOverview(): Promise<typeof StaffOverview.Type> {
   );
 }
 
-export { loadOverview };
+const overviewOptions = queryOptions({
+  queryFn: loadOverview,
+  queryKey: ["staff-overview"],
+  retry: false,
+});
+
+export { overviewOptions };

@@ -1,4 +1,5 @@
 import { apiData } from "@repo/runtime/client";
+import { queryOptions } from "@tanstack/react-query";
 
 import { userClient } from "#shared/api/index.ts";
 import {
@@ -32,4 +33,26 @@ function replyToInquiry(values: typeof InquiryReply.Type): Promise<typeof Inquir
   );
 }
 
-export { createInquiry, loadInquiry, loadInquiries, replyToInquiry };
+const supportInquiriesKey = ["support-inquiries"] as const;
+
+const inquiryListOptions = queryOptions({
+  queryFn: loadInquiries,
+  queryKey: [...supportInquiriesKey, "list"] as const,
+  retry: false,
+});
+
+function inquiryThreadOptions(inquiryId: string) {
+  return queryOptions({
+    queryFn: () => loadInquiry(inquiryId),
+    queryKey: [...supportInquiriesKey, "thread", inquiryId] as const,
+    retry: false,
+  });
+}
+
+export {
+  createInquiry,
+  inquiryListOptions,
+  inquiryThreadOptions,
+  replyToInquiry,
+  supportInquiriesKey,
+};

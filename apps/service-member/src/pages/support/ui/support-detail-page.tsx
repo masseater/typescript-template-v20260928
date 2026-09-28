@@ -4,19 +4,22 @@ import {
   STATUS_VARIANT,
   StatusMessage,
   TextLink,
-  resultError,
   formatWarekiDateTime,
 } from "@repo/ui";
-import { AsyncResult } from "effect/unstable/reactivity";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { useInquiryThread } from "#pages/support/model/inquiry-thread.ts";
+import { inquiryThreadOptions, supportInquiriesKey } from "#pages/support/api/support.ts";
 import { InquiryReplyForm } from "./inquiry-reply-form.tsx";
 
 import type { ReactElement } from "react";
 
 function SupportDetailPage({ inquiryId }: Readonly<{ inquiryId: string }>): ReactElement {
-  const { reload, thread } = useInquiryThread(inquiryId);
-  const error = resultError(thread);
+  const thread = useQuery(inquiryThreadOptions(inquiryId));
+  const queries = useQueryClient();
+  const error = thread.error?.message;
+  function reload(): void {
+    void queries.invalidateQueries({ queryKey: supportInquiriesKey });
+  }
 
   if (error !== undefined) {
     return (
@@ -27,15 +30,14 @@ function SupportDetailPage({ inquiryId }: Readonly<{ inquiryId: string }>): Reac
     );
   }
 
-  if (!AsyncResult.isSuccess(thread)) {
+  const inquiry = thread.data;
+  if (inquiry === undefined) {
     return (
       <Page title="お問い合わせ">
         <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
       </Page>
     );
   }
-
-  const inquiry = thread.value;
 
   return (
     <Page title="お問い合わせ">

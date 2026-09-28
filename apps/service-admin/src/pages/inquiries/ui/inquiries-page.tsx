@@ -1,23 +1,34 @@
-import { useAtomValue } from "@effect/atom-react";
-import { firstResultError, resultValue } from "@repo/ui";
+import { useQuery } from "@tanstack/react-query";
+import { getRouteApi, useNavigate } from "@tanstack/react-router";
 
-import { useInquiryList, useInquiryStatusFilter } from "#pages/inquiries/model/inquiry-list.ts";
-import { pendingCountAtom } from "#shared/api/index.ts";
+import { inquiryListOptions } from "#pages/inquiries/api/inquiries.ts";
+import { inquiryListQuery } from "#pages/inquiries/model/inquiry-list.ts";
+import { pendingCountOptions } from "#shared/api/index.ts";
 import { InquiriesView } from "./inquiries-view.tsx";
 
+import type { InquiryStatus } from "#pages/inquiries/model/status-label.ts";
 import type { ReactElement } from "react";
 
+const route = getRouteApi("/_admin/inquiries");
+
 function InquiriesPage(): ReactElement {
-  const { status, toggle } = useInquiryStatusFilter();
-  const listing = useInquiryList(status);
-  const pendingState = useAtomValue(pendingCountAtom);
+  const search = route.useSearch();
+  const navigate = useNavigate();
+  const listing = useQuery(inquiryListOptions(inquiryListQuery(search)));
+  const pending = useQuery(pendingCountOptions);
+  function toggle(value: InquiryStatus): void {
+    void navigate({
+      search: search.status === value ? {} : { status: value },
+      to: "/inquiries",
+    });
+  }
   return (
     <InquiriesView
-      error={firstResultError(listing, pendingState)}
-      inquiries={resultValue(listing)}
+      error={listing.error?.message ?? pending.error?.message}
+      list={listing.data}
       onToggle={toggle}
-      pendingCount={resultValue(pendingState)}
-      status={status}
+      pendingCount={pending.data}
+      search={search}
     />
   );
 }

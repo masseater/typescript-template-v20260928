@@ -1,5 +1,3 @@
-import { Cause } from "effect";
-import { AsyncResult } from "effect/unstable/reactivity";
 import { describe, expect, test } from "vite-plus/test";
 
 import { renderedAt } from "./rendered-test-fixture.tsx";
@@ -18,7 +16,7 @@ describe("RequestContent", () => {
       renderedAt(
         <RequestContent
           failureTitle="一覧を取得できませんでした。"
-          fetched={AsyncResult.success("規約", { waiting: true })}
+          fetched={{ data: "規約", error: null, isFetching: true }}
           onRetry={() => undefined}
         >
           {(loaded) => <p>{loaded}</p>}
@@ -29,7 +27,7 @@ describe("RequestContent", () => {
       renderedAt(
         <RequestContent
           failureTitle="一覧を取得できませんでした。"
-          fetched={AsyncResult.failure(Cause.fail(new Error("通信できません。")))}
+          fetched={{ data: undefined, error: new Error("通信できません。"), isFetching: false }}
           onRetry={() => undefined}
         >
           {(loaded) => <p>{String(loaded)}</p>}
@@ -41,7 +39,7 @@ describe("RequestContent", () => {
       renderedAt(
         <RequestContent
           failureTitle="一覧を取得できませんでした。"
-          fetched={AsyncResult.success("規約")}
+          fetched={{ data: "規約", error: null, isFetching: false }}
           onRetry={() => undefined}
         >
           {(loaded) => <p>{loaded}</p>}

@@ -1,8 +1,10 @@
 import { apiData } from "@repo/runtime/client";
-import { requestAtom } from "@repo/ui";
+import { queryOptions } from "@tanstack/react-query";
 
 import { PendingCount } from "#shared/contracts/index.ts";
 import { adminClient } from "./client.ts";
+
+const inquiriesKey = ["admin-inquiries"] as const;
 
 function loadPendingCount(): Promise<number> {
   return adminClient()
@@ -10,6 +12,10 @@ function loadPendingCount(): Promise<number> {
     .then((response) => apiData(PendingCount, response).count);
 }
 
-const pendingCountAtom = requestAtom(loadPendingCount);
+const pendingCountOptions = queryOptions({
+  queryFn: loadPendingCount,
+  queryKey: [...inquiriesKey, "pending-count"] as const,
+  retry: false,
+});
 
-export { pendingCountAtom };
+export { inquiriesKey, pendingCountOptions };

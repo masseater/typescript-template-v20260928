@@ -1,5 +1,6 @@
 import { requireSuccess } from "@repo/auth-ui";
 import { memberApiKeyReadPermissions } from "@repo/config";
+import { queryOptions } from "@tanstack/react-query";
 import { DateTime } from "effect";
 
 import { memberAuthClient } from "#shared/auth/index.ts";
@@ -75,5 +76,11 @@ function revokeApiKey(keyId: string): Promise<void> {
   });
 }
 
-export { createApiKey, loadApiKeys, revokeApiKey };
+const apiKeysOptions = queryOptions({
+  queryFn: loadApiKeys,
+  queryKey: ["api-keys"],
+  retry: false,
+});
+
+export { apiKeysOptions, createApiKey, revokeApiKey };
 export type { CreatedApiKey, ListedApiKey };

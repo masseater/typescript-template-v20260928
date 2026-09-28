@@ -1,4 +1,4 @@
-import { RequestTable, type RequestResult } from "@repo/ui";
+import { RequestTable, type FetchedValue } from "@repo/ui";
 
 import { staffTableColumns } from "#pages/staff/model/staff-labels.ts";
 import { StaffRow } from "./staff-row.tsx";
@@ -10,7 +10,7 @@ function StaffTable({
   listing,
   onReload,
 }: Readonly<{
-  listing: RequestResult<readonly ListedStaff[]>;
+  listing: FetchedValue<readonly ListedStaff[]>;
   onReload: () => void;
 }>): ReactElement {
   return (
