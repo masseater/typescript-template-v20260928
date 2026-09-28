@@ -12,12 +12,12 @@ import {
   startAdminAuthorization,
   type FetchMcp,
 } from "@repo/auth/testing";
-import { APPLICATION, httpStatus } from "@repo/config";
+import { APPLICATION, httpStatus, mcpPath, oauthMetadataPathPrefix } from "@repo/config";
 import { ADMIN_PERMISSION } from "@repo/config/identity";
 import { addUser, auditActionsOf } from "@repo/db/testing";
-import { unavailable } from "@repo/runtime/account";
+import { mcpApi } from "@repo/runtime/account";
 import { appLayer } from "@repo/runtime/bindings";
-import { apiRoutes, createApi } from "@repo/runtime/http";
+import { apiRoutes } from "@repo/runtime/http";
 import { appEnvironment } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
 import { Context, Effect, Layer, Schema } from "effect";
@@ -67,7 +67,7 @@ function adminMcpApp(auth: Parameters<typeof runWith>[0]): {
     ),
   );
   const api = apiRoutes(runtime, reporting);
-  const app = createApi("").all("/mcp", ...api.raw(serveMcp, unavailable));
+  const app = mcpApi(api, serveMcp);
   const fetchMcp = (request: Request): Effect.Effect<Response, never, never> =>
     Effect.promise(() => Promise.resolve(app.fetch(request)));
   return { fetchMcp, stop: Effect.promise(() => runtime.dispose()) };
@@ -107,7 +107,7 @@ describe("admin MCP authorization", () => {
     runWith(auth, () =>
       Effect.gen(function* program() {
         const app = adminMcpApp(auth);
-        const resource = yield* discovery("/.well-known/oauth-protected-resource/mcp");
+        const resource = yield* discovery(`${oauthMetadataPathPrefix}protected-resource${mcpPath}`);
         const server = yield* discovery("/.well-known/oauth-authorization-server/api/auth");
         const challenge = yield* mcpChallenge();
         const header =
@@ -124,7 +124,7 @@ describe("admin MCP authorization", () => {
       expect(result.resource.status).toBe(httpStatus.ok);
       expect(result.resource.body).toMatchObject({
         authorization_servers: [`${adminOrigin}/api/auth`],
-        resource: `${adminOrigin}/mcp`,
+        resource: `${adminOrigin}${mcpPath}`,
       });
       expect(result.server.body).toMatchObject({
         code_challenge_methods_supported: ["S256"],
@@ -133,7 +133,7 @@ describe("admin MCP authorization", () => {
       });
       expect(result.challengeStatus).toBe(httpStatus.unauthorized);
       expect(result.header).toContain(
-        `resource_metadata="${adminOrigin}/.well-known/oauth-protected-resource/mcp"`,
+        `resource_metadata="${adminOrigin}${oauthMetadataPathPrefix}protected-resource${mcpPath}"`,
       );
     }));
 

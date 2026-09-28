@@ -19,6 +19,7 @@ import { onCLS, onFCP, onINP, onLCP, onTTFB } from "web-vitals";
 
 import { makeEventQueue, type EventQueue } from "./browser-queue.ts";
 import { stoppableVitals, type VitalMetric } from "./vital-reporting.ts";
+import type { ACCOUNT_API_PATH } from "@repo/config";
 
 const browserCrypto = Crypto.make({
   digest: (algorithm, digestInput) =>
@@ -230,7 +231,7 @@ export const initBrowserTelemetry = ({
   endpoint,
   routes,
 }: {
-  readonly endpoint: "/api/telemetry";
+  readonly endpoint: typeof ACCOUNT_API_PATH.telemetry;
   readonly routes: Readonly<Record<string, string>>;
 }): { readonly dispose: () => void } => {
   if (!isRoutes(routes)) {

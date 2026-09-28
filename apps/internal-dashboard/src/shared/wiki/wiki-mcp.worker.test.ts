@@ -16,7 +16,7 @@ import {
   wikiOrigin,
   wikiStaff,
 } from "@repo/auth/testing";
-import { APPLICATION, ROLE, httpStatus } from "@repo/config";
+import { APPLICATION, ROLE, httpStatus, mcpPath, oauthMetadataPathPrefix } from "@repo/config";
 import { Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 
@@ -45,7 +45,7 @@ describe("wiki MCP authorization", () => {
     Effect.runPromise(
       Effect.gen(function* discoverOAuth() {
         const result = yield* Effect.gen(function* program() {
-          const resource = yield* discovery("/.well-known/oauth-protected-resource/mcp");
+          const resource = yield* discovery(`${oauthMetadataPathPrefix}protected-resource${mcpPath}`);
           const server = yield* discovery("/.well-known/oauth-authorization-server/api/auth");
           const challenge = yield* mcpRequest();
           const header =
@@ -60,7 +60,7 @@ describe("wiki MCP authorization", () => {
         expect(result.resource.status).toBe(httpStatus.ok);
         expect(result.resource.body).toMatchObject({
           authorization_servers: [`${wikiOrigin}/api/auth`],
-          resource: `${wikiOrigin}/mcp`,
+          resource: `${wikiOrigin}${mcpPath}`,
         });
         expect(result.server.body).toMatchObject({
           code_challenge_methods_supported: ["S256"],
@@ -69,7 +69,7 @@ describe("wiki MCP authorization", () => {
         });
         expect(result.challengeStatus).toBe(httpStatus.unauthorized);
         expect(result.header).toContain(
-          `resource_metadata="${wikiOrigin}/.well-known/oauth-protected-resource/mcp"`,
+          `resource_metadata="${wikiOrigin}${oauthMetadataPathPrefix}protected-resource${mcpPath}"`,
         );
       }),
     ),

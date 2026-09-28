@@ -1,5 +1,5 @@
 import { verifySession } from "@repo/auth";
-import { AGREEMENT_KIND, agreementPolicies, httpStatus } from "@repo/config";
+import { ACCOUNT_API_ROUTE, AGREEMENT_KIND, agreementPolicies, apiRoot, httpStatus } from "@repo/config";
 import {
   AgreementVersionUnavailable,
   AgreementWithdrawalUnavailable,
@@ -119,22 +119,22 @@ function agreementApi(api: ApiRoutes<AppServices>) {
 const exemptPrefixes = [
   "/auth",
   "/agreements",
-  "/invite",
+  ACCOUNT_API_ROUTE.invite,
   "/recovery",
   "/billing",
   "/support",
 ] as const;
 const exemptPaths: ReadonlySet<string> = new Set([
-  "/session",
-  "/health",
-  "/telemetry",
+  ACCOUNT_API_ROUTE.session,
+  ACCOUNT_API_ROUTE.health,
+  ACCOUNT_API_ROUTE.telemetry,
   "/contact",
   "/leave",
 ]);
 
 const apiRelativePath = (request: Request): string => {
   const path = new URL(request.url).pathname.replace(/\/$/, "") || "/";
-  return path.startsWith("/api/") ? path.slice("/api".length) : path;
+  return path.startsWith(`${apiRoot}/`) ? path.slice(apiRoot.length) : path;
 };
 
 const consentExempt = (request: Request): boolean => {

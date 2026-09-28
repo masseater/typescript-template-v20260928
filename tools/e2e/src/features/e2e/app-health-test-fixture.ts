@@ -1,3 +1,4 @@
+import { ACCOUNT_API_PATH } from "@repo/config";
 import { Duration, Effect, FileSystem } from "effect";
 import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 
@@ -6,7 +7,7 @@ import { failed, spelled } from "./journey-failure.ts";
 const servingHealth = "serving";
 
 const healthReport = (origin: string): Effect.Effect<string> => {
-  const healthPath = "/api/health";
+  const healthPath = ACCOUNT_API_PATH.health;
   const okStatus = 200;
   const requestTimeout = Duration.millis(120_000);
   return Effect.match(

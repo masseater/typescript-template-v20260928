@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { applications } from "@repo/config";
+import { ACCOUNT_API_PATH, applications } from "@repo/config";
 import { HealthView } from "@repo/runtime";
 import { Console, Duration, Effect, Schema } from "effect";
 import { FetchHttpClient, HttpClient } from "effect/unstable/http";
@@ -18,7 +18,7 @@ const probeOrigin = Effect.fn("probeOrigin")(function* probeOrigin(
   service: (typeof applications)[number],
   origin: string,
 ) {
-  const response = yield* HttpClient.get(new URL("/api/health", origin).href, {
+  const response = yield* HttpClient.get(new URL(ACCOUNT_API_PATH.health, origin).href, {
     headers: { accept: "application/json" },
   }).pipe(
     Effect.timeout(Duration.seconds(15)),

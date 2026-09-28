@@ -14,6 +14,7 @@
     "./testing": "./src/features/ui/rendered-test-fixture.tsx"
   },
   "dependencies": {
+    "@repo/config": "workspace:*",
     "@effect/atom-react": "catalog:",
     "@repo/observability": "workspace:*",
     "@repo/runtime": "workspace:*",
@@ -40,7 +41,6 @@
   "devDependencies": {
     "@effect/platform-node": "catalog:",
     "@effect/vitest": "catalog:",
-    "@repo/config": "workspace:*",
     "@repo/telemetry": "workspace:*",
     "@repo/vite-config": "workspace:*",
     "@shadcn/lint": "catalog:",

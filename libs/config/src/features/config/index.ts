@@ -6,9 +6,13 @@ export {
 } from "./agreements.ts";
 export type { AgreementKind, AgreementPolicy } from "./agreements.ts";
 export {
+  ACCOUNT_API_PATH,
+  ACCOUNT_API_ROUTE,
   APPLICATION,
   scalarReferencePath,
   ApplicationName,
+  accountApiPaths,
+  apiRoot,
   applicationOrigins,
   applicationPorts,
   applicationReadyPaths,
@@ -23,6 +27,8 @@ export {
   mailpitOrigin,
   mailpitPort,
   mailpitSendPath,
+  mcpPath,
+  oauthMetadataPathPrefix,
   storybookOrigin,
   storybookPort,
 } from "./applications.ts";

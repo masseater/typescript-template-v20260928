@@ -1,4 +1,4 @@
-import { httpStatus, type Application } from "@repo/config";
+import { httpStatus, mcpPath, type Application } from "@repo/config";
 import { Effect, Schema } from "effect";
 
 import { AuthApps, clientOf } from "./auth-test-fixture.ts";
@@ -48,7 +48,7 @@ const authorizeUrl = ({
     code_challenge: challenge,
     code_challenge_method: "S256",
     redirect_uri: oauthClient.redirectUri,
-    resource: `${origin}/mcp`,
+    resource: `${origin}${mcpPath}`,
     response_type: "code",
     scope: oauthClient.scope,
     state: "state-value",
@@ -136,7 +136,7 @@ const exchangeOAuthCode = Effect.fn("exchangeOAuthCode")(function* exchangeOAuth
       code_verifier: flow.verifier,
       grant_type: "authorization_code",
       redirect_uri: flow.oauthClient.redirectUri,
-      resource: `${origin}/mcp`,
+      resource: `${origin}${mcpPath}`,
     }),
     headers: { "content-type": "application/x-www-form-urlencoded" },
     method: "POST",

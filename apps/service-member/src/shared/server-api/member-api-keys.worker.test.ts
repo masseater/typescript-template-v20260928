@@ -1,17 +1,11 @@
 import { assert, it } from "@effect/vitest";
 import { Auth } from "@repo/auth";
-import {
-  APPLICATION,
-  ROLE,
-  SUBSCRIPTION_STATUS,
-  httpStatus,
-  memberApiKeyHeader,
-} from "@repo/config";
+import { APPLICATION, ROLE, SUBSCRIPTION_STATUS, apiRoot, httpStatus, memberApiKeyHeader } from "@repo/config";
 import { query, schema } from "@repo/db";
 import { TestDatabase, runStatement } from "@repo/db/testing";
 import { recordingSink } from "@repo/observability/testing";
 import { appLayer } from "@repo/runtime/bindings";
-import { apiRoot, apiRoutes } from "@repo/runtime/http";
+import { apiRoutes } from "@repo/runtime/http";
 import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
 import { DateTime, Effect, Layer, Schema } from "effect";

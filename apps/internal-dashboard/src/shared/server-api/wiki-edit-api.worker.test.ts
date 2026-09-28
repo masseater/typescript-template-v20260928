@@ -1,10 +1,10 @@
 import { Auth } from "@repo/auth";
 import { AuthApps, MockNetwork, authTest, runWith, wikiStaff } from "@repo/auth/testing";
-import { APPLICATION, ROLE, STAFF_PERMISSION, httpStatus } from "@repo/config";
+import { APPLICATION, ROLE, STAFF_PERMISSION, apiRoot, httpStatus } from "@repo/config";
 import { findWikiDraft, markWikiDraftPublished } from "@repo/db";
 import { addUser, runStatement } from "@repo/db/testing";
 import { recordingSink } from "@repo/observability/testing";
-import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
+import { apiRoutes, createApi } from "@repo/runtime/http";
 import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
 import { Effect, Encoding, Layer, Result, Schema } from "effect";

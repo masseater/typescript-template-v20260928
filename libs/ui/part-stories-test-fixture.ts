@@ -1,3 +1,4 @@
+import { mcpPath } from "@repo/config";
 import { repositoryFile } from "@repo/config/repository-root";
 import { Effect, FileSystem, Path } from "effect";
 import { parseSync } from "vite-plus";
@@ -147,7 +148,7 @@ const storybookEndpointViolations = (origin: string): HostRead<string[]> =>
   Effect.map(read(agentConfigFile), (source) => {
     const parsed: unknown = JSON.parse(source);
     const url: unknown = field(field(field(parsed, "mcpServers"), "storybook"), "url");
-    const expected = `${origin}/mcp`;
+    const expected = `${origin}${mcpPath}`;
     return url === expected
       ? []
       : [

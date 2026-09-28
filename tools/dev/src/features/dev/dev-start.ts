@@ -2,12 +2,7 @@
 import { env as processEnvironment } from "node:process";
 
 import { reportFailed, runCli } from "@repo/cli";
-import {
-  applicationReadyPaths,
-  applications,
-  loopbackAddress,
-  waitUntilResponds,
-} from "@repo/config";
+import { ACCOUNT_API_PATH, applicationReadyPaths, applications, loopbackAddress, waitUntilResponds } from "@repo/config";
 import { localDatabaseVariable } from "@repo/config/local-database-path";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { Cause, Console, Effect, FileSystem, Path, Result, Schema } from "effect";
@@ -206,7 +201,7 @@ const program = Effect.gen(function* program() {
     Effect.mapError(() => new DevStartFailure({ reason: "not an application workspace" })),
   );
   const origin = yield* listeningOrigin;
-  const paths = [...new Set(["/api/health", applicationReadyPaths[app]])];
+  const paths = [...new Set([ACCOUNT_API_PATH.health, applicationReadyPaths[app]])];
   const results = yield* Effect.all(
     paths.map((pathname) => probe(origin, pathname)),
     { concurrency: "unbounded", mode: "result" },

@@ -1,3 +1,5 @@
+import { ACCOUNT_API_PATH } from "@repo/config";
+
 export const routes = {
   "/": "landing",
   "/_serverFn/*": "server-function",
@@ -13,7 +15,7 @@ export const routes = {
   "/api/billing/portal": "billing-portal-api",
   "/api/billing/webhook": "billing-webhook-api",
   "/api/contact": "contact-api",
-  "/api/health": "health",
+  [ACCOUNT_API_PATH.health]: "health",
   "/api/interview": "interview-api",
   "/api/interview/history-consent": "interview-history-consent-api",
   "/api/interview/restart": "interview-restart-api",
@@ -31,15 +33,15 @@ export const routes = {
   "/api/recovery/accept": "recovery-accept-api",
   "/api/recovery/decline": "recovery-decline-api",
   "/api/recovery-offer": "recovery-offer-api",
-  "/api/session": "session",
+  [ACCOUNT_API_PATH.session]: "session",
   "/api/onboarding": "onboarding",
   "/api/home/feed": "home-feed",
   "/api/realtime": "realtime",
   "/api/support": "support-api",
   "/api/support/detail": "support-api",
   "/api/support/reply": "support-api",
-  "/api/telemetry": "telemetry",
-  "/api/verify-email": "verify-email-api",
+  [ACCOUNT_API_PATH.telemetry]: "telemetry",
+  [ACCOUNT_API_PATH.verifyEmail]: "verify-email-api",
   "/contact": "contact",
   "/login": "login",
   "/privacy": "privacy-document",

@@ -1,3 +1,4 @@
+import { ACCOUNT_API_PATH } from "@repo/config";
 import "./temporal.ts";
 import { HeadContent } from "@tanstack/react-router";
 import { useEffect, type ReactElement } from "react";
@@ -22,7 +23,7 @@ const AppShell = ({
     themedDocument?: boolean;
   }>): ReactElement => {
   useEffect(() => {
-    const telemetry = initBrowserTelemetry({ endpoint: "/api/telemetry", routes });
+    const telemetry = initBrowserTelemetry({ endpoint: ACCOUNT_API_PATH.telemetry, routes });
     return (): void => {
       telemetry.dispose();
     };

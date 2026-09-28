@@ -6,7 +6,12 @@ import {
   verifyEmailToken,
   verifySession,
 } from "@repo/auth";
-import { httpStatus } from "@repo/config";
+import {
+  ACCOUNT_API_ROUTE,
+  httpStatus,
+  mcpPath,
+  oauthMetadataPathPrefix,
+} from "@repo/config";
 import { Telemetry, ingestBrowser } from "@repo/observability";
 import { Effect } from "effect";
 
@@ -23,7 +28,8 @@ import {
 import { DatabaseHealth } from "./database-health.ts";
 import { createApi, failureBy } from "./http.ts";
 
-import type { EmailVerificationFailed } from "@repo/auth";
+import type { AuthFailure, EmailVerificationFailed } from "@repo/auth";
+import type { DatabaseFailure } from "@repo/db";
 import type { Failure, FailureMapping, FailureTable } from "./failures.ts";
 import type { ApiRoutes } from "./http.ts";
 import type { AppServices } from "./index.ts";
@@ -116,7 +122,7 @@ const acceptOpenInvite = Effect.fn("acceptOpenInvite")(function* acceptOpenInvit
 function inviteApi<Requirements = never>(api: ApiRoutes<AppServices | Requirements>) {
   return createApi("")
     .get(
-      "/invite",
+      ACCOUNT_API_ROUTE.invite,
       ...api.route(
         { query: InvitePreviewQuery, response: InvitePreview },
         openInvite,
@@ -124,7 +130,7 @@ function inviteApi<Requirements = never>(api: ApiRoutes<AppServices | Requiremen
       ),
     )
     .post(
-      "/invite",
+      ACCOUNT_API_ROUTE.invite,
       ...api.route(
         { body: InviteAcceptance, response: InviteAccepted },
         acceptOpenInvite,
@@ -136,10 +142,13 @@ function inviteApi<Requirements = never>(api: ApiRoutes<AppServices | Requiremen
 function sessionApi<Requirements = never>(api: ApiRoutes<AppServices | Requirements>) {
   return createApi("")
     .all("/auth/*", ...api.raw(handleAuthRequest, authUnavailable))
-    .post("/telemetry", ...api.raw(ingestBrowser, {}))
-    .get("/health", ...api.route({ response: HealthView }, health, databaseUnavailable))
+    .post(ACCOUNT_API_ROUTE.telemetry, ...api.raw(ingestBrowser, {}))
     .get(
-      "/session",
+      ACCOUNT_API_ROUTE.health,
+      ...api.route({ response: HealthView }, health, databaseUnavailable),
+    )
+    .get(
+      ACCOUNT_API_ROUTE.session,
       ...api.route(
         { response: SessionView },
         (request) => verifySession(request.headers, true),
@@ -148,11 +157,22 @@ function sessionApi<Requirements = never>(api: ApiRoutes<AppServices | Requireme
     );
 }
 
+function mcpApi<Requirements = never>(
+  api: ApiRoutes<AppServices | Requirements>,
+  serveMcp: (
+    request: Request,
+  ) => Effect.Effect<Response, AuthFailure | DatabaseFailure, AppServices | Requirements>,
+) {
+  return createApi("")
+    .all(mcpPath, ...api.raw(serveMcp, unavailable))
+    .all(`${oauthMetadataPathPrefix}*`, ...api.raw(handleAuthRequest, unavailable));
+}
+
 function accountApi<Requirements = never>(api: ApiRoutes<AppServices | Requirements>) {
   return createApi("")
     .use(sessionApi(api))
     .post(
-      "/verify-email",
+      ACCOUNT_API_ROUTE.verifyEmail,
       ...api.route(
         { body: EmailVerificationRequest, response: EmailVerified },
         (request, { token }) => verifyEmailToken(token, request.headers),
@@ -167,6 +187,7 @@ export {
   databaseUnavailable,
   forbidden,
   inviteApi,
+  mcpApi,
   privileged,
   sessionApi,
   sessionFailures,

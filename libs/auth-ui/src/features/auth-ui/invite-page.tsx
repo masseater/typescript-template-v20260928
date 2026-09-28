@@ -1,3 +1,4 @@
+import { ACCOUNT_API_PATH } from "@repo/config";
 import { Page } from "@repo/ui";
 import { type ReactElement } from "react";
 
@@ -9,7 +10,7 @@ const InvitePage = ({
   token,
 }: Readonly<{ invitation: Invitation; token: string }>): ReactElement => (
   <Page title="招待を受ける">
-    <InviteAcceptance endpoint="/api/invite" invitation={invitation} token={token} />
+    <InviteAcceptance endpoint={ACCOUNT_API_PATH.invite} invitation={invitation} token={token} />
   </Page>
 );
 

@@ -1,3 +1,5 @@
+import { ACCOUNT_API_PATH } from "@repo/config";
+
 export const routes = {
   "/": "home",
   "/admins": "admins",
@@ -7,10 +9,10 @@ export const routes = {
   "/api/agreements": "agreements-api",
   "/api/agreements/*": "agreements-sub-api",
   "/api/auth/*": "auth",
-  "/api/health": "health",
-  "/api/invite": "invite-api",
-  "/api/session": "session",
-  "/api/telemetry": "telemetry",
+  [ACCOUNT_API_PATH.health]: "health",
+  [ACCOUNT_API_PATH.invite]: "invite-api",
+  [ACCOUNT_API_PATH.session]: "session",
+  [ACCOUNT_API_PATH.telemetry]: "telemetry",
   "/api/users": "users-api",
   "/api/inquiries": "inquiries-api",
   "/api/inquiries/pending-count": "inquiries-api",
@@ -18,7 +20,7 @@ export const routes = {
   "/api/inquiries/member": "inquiries-api",
   "/api/inquiries/reply": "inquiries-api",
   "/api/inquiries/close": "inquiries-api",
-  "/api/verify-email": "verify-email-api",
+  [ACCOUNT_API_PATH.verifyEmail]: "verify-email-api",
   "/inquiries": "inquiries",
   "/invite/*": "invite-page",
   "/login": "login",

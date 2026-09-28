@@ -1,10 +1,10 @@
 import { assert, describe, it } from "@effect/vitest";
-import { APPLICATION, RECORDING_STATUS, httpStatus } from "@repo/config";
+import { APPLICATION, RECORDING_STATUS, apiRoot, httpStatus } from "@repo/config";
 import { recordingSink } from "@repo/observability/testing";
 import { accountApi } from "@repo/runtime/account";
 import { appLayer } from "@repo/runtime/bindings";
 import { CreatedResource } from "@repo/runtime/contracts";
-import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
+import { apiRoutes, createApi } from "@repo/runtime/http";
 import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
 import { applyD1Migrations, reset, type D1Migration } from "cloudflare:test";

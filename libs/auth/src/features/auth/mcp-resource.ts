@@ -1,5 +1,5 @@
 import { createResourceServerChallenge } from "@better-auth/oauth-provider";
-import { httpStatus } from "@repo/config";
+import { httpStatus, mcpPath } from "@repo/config";
 import { APIError } from "better-auth/api";
 import { createInsufficientScopeError, verifyJwsAccessToken } from "better-auth/oauth2";
 import { APIError as ChallengeError } from "better-call";
@@ -29,7 +29,7 @@ const mcpJsonRpcError = (
 
 type McpResource = Readonly<{ challengeScopes: readonly string[]; origin: string }>;
 const challengeResponse = (rejected: unknown, resource: McpResource): Response => {
-  const challenge = createResourceServerChallenge(rejected, `${resource.origin}/mcp`, {
+  const challenge = createResourceServerChallenge(rejected, `${resource.origin}${mcpPath}`, {
     challengeScopes: [...resource.challengeScopes],
   });
   if (!(challenge instanceof ChallengeError)) {
@@ -118,7 +118,7 @@ const verifiedClaims = (
         jwksCacheKey: issuer,
         jwksFetch: () => Effect.runPromise(publishedJwks(issuer, presented.origin)),
         verifyOptions: {
-          audience: `${presented.origin}/mcp`,
+          audience: `${presented.origin}${mcpPath}`,
           issuer: `${presented.origin}/api/auth`,
         },
       }),

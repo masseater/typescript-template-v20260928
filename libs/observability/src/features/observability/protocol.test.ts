@@ -1,3 +1,4 @@
+import { ACCOUNT_API_PATH } from "@repo/config";
 import { describe, expect, test } from "vite-plus/test";
 
 import { isRoutes, parentContext, routeLabel, traceparentOf } from "./protocol.ts";
@@ -34,7 +35,7 @@ describe("routeLabel", () => {
     ["/token/secret-user@example.com", "unmatched"],
   ] as const)("the path %s against fixed routes", ([pathname, expectedLabel]) => {
     const it = test.extend("matchedRoute", () =>
-      routeLabel(pathname, { "/": "home", "/api/health": "health" }));
+      routeLabel(pathname, { "/": "home", [ACCOUNT_API_PATH.health]: "health" }));
     it("names the route it matches or none", ({ matchedRoute }) => {
       expect(matchedRoute).toBe(expectedLabel);
     });
@@ -57,7 +58,7 @@ describe("routeLabel", () => {
 });
 describe("isRoutes", () => {
   describe.for([
-    ["fixed paths with bounded labels", { "/": "home", "/api/health": "health" }, true],
+    ["fixed paths with bounded labels", { "/": "home", [ACCOUNT_API_PATH.health]: "health" }, true],
     ["terminal wildcards", { "/api/*": "api", "/api/auth/*": "auth" }, true],
     ["a label that is an address", { "/": "private@example.com" }, false],
     ["a wildcard in the middle", { "/api/*/token": "bad" }, false],

@@ -1,9 +1,10 @@
+import { ACCOUNT_API_PATH } from "@repo/config";
 import { Effect, Option, Ref } from "effect";
 import { HttpBody, HttpClient } from "effect/unstable/http";
 
 import { browserHttp } from "./browser-http.ts";
 
-const verificationEndpoint = "/api/verify-email";
+const verificationEndpoint = ACCOUNT_API_PATH.verifyEmail;
 
 const pendingVerification = Ref.makeUnsafe<
   { readonly result: Promise<boolean>; readonly token: string } | undefined

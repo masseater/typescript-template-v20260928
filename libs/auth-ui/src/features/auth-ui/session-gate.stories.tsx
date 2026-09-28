@@ -1,4 +1,4 @@
-import { ROLE } from "@repo/config";
+import { ACCOUNT_API_PATH, ROLE } from "@repo/config";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   RouterContextProvider,
@@ -18,7 +18,7 @@ import { SessionGate } from "./session-gate";
 import type { ReactElement } from "react";
 import type { SessionView } from "./protocol";
 
-const sessionPath = "/api/session";
+const sessionPath = ACCOUNT_API_PATH.session;
 
 const weakAdministrator: SessionView = {
   strong: false,

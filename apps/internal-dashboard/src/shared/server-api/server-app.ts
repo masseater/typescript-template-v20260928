@@ -1,7 +1,6 @@
-import { handleAuthRequest } from "@repo/auth";
-import { APPLICATION } from "@repo/config";
-import { sessionApi, unavailable } from "@repo/runtime/account";
-import { apiDocs, apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
+import { APPLICATION, apiRoot } from "@repo/config";
+import { mcpApi, sessionApi } from "@repo/runtime/account";
+import { apiDocs, apiRoutes, createApi } from "@repo/runtime/http";
 
 import { dashboardApi } from "./dashboard-api.ts";
 import { flagsApi } from "./flags-api.ts";
@@ -26,8 +25,7 @@ const wikiApi = createApi("")
       .use(recordingsApi(api))
       .use(wikiEditApi(api)),
   )
-  .all("/mcp", ...api.raw(serveMcp, unavailable))
-  .all("/.well-known/oauth-*", ...api.raw(handleAuthRequest, unavailable));
+  .use(mcpApi(api, serveMcp));
 
 export { wikiApi, wikiApi as app };
 export default wikiApi;
