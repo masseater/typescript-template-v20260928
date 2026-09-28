@@ -21,7 +21,7 @@ description: 社内向けの文書と、MCP で文書を配る窓口
 | [はじめに](/getting-started/what-is-this) | テンプレートの概要、設計思想、アプリの役割、使い始める手順 |
 | [場面ごとにやること](/checklists) | 事業の案が出てから畳むまで、場面ごとに決めることと見ること |
 | [技術スタック](/tech-stack) | 主要技術と参考文献 |
-| [Observability](/observability) | ブラウザから SLI までの信号の層 |
+| [Observability](/observability) | ブラウザと Worker の信号が送り先に届くまでの経路 |
 | [データモデル](/data-model/overview) | ER 図に沿った概念と関係。本格開発のときに差し替える |
 | [用語集](/glossary) | ドメイン用語。`[[用語]]` からホバーで解説を見て移れる |
 | [ページ構成](/pages/internal-dashboard-layout) | 各アプリの画面の仕様 |

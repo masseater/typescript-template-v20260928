@@ -11,10 +11,10 @@ URL は `src/routes` のファイル名から決まる。`_member/users.$id.tsx`
 
 ブラウザから呼べて、本体がサーバーでだけ実行される関数は `createServerFn` である。`handler` は URL として公開されない。ブラウザ以外が HTTP で呼ぶ API は、サーバールートにマウントした [Elysia](/tech-stack/elysia) に置く。
 
-```ts
-const renameUser = createServerFn({ method: "POST" })
-  .validator((input: { readonly id: string; readonly name: string }) => input)
-  .handler(async ({ data }) => data.name);
+```ts title="apps/internal-wiki/src/pages/docs/model/load-wiki-page.ts"
+const loadWikiPage = createServerFn({ method: "GET" })
+  .validator((slugs: readonly string[]) => [...slugs])
+  .handler(({ data: slugs }: Readonly<{ data: readonly string[] }>) =>
 ```
 
 ## 採ると
@@ -23,7 +23,7 @@ const renameUser = createServerFn({ method: "POST" })
 | --- | --- | --- |
 | `/users/123` | URL の登録と、画面のファイルを別に持つ | `src/routes/_member/users.$id.tsx` が `/users/123` になる。フォルダ `_member` は URL に出ない |
 | 最初の表示 | ブラウザが空の画面を出してから、データを取りに行く | その URL を開いたとき、loader がサーバーで初期データだけを返す |
-| 名前の変更 | `POST` の URL を公開し、ブラウザ以外もその URL を HTTP で呼ぶ | `createServerFn` の `handler` は URL を持たない。本体はサーバーでだけ実行され、返すのは `data.name` である |
+| wiki の文書の読み込み | URL を公開し、ブラウザ以外もその URL を HTTP で呼ぶ | `createServerFn` の `handler` は URL を持たない。本体はサーバーでだけ実行され、`data` には `validator` を通った値が入る |
 
 ## 参考文献
 

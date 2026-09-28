@@ -5,25 +5,9 @@ description: ブラウザが描画と入力の計測をエントリとして残�
 
 Web Performance API は、ブラウザが描画と入力の計測をエントリとして残す。スクリプトは `PerformanceObserver` でそのエントリを受け取る。LCP は、ビューポート内で最大の内容が描かれた時刻である。
 
-```js
-const observer = new PerformanceObserver((list) => {
-  for (const entry of list.getEntries()) {
-    console.log(entry.entryType, entry.startTime);
-  }
-});
-observer.observe({ type: "largest-contentful-paint", buffered: true });
-```
+`observe` に `buffered: true` を渡すと、observer を登録する前にブラウザが記録していた LCP も届く。`startTime` はナビゲーション開始からのミリ秒である。入力の遅れは INP、レイアウトのずれは CLS である。先頭バイトまでの時間は TTFB で、ナビゲーションの `responseStart` がそれにあたる。
 
-`buffered: true` にすると、observer を登録する前にブラウザが記録していた LCP も届く。`startTime` はナビゲーション開始からのミリ秒である。入力の遅れは INP、レイアウトのずれは CLS である。先頭バイトまでの時間は TTFB で、ナビゲーションの `responseStart` がそれにあたる。
-
-Resource Timing は、ページが読んだ資源ごとの時間である。DNS、TCP、先頭バイトは、一つの resource エントリの時刻の差で出る。
-
-```js
-const resource = performance.getEntriesByType("resource")[0];
-const dns = resource.domainLookupEnd - resource.domainLookupStart;
-const tcp = resource.connectEnd - resource.connectStart;
-const ttfb = resource.responseStart - resource.startTime;
-```
+Resource Timing は、ページが読んだ資源ごとの時間である。DNS、TCP、先頭バイトは、一つの resource エントリの時刻の差で出る。DNS は `domainLookupEnd` と `domainLookupStart`、TCP は `connectEnd` と `connectStart`、先頭バイトは `responseStart` と `startTime` の差である。
 
 メインスレッドを 50 ミリ秒以上止めた処理は Long Task で、INP が伸びる原因になる。実利用者のブラウザで取るのが RUM で、決めた間隔で外から同じ URL を開くのが synthetic である。これらをサーバへ送る運搬は [HTTP](/observability/http) である。
 

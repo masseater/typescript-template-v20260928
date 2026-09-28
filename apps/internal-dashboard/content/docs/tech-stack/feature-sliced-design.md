@@ -21,11 +21,17 @@ Feature-Sliced Design は、フロントエンドのコードをレイヤー、�
 | `src/pages/profile/api/`               | その画面の取得                         |
 | `src/pages/profile/model/`             | その画面の型と検証                     |
 
-```tsx
-import { ProfilePage, loadMember } from "#pages/profile/index.ts";
+```tsx title="apps/service-member/src/app/routes/_member/users.$id.tsx"
+import {
+  ProfileFailed,
+  ProfileMissing,
+  ProfilePending,
+  ProfileRoute,
+  loadMember,
+} from "#pages/profile/index.ts";
 ```
 
-`loadMember` はルートの loader から呼ぶ。`ProfilePage` は、loader の結果を受け取って表示する。`pages/profile/ui/profile-page.tsx` をルートから直接 import しない。
+`loadMember` はルートの loader から呼ぶ。`ProfileRoute` は、loader の結果を受け取って表示する。`pages/profile/ui/` のファイルをルートから直接 import しない。
 
 層の外のファイル、上の層への import、public API を通さない import は steiger が失敗させる。コマンドは `dont-review-it-feature-sliced` である。
 
@@ -33,9 +39,9 @@ import { ProfilePage, loadMember } from "#pages/profile/index.ts";
 
 | 見ているもの | 採る前 | 採ったあと |
 | --- | --- | --- |
-| `/users/123` | ルートファイルが、画面の表示まで持つ | `src/app/routes/_member/users.$id.tsx` は URL を繋ぐだけ。`ProfilePage` と `loadMember` は `#pages/profile/index.ts` から取る |
+| `/users/123` | ルートファイルが、画面の表示まで持つ | `src/app/routes/_member/users.$id.tsx` は URL を繋ぐだけ。`ProfileRoute` と `loadMember` は `#pages/profile/index.ts` から取る |
 | `pages/settings` からプロフィールを使う | 同じ層のファイルを直接 import できる | `pages/profile` は `pages/settings` を知らない。外から見えるのは `index.ts` だけである |
-| `pages/profile/ui/profile-page.tsx` をルートから import する | レビューで見つける | `dont-review-it-feature-sliced` が失敗する |
+| `pages/profile/ui/` のファイルをルートから import する | レビューで見つける | `dont-review-it-feature-sliced` が失敗する |
 
 ## 参考文献
 

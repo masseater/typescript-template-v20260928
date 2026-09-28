@@ -9,23 +9,22 @@ OpenTelemetry は、トレース、メトリクス、ログを一つのモデル
 
 リクエストの区間は `observeRequest` が `http.server.request` という server span として開く。Worker の `fetch` は毎リクエストこれを通すので、ルートの関数は `http.server.request` を自分では開かない。来た `traceparent` が [W3C Trace Context](https://www.w3.org/TR/trace-context/) として読めるときは、その span を親にする。読めなければ新しい trace id を切る。子の区間は `withSpan` で切る。属性名が `authorization` や `token` に当たる値は、span に載せる前に `[redacted]` へ置き換わる。`Effect.withSpan` へ直接渡すと、この置換を通らない。
 
-```ts
-const request = new Request("https://app.example/users/123", {
-  headers: {
-    traceparent: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
-  },
-});
-
-const handle = (_request: Request) =>
-  Effect.succeed({ id: "123" }).pipe(
-    Effect.map((user) => Response.json(user)),
-    withSpan("user.load", { attributes: { "user.id": "123" } }),
-  );
-
-const program = observeRequest(request, handle);
+```ts title="libs/runtime/src/features/runtime/worker.ts"
+    fetch: (httpRequest, _environment, runtimeContext): Promise<Response> =>
+      Effect.runPromise(
+        Effect.gen(function* serveFetch() {
+          const exit = yield* Effect.promise(() =>
+            asked.runtime.runPromiseExit(observeRequest(httpRequest, asked.route)),
+          );
+          if (exit._tag === "Success") {
+            runtimeContext.waitUntil(asked.runtime.runPromise(flushTelemetry));
 ```
 
-`program` を作った時点では span は開かない。`runPromise` すると `http.server.request` が開き、`handle` はその中で実行される。trace id `4bf92f3577b34da6a3ce929d0e0e4736` を引き継ぎ、親 span は `00f067aa0ba902b7` になる。`user.load` はその子である。応答の `traceparent` は同じ trace id と、この server span の span id を持ち、末尾の `01` は sampled を表す。同じリクエストのログにもその trace id が付く。実行には `Telemetry` の Layer が要る。Layer が tracer と logger を渡す。
+```ts title="apps/service-member/src/shared/billing/stripe.ts"
+    withSpan("stripe.request", { attributes: { "stripe.path": path } }),
+```
+
+Worker の `fetch` は、ルートの処理 `asked.route` を `observeRequest` に包んで実行する。`http.server.request` が開き、ルートの処理はその中で実行される。来た `traceparent` が読めればその trace id を引き継ぎ、Stripe への要求のように `withSpan` で切った `stripe.request` はその子になる。応答の `traceparent` は同じ trace id と、この server span の span id を持つ。同じリクエストのログにもその trace id が付く。応答を返せたときは、溜めた分を送る `flushTelemetry` を `waitUntil` に渡す。
 
 ## 自動計装
 
@@ -35,43 +34,28 @@ Workers は Node の起動フラグでモジュールを差し替えない。入
 
 ブラウザでは `globalThis.fetch` を差し替える。同じオリジンへの `fetch` は、呼び出し側がヘッダを書かなくても `traceparent` が付く。trace id と span id はその呼び出しで新しく切り、ページが既に持っている trace には繋がない。記録の名前は `http.client.request` で、OTLP には出さず `/api/telemetry` の JSON に載る。サーバーの `observeRequest` は、その `traceparent` を親にして同じ trace id を続ける。別オリジンと `/api/telemetry` 自身は差し替えない。
 
-```ts
-function hex(bytes: number): string {
-  return Array.from(crypto.getRandomValues(new Uint8Array(bytes)), (byte) =>
-    byte.toString(16).padStart(2, "0"),
-  ).join("");
-}
-
-const originalFetch = globalThis.fetch;
-
-globalThis.fetch = async (input, init) => {
-  const url = new URL(
-    input instanceof Request ? input.url : String(input),
-    globalThis.location.href,
-  );
-  if (url.origin !== globalThis.location.origin || url.pathname === "/api/telemetry") {
-    return originalFetch(input, init);
-  }
-  const request = new Request(input instanceof Request ? input : url, init);
-  const traced = new Request(request, {
-    headers: new Headers([
-      ...request.headers.entries(),
-      ["traceparent", `00-${hex(16)}-${hex(8)}-01`],
-    ]),
-  });
-  return originalFetch(traced);
-};
+```ts title="libs/ui/src/features/ui/browser-telemetry/browser.ts"
+const patchFetch = (instrumentation: FetchInstrumentation): (() => void) => {
+  const originalFetch = globalThis.fetch;
+  const instrumentedFetch = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const url = requestUrl(input);
+    if (url.origin !== globalThis.location.origin || url.pathname === instrumentation.endpoint) {
+      return instrumentation.send(input, init);
+    }
+    return tracedFetch(instrumentation, new Request(input instanceof Request ? input : url, init));
+  };
+  globalThis.fetch = instrumentedFetch;
 ```
 
-`fetch("/users/123")` は `traced` を送る。`hex(16)` が trace id、`hex(8)` が span id で、呼び出しごとに変わる。`fetch("https://other.example/")` と `fetch("/api/telemetry")` は `originalFetch` のままである。
+同じオリジンの `fetch("/users/123")` は `tracedFetch` を通り、新しい trace id と span id の `traceparent` を付けて送る。別オリジンと、送り先のエンドポイント自身は `instrumentation.send` のままである。
 
 ## 採ると
 
 | 見ているもの | 採る前 | 採ったあと |
 | --- | --- | --- |
-| `runPromise` した `user.load` | ログの行が、どのリクエストのものかをあとから繋げない | `http.server.request` が開き、`user.load` がその子になる。同じリクエストのログに trace id `4bf92f3577b34da6a3ce929d0e0e4736` が付く |
-| 来た `traceparent` | サーバーが新しい trace id を切る | ヘッダが読めるときは、親 span が `00f067aa0ba902b7` になる。読めなければ新しい trace id を切る |
-| ブラウザの `fetch("/users/123")` | `traceparent` は呼び出し側がヘッダに書く | 同じオリジンなら `hex(16)` と `hex(8)` で新しい id が付く。サーバーの `observeRequest` がその trace id を続ける |
+| Stripe への要求 | ログの行が、どのリクエストのものかをあとから繋げない | `http.server.request` が開き、`stripe.request` がその子になる。同じリクエストのログに同じ trace id が付く |
+| 来た `traceparent` | サーバーが新しい trace id を切る | ヘッダが読めるときは、その span を親にする。読めなければ新しい trace id を切る |
+| ブラウザの `fetch("/users/123")` | `traceparent` は呼び出し側がヘッダに書く | 同じオリジンなら `tracedFetch` が新しい id を付ける。サーバーの `observeRequest` がその trace id を続ける |
 
 ## 参考文献
 
