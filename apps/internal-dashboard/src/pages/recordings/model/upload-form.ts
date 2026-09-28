@@ -1,11 +1,10 @@
-import { localState, useAction, useTextInput } from "@repo/ui";
+import { useAction } from "@repo/ui";
+import { useForm, useStore } from "@tanstack/react-form";
 import { Effect } from "effect";
 
 import { uploadRecording } from "#pages/recordings/api/recordings.ts";
 
 import type { SubmitEventHandler } from "react";
-
-const useChosenAudio = localState<File | undefined>(undefined);
 
 function upload(
   title: string,
@@ -33,22 +32,35 @@ interface UploadForm {
   readonly title: string;
 }
 
+const blankUpload: Readonly<{ audio: File | undefined; title: string }> = {
+  audio: undefined,
+  title: "",
+};
+
 function useUploadForm(onUploaded: (recordingId: string) => Promise<void>): UploadForm {
-  const title = useTextInput();
-  const [audio, setAudio] = useChosenAudio();
   const action = useAction();
-  function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
-    event.preventDefault();
-    action.run(() => upload(title.value, audio, onUploaded));
-  }
+  const form = useForm({
+    defaultValues: blankUpload,
+    onSubmit: ({ value }) => {
+      action.run(() => upload(value.title, value.audio, onUploaded));
+    },
+  });
+  const title = useStore(form.store, (state) => state.values.title);
   return {
     blocked: action.blocked,
     error: action.error,
-    handleAudioChange: setAudio,
-    handleSubmit,
-    handleTitleChange: title.handleChange,
+    handleAudioChange: (audio) => {
+      form.setFieldValue("audio", audio);
+    },
+    handleSubmit: (event) => {
+      event.preventDefault();
+      void form.handleSubmit();
+    },
+    handleTitleChange: (value) => {
+      form.setFieldValue("title", value);
+    },
     pending: action.pending,
-    title: title.value,
+    title,
   };
 }
 

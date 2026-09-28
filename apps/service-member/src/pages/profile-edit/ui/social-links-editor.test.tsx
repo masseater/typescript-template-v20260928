@@ -5,7 +5,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { maximumSocialLinks } from "#shared/contracts/index.ts";
 import { SocialLinksEditor } from "./social-links-editor.tsx";
 
-import type { SocialLinkField } from "#pages/profile-edit/model/social-link-field.ts";
+import type { SocialLinkField } from "#entities/profile/index.ts";
 
 const validationMessages = {
   patternMismatch: "形式が違います。",

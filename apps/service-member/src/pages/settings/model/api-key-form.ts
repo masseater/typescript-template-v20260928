@@ -1,7 +1,9 @@
-import { localState, useAction, useTextInput, type ActionState } from "@repo/ui";
+import { localState, useAction, type ActionState } from "@repo/ui";
+import { useForm, useStore } from "@tanstack/react-form";
 import { Option } from "effect";
 
 import { createApiKey, type CreatedApiKey } from "#pages/settings/api/api-keys.ts";
+
 interface ApiKeyForm {
   readonly action: ActionState;
   readonly handleMessageSendChange: (checked: boolean) => void;
@@ -13,45 +15,48 @@ interface ApiKeyForm {
   readonly name: string;
   readonly profileUpdate: boolean;
 }
+
 const useIssued = localState(Option.none<CreatedApiKey>());
-const useMessageSend = localState(false);
-const useProfileUpdate = localState(false);
+
 function useApiKeyForm(onIssued: () => void): ApiKeyForm {
-  const name = useTextInput();
   const [issued, setIssued] = useIssued();
-  const [messageSend, setMessageSend] = useMessageSend();
-  const [profileUpdate, setProfileUpdate] = useProfileUpdate();
   const action = useAction();
-  function handleIssue(): void {
-    const trimmed = name.value.trim();
-    if (trimmed === "") {
-      return;
-    }
-    action.run(() =>
-      createApiKey(trimmed, {
-        messageSend,
-        profileUpdate,
-      }).then((created) =>
-        Promise.resolve().then(() => {
+  const form = useForm({
+    defaultValues: { messageSend: false, name: "", profileUpdate: false },
+    onSubmit: ({ formApi, value }) => {
+      const trimmed = value.name.trim();
+      if (trimmed === "") {
+        return;
+      }
+      action.run(() =>
+        createApiKey(trimmed, value).then((created) => {
           setIssued(Option.some(created));
-          return Promise.resolve().then(() => {
-            name.handleChange("");
-            return onIssued();
-          });
+          formApi.setFieldValue("name", "");
+          onIssued();
         }),
-      ),
-    );
-  }
+      );
+    },
+  });
+  const values = useStore(form.store, (state) => state.values);
   return {
     action,
-    handleIssue,
-    handleMessageSendChange: setMessageSend,
-    handleNameChange: name.handleChange,
-    handleProfileUpdateChange: setProfileUpdate,
+    handleIssue: () => {
+      void form.handleSubmit();
+    },
+    handleMessageSendChange: (checked) => {
+      form.setFieldValue("messageSend", checked);
+    },
+    handleNameChange: (value) => {
+      form.setFieldValue("name", value);
+    },
+    handleProfileUpdateChange: (checked) => {
+      form.setFieldValue("profileUpdate", checked);
+    },
     issued: Option.getOrUndefined(issued),
-    messageSend,
-    name: name.value,
-    profileUpdate,
+    messageSend: values.messageSend,
+    name: values.name,
+    profileUpdate: values.profileUpdate,
   };
 }
+
 export { useApiKeyForm };

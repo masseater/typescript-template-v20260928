@@ -1,9 +1,10 @@
 import { AUTHENTICATION_METHOD } from "@repo/config";
-import { type TextInput, Field } from "@repo/ui";
+import { Field } from "@repo/ui";
 
 import { TotpField } from "./totp-field";
 
 import type { ReactElement } from "react";
+import type { TextInput } from "./text-input.ts";
 
 const ChallengeCodeField = ({
   backup,

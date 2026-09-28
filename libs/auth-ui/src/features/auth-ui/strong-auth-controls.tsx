@@ -1,11 +1,12 @@
 import { AUTHENTICATION_METHOD, type StrongAuthenticationMethod } from "@repo/config";
-import { type ActionState, type TextInput, Button, STATUS_VARIANT, StatusMessage } from "@repo/ui";
+import { type ActionState, Button, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import { TotpField } from "./totp-field";
 import { usePasskeys } from "./use-passkeys";
 
 import type { ReactElement } from "react";
 import type { SessionView } from "./protocol";
+import type { TextInput } from "./text-input.ts";
 
 const StrongAuthControls = ({
   action,

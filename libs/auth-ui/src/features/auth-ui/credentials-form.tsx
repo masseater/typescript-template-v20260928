@@ -1,5 +1,5 @@
 import { AUTHENTICATION_METHOD } from "@repo/config";
-import { type ActionState, type TextInput, Button, Field, FormColumn } from "@repo/ui";
+import { type ActionState, Button, Field, FormColumn } from "@repo/ui";
 import { Effect } from "effect";
 
 import { authTask } from "./browser-http.ts";
@@ -9,6 +9,7 @@ import { requireSuccess } from "./protocol";
 
 import type { ReactElement, SyntheticEvent } from "react";
 import type { AuthenticatedHandler } from "./authenticated-handler";
+import type { TextInput } from "./text-input.ts";
 
 type CredentialsFormProps = {
   readonly action: ActionState;

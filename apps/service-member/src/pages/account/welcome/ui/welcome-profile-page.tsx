@@ -1,70 +1,72 @@
 import { maximumNameLength } from "@repo/runtime/contracts";
-import { Button, Field, FormColumn, Heading, localState, useAction } from "@repo/ui";
+import { Button, Field, FormColumn, Heading, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 import { useNavigate } from "@tanstack/react-router";
-import { Effect } from "effect";
 
-import { saveProfile } from "#entities/profile/index.ts";
+import { useProfileForm } from "#entities/profile/index.ts";
 import { maximumProfileLength } from "#shared/contracts/index.ts";
+import { fieldError } from "#shared/forms/index.ts";
 import { saveOnboardingStep } from "../api/onboarding.ts";
 
-import type { ReactElement } from "react";
+import type { FormEvent, ReactElement } from "react";
 
-const useName = localState("");
-const useProfile = localState("");
-
-function finishWelcomeProfile(
-  name: string,
-  profile: string,
-  goHome: () => Promise<unknown>,
-): Promise<void> {
-  return Effect.runPromise(
-    Effect.gen(function* persist() {
-      yield* Effect.promise(() => saveProfile({ name, profile, socialLinks: [] }));
-      yield* Effect.promise(() => saveOnboardingStep("done"));
-      yield* Effect.promise(() => goHome());
-    }),
-  );
-}
+const blankProfile = { name: "", profile: "", socialLinks: [] };
 
 function WelcomeProfilePage(): ReactElement {
   const navigate = useNavigate();
-  const action = useAction();
-  const [name, setName] = useName();
-  const [profile, setProfile] = useProfile();
-
+  const { blocked, error, form, pending } = useProfileForm(blankProfile, () =>
+    saveOnboardingStep("done").then(() => navigate({ to: "/home" })),
+  );
+  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
+    event.preventDefault();
+    void form.handleSubmit();
+  }
   return (
     <main className="flex flex-col gap-4">
       <Heading as="h1" size="page">
         基本項目の入力
       </Heading>
-      <FormColumn>
-        <Field
-          label="ユーザー名"
-          maxLength={maximumNameLength}
-          name="name"
-          onValueChange={setName}
-          value={name}
-        />
-        <Field
-          label="自己紹介"
-          maxLength={maximumProfileLength}
-          multiline
-          name="profile"
-          onValueChange={setProfile}
-          value={profile}
-        />
-      </FormColumn>
-      {action.error !== undefined && <p className="text-sm text-destructive">{action.error}</p>}
-      <Button
-        disabled={action.blocked || name.trim() === ""}
-        onClick={() => {
-          action.run(() => finishWelcomeProfile(name, profile, () => navigate({ to: "/home" })));
-        }}
-        type="button"
-        variant="primary"
-      >
-        保存してホームへ
-      </Button>
+      <form noValidate onSubmit={handleSubmit} aria-busy={pending}>
+        <FormColumn>
+          <form.Field name="name">
+            {(field) => (
+              <Field
+                label="ユーザー名"
+                maxLength={maximumNameLength}
+                name="name"
+                onValueChange={field.handleChange}
+                value={field.state.value}
+                error={fieldError(field.state.meta.errors)}
+              />
+            )}
+          </form.Field>
+          <form.Field name="profile">
+            {(field) => (
+              <Field
+                label="自己紹介"
+                maxLength={maximumProfileLength}
+                multiline
+                name="profile"
+                onValueChange={field.handleChange}
+                value={field.state.value}
+                error={fieldError(field.state.meta.errors)}
+              />
+            )}
+          </form.Field>
+          <form.Subscribe selector={(state) => state.errorMap.onSubmit}>
+            {(invalid) =>
+              invalid === undefined ? null : (
+                <StatusMessage variant={STATUS_VARIANT.failure}>{invalid}</StatusMessage>
+              )
+            }
+          </form.Subscribe>
+          {error !== "" && <StatusMessage variant={STATUS_VARIANT.failure}>{error}</StatusMessage>}
+          <div>
+            <Button disabled={blocked} type="submit" variant="primary">
+              保存してホームへ
+            </Button>
+          </div>
+        </FormColumn>
+      </form>
     </main>
   );
 }

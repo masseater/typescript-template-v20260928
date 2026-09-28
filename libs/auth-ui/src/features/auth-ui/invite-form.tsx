@@ -1,11 +1,14 @@
 import { maximumNameLength, maximumPasswordLength } from "@repo/runtime/contracts";
-import { ActionStatus, Button, Field, FormColumn, useAction, useTextInput } from "@repo/ui";
+import { ActionStatus, Button, Field, FormColumn, useAction } from "@repo/ui";
+import { useForm, useStore } from "@tanstack/react-form";
 import { Effect } from "effect";
 import { HttpBody, HttpClient } from "effect/unstable/http";
 import { type ReactElement, type SyntheticEvent } from "react";
 
 import { browserHttp } from "./browser-http.ts";
 import { readFailureMessage } from "./invite-preview.ts";
+
+import type { TextInput } from "./text-input.ts";
 
 const postAcceptance = (
   endpoint: string,
@@ -39,8 +42,20 @@ const InviteForm = ({
   token: string;
 }>): ReactElement => {
   const action = useAction();
-  const displayName = useTextInput();
-  const password = useTextInput();
+  const textForm = useForm({ defaultValues: { displayName: "", password: "" } });
+  const texts = useStore(textForm.store, (state) => state.values);
+  const displayName: TextInput = {
+    handleChange: (next) => {
+      textForm.setFieldValue("displayName", next);
+    },
+    value: texts.displayName,
+  };
+  const password: TextInput = {
+    handleChange: (next) => {
+      textForm.setFieldValue("password", next);
+    },
+    value: texts.password,
+  };
   const submit = (submitEvent: Readonly<Pick<SyntheticEvent, "preventDefault">>): void => {
     submitEvent.preventDefault();
     action.run(() =>

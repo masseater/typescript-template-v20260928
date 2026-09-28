@@ -1,4 +1,5 @@
-import { localState, useAction } from "@repo/ui";
+import { useAction } from "@repo/ui";
+import { useForm, useStore } from "@tanstack/react-form";
 
 import { closeInquiry, replyToInquiry } from "#pages/inquiries/api/inquiries.ts";
 
@@ -13,20 +14,20 @@ interface ReplyForm {
   readonly handleSubmit: SubmitEventHandler<HTMLFormElement>;
 }
 
-const useBody = localState("");
-
 function useReplyForm(inquiryId: string, onChanged: () => void): ReplyForm {
-  const [body, setBody] = useBody();
   const action = useAction();
-  function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
-    event.preventDefault();
-    action.run(() =>
-      replyToInquiry({ body, id: inquiryId }).then(() => {
-        setBody("");
-        onChanged();
-      }),
-    );
-  }
+  const form = useForm({
+    defaultValues: { body: "" },
+    onSubmit: ({ formApi, value }) => {
+      action.run(() =>
+        replyToInquiry({ body: value.body, id: inquiryId }).then(() => {
+          formApi.reset();
+          onChanged();
+        }),
+      );
+    },
+  });
+  const body = useStore(form.store, (state) => state.values.body);
   function handleClose(): void {
     action.run(() =>
       closeInquiry(inquiryId).then(() => {
@@ -38,9 +39,14 @@ function useReplyForm(inquiryId: string, onChanged: () => void): ReplyForm {
     blocked: action.blocked,
     body,
     error: action.error,
-    handleBodyChange: setBody,
+    handleBodyChange: (value) => {
+      form.setFieldValue("body", value);
+    },
     handleClose,
-    handleSubmit,
+    handleSubmit: (event) => {
+      event.preventDefault();
+      void form.handleSubmit();
+    },
   };
 }
 

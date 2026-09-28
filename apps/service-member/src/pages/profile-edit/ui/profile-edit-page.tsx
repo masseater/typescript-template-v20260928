@@ -1,7 +1,7 @@
 import { Field, FormColumn, Page, STATUS_VARIANT, StatusMessage, useToast } from "@repo/ui";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 
-import { useProfileForm } from "#pages/profile-edit/model/profile-form.ts";
+import { useProfileForm } from "#entities/profile/index.ts";
 import { PhotoEditor } from "./photo-editor.tsx";
 import { ProfileEditor } from "./profile-editor.tsx";
 

@@ -1,5 +1,6 @@
 import { AGREEMENT_KIND, agreementKinds, type AgreementKind } from "@repo/config";
-import { localState, useAction } from "@repo/ui";
+import { useAction } from "@repo/ui";
+import { useForm, useStore } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
 
 import { createDraft } from "#pages/terms/api/agreement-versions.ts";
@@ -24,41 +25,47 @@ interface NewDraftForm extends NewDraftFields {
 const isKind = (value: string): value is AgreementKind =>
   agreementKinds.some((kind) => kind === value);
 
-const useFields = localState<NewDraftFields>({
+const blankDraft: NewDraftFields = {
   body: "",
   kind: AGREEMENT_KIND.terms,
   summary: "",
   version: "",
-});
+};
 
 function useNewDraftForm(): NewDraftForm {
   const navigate = useNavigate();
   const action = useAction();
-  const [fields, setFields] = useFields();
+  const form = useForm({
+    defaultValues: blankDraft,
+    onSubmit: ({ value }) => {
+      action.run(() =>
+        createDraft(value).then((saved) =>
+          navigate({ params: { version: saved.version }, to: "/terms/$version" }),
+        ),
+      );
+    },
+  });
+  const fields = useStore(form.store, (state) => state.values);
   return {
     ...fields,
     blocked: action.blocked || fields.version.trim() === "" || fields.body.trim() === "",
     error: action.error,
     handleBodyChange: (body): void => {
-      setFields((current) => ({ ...current, body }));
+      form.setFieldValue("body", body);
     },
     handleKindChange: (value): void => {
       if (isKind(value)) {
-        setFields((current) => ({ ...current, kind: value }));
+        form.setFieldValue("kind", value);
       }
     },
     handleSave: (): void => {
-      action.run(() =>
-        createDraft(fields).then((saved) =>
-          navigate({ params: { version: saved.version }, to: "/terms/$version" }),
-        ),
-      );
+      void form.handleSubmit();
     },
     handleSummaryChange: (summary): void => {
-      setFields((current) => ({ ...current, summary }));
+      form.setFieldValue("summary", summary);
     },
     handleVersionChange: (version): void => {
-      setFields((current) => ({ ...current, version }));
+      form.setFieldValue("version", version);
     },
   };
 }

@@ -1,8 +1,9 @@
-import { type TextInput, Field } from "@repo/ui";
+import { Field } from "@repo/ui";
 
 import { CHALLENGE_MODE } from "./challenge-modes.ts";
 
 import type { ReactElement } from "react";
+import type { TextInput } from "./text-input.ts";
 
 const TOTP_LENGTH = 6;
 

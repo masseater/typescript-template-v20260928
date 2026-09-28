@@ -1,11 +1,10 @@
-import { localState, useAction, useTextInput } from "@repo/ui";
+import { useAction } from "@repo/ui";
+import { useForm, useStore } from "@tanstack/react-form";
 import { Effect } from "effect";
 
 import { registerPerson } from "#pages/recordings/api/recordings.ts";
 
 import type { PersonForm } from "./recording-state.ts";
-
-const useConsent = localState(false);
 
 function register(
   name: string,
@@ -24,28 +23,35 @@ function register(
 }
 
 function usePersonForm(onRegistered: () => Promise<void>): PersonForm {
-  const name = useTextInput();
-  const [consented, setConsented] = useConsent();
   const action = useAction();
-  function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
-    event.preventDefault();
-    action.run(() =>
-      register(name.value, consented, () =>
-        onRegistered().then(() => {
-          name.handleChange("");
-          setConsented(false);
-        }),
-      ),
-    );
-  }
+  const form = useForm({
+    defaultValues: { consented: false, name: "" },
+    onSubmit: ({ formApi, value }) => {
+      action.run(() =>
+        register(value.name, value.consented, () =>
+          onRegistered().then(() => {
+            formApi.reset();
+          }),
+        ),
+      );
+    },
+  });
+  const values = useStore(form.store, (state) => state.values);
   return {
     blocked: action.blocked,
-    consented,
+    consented: values.consented,
     error: action.error,
-    handleConsentChange: setConsented,
-    handleNameChange: name.handleChange,
-    handleSubmit,
-    name: name.value,
+    handleConsentChange: (consented) => {
+      form.setFieldValue("consented", consented);
+    },
+    handleNameChange: (name) => {
+      form.setFieldValue("name", name);
+    },
+    handleSubmit: (event) => {
+      event.preventDefault();
+      void form.handleSubmit();
+    },
+    name: values.name,
     pending: action.pending,
   };
 }

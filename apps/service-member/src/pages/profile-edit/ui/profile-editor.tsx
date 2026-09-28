@@ -6,7 +6,7 @@ import { fieldError } from "#shared/forms/index.ts";
 import { ProfileActions } from "./profile-actions.tsx";
 import { SocialLinksEditor } from "./social-links-editor.tsx";
 
-import type { useProfileForm } from "#pages/profile-edit/model/profile-form.ts";
+import type { useProfileForm } from "#entities/profile/index.ts";
 import type { FormEvent, ReactElement } from "react";
 
 function ProfileEditor({
