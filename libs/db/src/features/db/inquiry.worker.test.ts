@@ -3,15 +3,10 @@ import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { TestDatabase } from "./database-test-fixture.ts";
+import { closeInquiry, replyAsAdmin } from "./inquiry-admin-write.ts";
+import { createMemberInquiry } from "./inquiry-member-write.ts";
 import { staffInquiryCounts } from "./inquiry-staff.ts";
-import {
-  closeInquiry,
-  countPendingInquiries,
-  createMemberInquiry,
-  getMemberInquiry,
-  listMemberInquiries,
-  replyAsAdmin,
-} from "./inquiry.ts";
+import { countPendingInquiries, getMemberInquiry, listMemberInquiries } from "./inquiry.ts";
 import { addSession, addUser, auditActionsOf } from "./records-test-fixture.ts";
 import { INQUIRY_STATUS } from "./schema.ts";
 

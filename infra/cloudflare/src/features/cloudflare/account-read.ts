@@ -109,10 +109,7 @@ function mediaType(response: HttpClientResponse.HttpClientResponse): string {
 }
 
 function requestReason(error: unknown): string {
-  if (Predicate.hasProperty(error, "_tag") && error._tag === "TimeoutError") {
-    return "timeout";
-  }
-  return Predicate.hasProperty(error, "name") && error.name === "TimeoutError"
+  return Predicate.hasProperty(error, "_tag") && error._tag === "TimeoutError"
     ? "timeout"
     : "request_failed";
 }
@@ -271,7 +268,6 @@ export {
   readPages,
   readRequired,
   readVerdict,
-  requestReason,
   unreadableState,
   unreadableVerdict,
 };

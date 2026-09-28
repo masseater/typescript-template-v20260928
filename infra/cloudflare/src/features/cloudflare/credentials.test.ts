@@ -1,10 +1,10 @@
-import { assert, it } from "@effect/vitest";
+import { assert, describe, it } from "@effect/vitest";
 import { deploymentKeys } from "@repo/observability/deployment-keys";
 import { Effect, FileSystem } from "effect";
 import { vi } from "vite-plus/test";
 
 import { verifiedSecrets } from "./credentials.ts";
-import { ENVIRONMENT_FILE_VARIABLE, secretsFile } from "./deployment.ts";
+import { ENVIRONMENT_FILE_VARIABLE, secretsFileLocation } from "./deployment.ts";
 import { layer, path } from "./platform.ts";
 import { verificationEnvironment } from "./verification-settings.ts";
 
@@ -124,20 +124,40 @@ it.effect("reports a missing file instead of deploying without it", () =>
   }).pipe(Effect.scoped),
 );
 
-it.effect("resolves the same file the staged-diff check reads", () =>
-  Effect.acquireUseRelease(
-    Effect.sync(() => {
-      vi.stubEnv(ENVIRONMENT_FILE_VARIABLE, undefined);
-    }),
-    () =>
-      Effect.sync(() => {
-        assert.match(secretsFile("template"), /\/\.config\/template\/cloudflare\.env$/u);
-        vi.stubEnv(ENVIRONMENT_FILE_VARIABLE, "/elsewhere/cloudflare.env");
-        assert.strictEqual(secretsFile("template"), "/elsewhere/cloudflare.env");
+describe("the secrets file the staged-diff check reads", () => {
+  it("is the file the environment names when it names one", () => {
+    assert.strictEqual(
+      secretsFileLocation({
+        project: "template",
+        environmentFile: "/elsewhere/cloudflare.env",
+        configurationHome: "/xdg",
+        homeDirectory: "/home/member",
       }),
-    () =>
-      Effect.sync(() => {
-        vi.unstubAllEnvs();
+      "/elsewhere/cloudflare.env",
+    );
+  });
+
+  it("sits under the configuration home when one is set", () => {
+    assert.strictEqual(
+      secretsFileLocation({
+        project: "template",
+        environmentFile: undefined,
+        configurationHome: "/xdg",
+        homeDirectory: "/home/member",
       }),
-  ),
-);
+      "/xdg/template/cloudflare.env",
+    );
+  });
+
+  it("sits under the home directory's .config otherwise", () => {
+    assert.strictEqual(
+      secretsFileLocation({
+        project: "template",
+        environmentFile: undefined,
+        configurationHome: undefined,
+        homeDirectory: "/home/member",
+      }),
+      "/home/member/.config/template/cloudflare.env",
+    );
+  });
+});

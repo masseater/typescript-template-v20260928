@@ -115,6 +115,30 @@ const detected: readonly Case[] = [
     { "libs/db/src/features/db/index.ts": 'export * from "./admin.ts";\n' },
   ],
   [
+    "no-member-inquiry-write-outside-member",
+    {
+      "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db/inquiry-member-write";\n',
+    },
+  ],
+  [
+    "no-member-inquiry-write-outside-member",
+    { "apps/service-admin/src/index.ts": 'export * from "@repo/db/inquiry-member-write";\n' },
+  ],
+  [
+    "no-member-inquiry-write-outside-member",
+    { "libs/db/src/features/db/index.ts": 'export * from "./inquiry-member-write.ts";\n' },
+  ],
+  [
+    "no-admin-inquiry-write-outside-admin",
+    {
+      "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db/inquiry-admin-write";\n',
+    },
+  ],
+  [
+    "no-admin-inquiry-write-outside-admin",
+    { "apps/service-member/src/index.ts": 'export * from "@repo/db/inquiry-admin-write";\n' },
+  ],
+  [
     "no-database-operations-outside-tooling",
     { "apps/service-admin/src/index.ts": 'export * from "@repo/db/remote";\n' },
   ],
@@ -247,6 +271,14 @@ const accepted: readonly Case[] = [
   [
     "no-database-admin-outside-admin",
     { "apps/service-admin/src/index.ts": 'export * from "@repo/db/admin";\n' },
+  ],
+  [
+    "no-member-inquiry-write-outside-member",
+    { "apps/service-member/src/index.ts": 'export * from "@repo/db/inquiry-member-write";\n' },
+  ],
+  [
+    "no-admin-inquiry-write-outside-admin",
+    { "apps/service-admin/src/index.ts": 'export * from "@repo/db/inquiry-admin-write";\n' },
   ],
   [
     "no-database-operations-outside-tooling",

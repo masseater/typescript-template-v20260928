@@ -1,24 +1,13 @@
-import { ADMIN_PERMISSION, AUDIT_ACTION, maximumAdminPageSize } from "@repo/config";
-import { and, desc, eq, sql, type SQL } from "drizzle-orm";
-import { DateTime, Effect, Schema } from "effect";
+import { maximumAdminPageSize } from "@repo/config";
+import { and, desc, eq, type SQL } from "drizzle-orm";
+import { Effect, Schema } from "effect";
 
 import { countRows } from "./count-rows.ts";
-import { query, type DrizzleDatabase } from "./database.ts";
-import { InquiryForbidden } from "./inquiry-forbidden.ts";
+import { query } from "./database.ts";
 import { InquiryNotFound } from "./inquiry-not-found.ts";
 import { adminInquiryColumns, inquiryColumns, inquiryThread } from "./inquiry-thread.ts";
-import { liveAdmin, requireAdmin } from "./privileged-session.ts";
-import {
-  auditEvent,
-  INQUIRY_AUTHOR_KIND,
-  INQUIRY_STATUS,
-  inquiry,
-  inquiryMessage,
-  inquiryStatuses,
-  type AuditAction,
-  type InquiryStatus,
-  user,
-} from "./schema.ts";
+import { requireAdmin } from "./privileged-session.ts";
+import { INQUIRY_STATUS, inquiry, inquiryStatuses, type InquiryStatus, user } from "./schema.ts";
 
 export const InquiryPage = Schema.Struct({
   limit: Schema.Int.check(Schema.isBetween({ maximum: maximumAdminPageSize, minimum: 1 })),
@@ -57,41 +46,6 @@ type MemberSummary = Readonly<{
   id: string;
   name: string;
 }>;
-
-const auditInquiryReply = (
-  database: DrizzleDatabase,
-  {
-    action,
-    actorId,
-    checkedAt,
-    inquiryId,
-    sessionId,
-  }: Readonly<{
-    action: AuditAction;
-    actorId: string;
-    checkedAt: Date;
-    inquiryId: string;
-    sessionId: string;
-  }>,
-): SQL => {
-  const auditColumns = [
-    [auditEvent.action, action],
-    [auditEvent.actorId, actorId],
-    [auditEvent.createdAt, checkedAt.getTime()],
-    [auditEvent.id, crypto.randomUUID()],
-    [auditEvent.targetId, inquiryId],
-  ] as const;
-  const columnNames = sql.join(
-    auditColumns.map(([column]) => sql.identifier(column.name)),
-    sql`, `,
-  );
-  const columnValues = sql.join(
-    auditColumns.map(([, columnValue]) => sql`${columnValue}`),
-    sql`, `,
-  );
-  const targeted = sql`SELECT 1 FROM ${inquiry} WHERE ${inquiry.id} = ${inquiryId} AND ${liveAdmin(database, { checkedAt, required: ADMIN_PERMISSION.operator, sessionId })}`;
-  return sql`INSERT INTO ${auditEvent} (${columnNames}) SELECT ${columnValues} WHERE EXISTS (${targeted})`;
-};
 
 const adminInquiryRows = Effect.fn("adminInquiryRows")(function* adminInquiryRows(
   where: () => SQL | undefined,
@@ -135,65 +89,6 @@ const getMemberInquiry = Effect.fn("getMemberInquiry")(function* getMemberInquir
   return (yield* inquiryThread(inquiryId, found)) satisfies InquiryThread;
 });
 
-const createMemberInquiry = Effect.fn("createMemberInquiry")(function* createMemberInquiry(
-  memberId: string,
-  draft: { readonly body: string; readonly subject: string },
-) {
-  const inquiryId = crypto.randomUUID();
-  const messageId = crypto.randomUUID();
-  const openedAt = DateTime.toDate(yield* DateTime.now);
-  yield* query((database) =>
-    database.batch([
-      database.insert(inquiry).values({
-        createdAt: openedAt,
-        id: inquiryId,
-        memberId,
-        status: INQUIRY_STATUS.open,
-        subject: draft.subject,
-        updatedAt: openedAt,
-      }),
-      database.insert(inquiryMessage).values({
-        authorId: memberId,
-        authorKind: INQUIRY_AUTHOR_KIND.member,
-        body: draft.body,
-        createdAt: openedAt,
-        id: messageId,
-        inquiryId,
-      }),
-    ]),
-  );
-  return yield* getMemberInquiry(memberId, inquiryId);
-});
-
-const replyAsMember = Effect.fn("replyAsMember")(function* replyAsMember({
-  body: replyBody,
-  inquiryId,
-  memberId,
-}: Readonly<{ body: string; inquiryId: string; memberId: string }>) {
-  const thread = yield* getMemberInquiry(memberId, inquiryId);
-  if (thread.status === INQUIRY_STATUS.closed) {
-    return yield* new InquiryForbidden();
-  }
-  const repliedAt = DateTime.toDate(yield* DateTime.now);
-  yield* query((database) =>
-    database.batch([
-      database.insert(inquiryMessage).values({
-        authorId: memberId,
-        authorKind: INQUIRY_AUTHOR_KIND.member,
-        body: replyBody,
-        createdAt: repliedAt,
-        id: crypto.randomUUID(),
-        inquiryId,
-      }),
-      database
-        .update(inquiry)
-        .set({ updatedAt: repliedAt })
-        .where(and(eq(inquiry.id, inquiryId), eq(inquiry.memberId, memberId))),
-    ]),
-  );
-  return yield* getMemberInquiry(memberId, inquiryId);
-});
-
 const matchesInquiryPage = (page: typeof InquiryPage.Type): SQL | undefined => {
   const { status } = page;
   return status === undefined ? undefined : eq(inquiry.status, status);
@@ -226,72 +121,6 @@ const countPendingInquiries = Effect.fn("countPendingInquiries")(function* count
   return yield* countRows(inquiry, () => eq(inquiry.status, INQUIRY_STATUS.open));
 });
 
-const replyAsAdmin = Effect.fn("replyAsAdmin")(function* replyAsAdmin({
-  body: replyBody,
-  inquiryId,
-  sessionId,
-}: Readonly<{ body: string; inquiryId: string; sessionId: string }>) {
-  const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.operator);
-  const [existing] = yield* query((database) =>
-    database
-      .select({ id: inquiry.id, status: inquiry.status })
-      .from(inquiry)
-      .where(eq(inquiry.id, inquiryId))
-      .limit(1),
-  );
-  if (!existing) {
-    return yield* new InquiryNotFound();
-  }
-  if (existing.status === INQUIRY_STATUS.closed) {
-    return yield* new InquiryForbidden();
-  }
-  const repliedAt = DateTime.toDate(yield* DateTime.now);
-  const change = {
-    action: AUDIT_ACTION.inquiryReplied,
-    actorId: actor.user.id,
-    checkedAt: repliedAt,
-    inquiryId,
-    sessionId,
-  } as const;
-  yield* query((database) =>
-    database.batch([
-      database.run(auditInquiryReply(database, change)),
-      database.insert(inquiryMessage).values({
-        authorId: actor.user.id,
-        authorKind: INQUIRY_AUTHOR_KIND.admin,
-        body: replyBody,
-        createdAt: repliedAt,
-        id: crypto.randomUUID(),
-        inquiryId,
-      }),
-      database
-        .update(inquiry)
-        .set({ status: INQUIRY_STATUS.answered, updatedAt: repliedAt })
-        .where(eq(inquiry.id, inquiryId)),
-    ]),
-  );
-  return yield* getAdminInquiry(sessionId, inquiryId);
-});
-
-const closeInquiry = Effect.fn("closeInquiry")(function* closeInquiry(
-  sessionId: string,
-  inquiryId: string,
-) {
-  yield* requireAdmin(sessionId, ADMIN_PERMISSION.operator);
-  const closedAt = DateTime.toDate(yield* DateTime.now);
-  const [closed] = yield* query((database) =>
-    database
-      .update(inquiry)
-      .set({ status: INQUIRY_STATUS.closed, updatedAt: closedAt })
-      .where(eq(inquiry.id, inquiryId))
-      .returning({ id: inquiry.id }),
-  );
-  if (!closed) {
-    return yield* new InquiryNotFound();
-  }
-  return yield* getAdminInquiry(sessionId, inquiryId);
-});
-
 const getInquiryMemberSummary = Effect.fn("getInquiryMemberSummary")(
   function* getInquiryMemberSummary(sessionId: string, memberId: string) {
     yield* requireAdmin(sessionId);
@@ -310,16 +139,12 @@ const getInquiryMemberSummary = Effect.fn("getInquiryMemberSummary")(
 );
 
 export {
-  closeInquiry,
   countPendingInquiries,
-  createMemberInquiry,
   getAdminInquiry,
   getInquiryMemberSummary,
   getMemberInquiry,
   listAdminInquiries,
   listMemberInquiries,
-  replyAsAdmin,
-  replyAsMember,
 };
 export { InquiryForbidden } from "./inquiry-forbidden.ts";
 export { InquiryNotFound } from "./inquiry-not-found.ts";

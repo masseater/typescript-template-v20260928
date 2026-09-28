@@ -1,11 +1,7 @@
 import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/config";
-import {
-  createMemberInquiry,
-  getMemberInquiry,
-  listMemberInquiries,
-  replyAsMember,
-} from "@repo/db";
+import { getMemberInquiry, listMemberInquiries } from "@repo/db";
+import { createMemberInquiry, replyAsMember } from "@repo/db/inquiry-member-write";
 import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";

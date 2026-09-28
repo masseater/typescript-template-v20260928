@@ -1,12 +1,6 @@
 import { assert, it } from "@effect/vitest";
-import {
-  createMemberInquiry,
-  getMemberInquiry,
-  query,
-  schema,
-  type Database,
-  type DatabaseFailure,
-} from "@repo/db";
+import { getMemberInquiry, query, schema, type Database, type DatabaseFailure } from "@repo/db";
+import { createMemberInquiry } from "@repo/db/inquiry-member-write";
 import { TestDatabase } from "@repo/db/testing";
 import { Effect, DateTime } from "effect";
 

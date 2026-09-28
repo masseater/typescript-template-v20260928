@@ -17,6 +17,8 @@ const anyOf = (values: readonly string[]): string => {
 const testModule = String.raw`(?:\.(?:test|spec)|-test-fixture)\.[cm]?[jt]sx?$`;
 const developmentModule = String.raw`${testModule}|\.stories\.tsx$`;
 const databaseAdmin = String.raw`^libs/db/src/features/db/admin\.ts$`;
+const memberInquiryWrite = String.raw`^libs/db/src/features/db/inquiry-member-write\.ts$`;
+const adminInquiryWrite = String.raw`^libs/db/src/features/db/inquiry-admin-write\.ts$`;
 const databaseOperations = String.raw`^libs/(db(?:-local)?)/src/features/\1/(?:remote|bootstrap|migrat)[^/]*\.ts$`;
 const databaseInternal = String.raw`^libs/(db(?:-local)?)/src/features/\1/(?:(?:remote|bootstrap|migrat|testing)[^/]*\.ts$|.*${testModule})`;
 const testingEntry = String.raw`-test-fixture\.[cm]?[jt]sx?$`;
@@ -84,6 +86,28 @@ const configuration = {
       name: "no-database-admin-outside-admin",
       severity: "error",
       to: { path: databaseAdmin },
+    },
+    {
+      comment:
+        "会員が問い合わせを書き込む処理です。apps/service-member と libs/db の中だけで使い、ほかのアプリから問い合わせを作ったり返信したりしないでください。",
+      from: {
+        path: "^(?:apps|libs)/",
+        pathNot: `^apps/service-member/|^libs/db/src/features/db/(?!index\\.ts$)|${testModule}`,
+      },
+      name: "no-member-inquiry-write-outside-member",
+      severity: "error",
+      to: { path: memberInquiryWrite },
+    },
+    {
+      comment:
+        "管理者が問い合わせに返信し完了にする処理です。apps/service-admin と libs/db の中だけで使い、ほかのアプリから問い合わせを書き換えないでください。",
+      from: {
+        path: "^(?:apps|libs)/",
+        pathNot: `^apps/service-admin/|^libs/db/src/features/db/(?!index\\.ts$)|${testModule}`,
+      },
+      name: "no-admin-inquiry-write-outside-admin",
+      severity: "error",
+      to: { path: adminInquiryWrite },
     },
     {
       comment:

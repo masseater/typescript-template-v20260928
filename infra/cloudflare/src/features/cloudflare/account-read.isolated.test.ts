@@ -1,17 +1,17 @@
 import { assert, it } from "@effect/vitest";
-import { Effect, Schema } from "effect";
-import { HttpResponse, delay, http } from "msw";
+import { Deferred, Duration, Effect, Fiber, Schema } from "effect";
+import { TestClock } from "effect/testing";
+import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 
-import { endpoint, readList, requestReason } from "./account-read.ts";
+import { endpoint, readList } from "./account-read.ts";
 
 import type { Scope } from "effect";
 import type { SetupServer } from "msw/node";
 
 const HEX_ID_LENGTH = 32;
 const PAGE_SIZE = 20;
-const RESPONSE_DELAY_MS = 200;
-const ABORT_DEADLINE_MS = 1;
+const REQUEST_DEADLINE_SECONDS = 30;
 
 const access = {
   accountId: "c".repeat(HEX_ID_LENGTH),
@@ -157,22 +157,24 @@ it.effect("reports a read the network never completed", () =>
   }).pipe(Effect.scoped),
 );
 
-it.effect("reads an abort raised by a request deadline as a timeout", () =>
+it.effect("reports a read Cloudflare never answered within the request deadline", () =>
   Effect.gen(function* program() {
+    const requested = yield* Deferred.make<boolean>();
+    const services = yield* Effect.context();
     yield* mockServer(
-      http.get(url, () => delay(RESPONSE_DELAY_MS).then(() => HttpResponse.json({ result: [] }))),
+      http.get(url, () => {
+        Effect.runSyncWith(services)(Deferred.succeed(requested, true));
+        return new Promise<never>(() => undefined);
+      }),
     );
-    const aborted = yield* Effect.callback<unknown>((resume) => {
-      const signal = AbortSignal.timeout(ABORT_DEADLINE_MS);
-      if (signal.aborted) {
-        resume(Effect.succeed(signal.reason));
-        return;
-      }
-      signal.addEventListener("abort", () => {
-        resume(Effect.succeed(signal.reason));
-      });
-    });
-    assert.strictEqual(requestReason(aborted), "timeout");
-    assert.strictEqual(requestReason(new TypeError("fetch failed")), "request_failed");
+    const reading = yield* Effect.forkChild(
+      readList(access, { source: endpoint`zones/${access.accountId}/dns_records` }, Rows).pipe(
+        Effect.flip,
+      ),
+    );
+    yield* Deferred.await(requested);
+    yield* TestClock.adjust(Duration.seconds(REQUEST_DEADLINE_SECONDS));
+    const failure = yield* Fiber.join(reading);
+    assert.deepStrictEqual(failure.keys, ["zones/{}/dns_records", "timeout"]);
   }).pipe(Effect.scoped),
 );

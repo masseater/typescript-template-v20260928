@@ -16,6 +16,8 @@ const workspaces: Readonly<Record<string, Readonly<Record<string, string>>>> = {
     ".": "./src/features/db/index.ts",
     "./admin": "./src/features/db/admin.ts",
     "./bootstrap": "./src/features/db/bootstrap-statement.ts",
+    "./inquiry-admin-write": "./src/features/db/inquiry-admin-write.ts",
+    "./inquiry-member-write": "./src/features/db/inquiry-member-write.ts",
     "./inquiry-staff": "./src/features/db/inquiry-staff.ts",
     "./local": "./src/features/db/local.ts",
     "./remote": "./src/features/db/remote-command.ts",

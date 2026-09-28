@@ -77,16 +77,12 @@ export {
   InquiryForbidden,
   InquiryNotFound,
   InquiryPage,
-  closeInquiry,
   countPendingInquiries,
-  createMemberInquiry,
   getAdminInquiry,
   getInquiryMemberSummary,
   getMemberInquiry,
   listAdminInquiries,
   listMemberInquiries,
-  replyAsAdmin,
-  replyAsMember,
 } from "./inquiry.ts";
 export type {
   AdminInquirySummary,

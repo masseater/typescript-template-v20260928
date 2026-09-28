@@ -10,7 +10,9 @@
     "./testing": "./src/features/db/database-test-fixture.ts",
     "./migrations": "./src/features/db/remote-operations.ts",
     "./local": "./src/features/db/local.ts",
-    "./inquiry-staff": "./src/features/db/inquiry-staff.ts"
+    "./inquiry-staff": "./src/features/db/inquiry-staff.ts",
+    "./inquiry-member-write": "./src/features/db/inquiry-member-write.ts",
+    "./inquiry-admin-write": "./src/features/db/inquiry-admin-write.ts"
   },
   "dependencies": {
     "@repo/config": "workspace:*",

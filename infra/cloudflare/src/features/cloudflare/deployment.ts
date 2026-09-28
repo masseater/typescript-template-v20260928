@@ -15,16 +15,30 @@ const environmentFile = (): string | undefined => nonEmptySetting(ENVIRONMENT_FI
 
 const secretsFileConfigured = (): boolean => environmentFile() !== undefined;
 
-const configurationHome = (project: string): string =>
-  path.join(nonEmptySetting("XDG_CONFIG_HOME") ?? path.join(homedir(), ".config"), project);
-
 const ENVIRONMENT_FILE_NAME = "cloudflare.env";
 
-const secretsFile = (project: string): string => {
-  const configured = environmentFile();
-  return configured === undefined
-    ? path.join(configurationHome(project), ENVIRONMENT_FILE_NAME)
-    : path.resolve(configured);
+type SecretsFileSettings = {
+  readonly project: string;
+  readonly environmentFile: string | undefined;
+  readonly configurationHome: string | undefined;
+  readonly homeDirectory: string;
 };
 
-export { ENVIRONMENT_FILE_VARIABLE, secretsFile, secretsFileConfigured };
+const secretsFileLocation = (settings: SecretsFileSettings): string =>
+  settings.environmentFile === undefined
+    ? path.join(
+        settings.configurationHome ?? path.join(settings.homeDirectory, ".config"),
+        settings.project,
+        ENVIRONMENT_FILE_NAME,
+      )
+    : path.resolve(settings.environmentFile);
+
+const secretsFile = (project: string): string =>
+  secretsFileLocation({
+    project,
+    environmentFile: environmentFile(),
+    configurationHome: nonEmptySetting("XDG_CONFIG_HOME"),
+    homeDirectory: homedir(),
+  });
+
+export { ENVIRONMENT_FILE_VARIABLE, secretsFile, secretsFileConfigured, secretsFileLocation };

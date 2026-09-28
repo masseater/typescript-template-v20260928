@@ -1,13 +1,12 @@
 import { verifiedSessionId } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import {
-  closeInquiry,
   countPendingInquiries,
   getAdminInquiry,
   getInquiryMemberSummary,
   listAdminInquiries,
-  replyAsAdmin,
 } from "@repo/db";
+import { closeInquiry, replyAsAdmin } from "@repo/db/inquiry-admin-write";
 import { privileged } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
