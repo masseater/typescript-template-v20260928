@@ -159,10 +159,55 @@ const effectCheckedProjects = [
   ),
 ].toSorted();
 
+const baselines: Readonly<Record<string, unknown>> = import.meta.glob(
+  "../../../../../../libs/vite-config/src/features/vite-config/effect-typecheck-baseline.json",
+  { eager: true, import: "default" },
+);
+
+const baselineRows = (): Readonly<Record<string, unknown>> => {
+  const [baseline] = Object.values(baselines);
+  const rows = field(baseline, "workspaces");
+  return typeof rows === "object" && rows !== null ? { ...rows } : {};
+};
+
+const awaitingWorkspaces = declarations
+  .filter(({ task }) => field(task, "command") === baselinedCommand)
+  .map(({ directory }) => directory)
+  .toSorted();
+
+const baselineMismatches = (
+  rows: Readonly<Record<string, unknown>>,
+  awaiting: readonly string[],
+): readonly string[] => [
+  ...Object.keys(rows)
+    .filter((directory) => !awaiting.includes(directory))
+    .map((directory) => `${directory}: rows kept for a workspace the baseline never reads`),
+  ...awaiting
+    .filter((directory) => {
+      const kept = rows[directory];
+      return !Array.isArray(kept) || kept.length === 0;
+    })
+    .map((directory) => `${directory}: awaiting diagnostics with no existing violation`),
+];
+
 describe("effect diagnostics coverage", () => {
   it("every workspace with a TypeScript project runs the Effect diagnostics", () => {
     expect.assertions(1);
     expect(diagnosed).toStrictEqual(projectWorkspaces);
+  });
+
+  it("keeps the baseline to the awaiting workspaces that still have violations", () => {
+    expect.assertions(2);
+    expect(baselineMismatches(baselineRows(), awaitingWorkspaces)).toStrictEqual([]);
+    expect(
+      baselineMismatches({ "libs/config": [{ count: 1 }], "tools/ai-native": [{ count: 1 }] }, [
+        "libs/config",
+        "tools/dev",
+      ]),
+    ).toStrictEqual([
+      "tools/ai-native: rows kept for a workspace the baseline never reads",
+      "tools/dev: awaiting diagnostics with no existing violation",
+    ]);
   });
 
   it("every workspace typechecks only through effect-tsgo", () => {

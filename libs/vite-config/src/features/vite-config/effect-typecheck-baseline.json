@@ -118,14 +118,6 @@
         "message": "`Schema.decodeSync` executes synchronously. Use `Schema.decodeEffect` to compose this operation through Effect without throwing. effect(schemaSync)",
         "count": 1
       }
-    ],
-    "tools/ai-native": [
-      {
-        "file": "../dont-review-it/src/features/dont-review-it/repository/lint.ts",
-        "code": "TS2345",
-        "message": "Argument of type 'string' is not assignable to parameter of type '\"react\"'.",
-        "count": 1
-      }
     ]
   }
 }

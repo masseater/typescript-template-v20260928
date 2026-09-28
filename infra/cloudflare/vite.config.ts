@@ -1,6 +1,6 @@
 import { applications, wikiWorker } from "@repo/config";
 import {
-  awaitingEffectDiagnostics,
+  effectDiagnostics,
   lifecycle,
   taskInput,
   checkCode,
@@ -19,7 +19,7 @@ const stackBuilds = ["core", wikiWorker, ...applications, ...monitorStacks].map(
 export default defineConfig({
   run: {
     tasks: {
-      ...awaitingEffectDiagnostics(import.meta.dirname),
+      ...effectDiagnostics(import.meta.dirname),
       ...checkCode,
       ...workspaceCheckImports,
       ...modularBoundaries,

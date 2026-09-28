@@ -239,7 +239,7 @@ const appTasks = measured({
 } satisfies Tasks);
 
 const appRun = (packageRoot: string): { tasks: typeof appTasks & EffectDiagnosticsTask } => ({
-  tasks: { ...awaitingEffectDiagnostics(packageRoot), ...appTasks },
+  tasks: { ...effectDiagnostics(packageRoot), ...appTasks },
 });
 
 const paraglideCompileDependency = ["typescript-template#compile:paraglide"];
@@ -258,7 +258,7 @@ const paraglideAppRun = (packageRoot: string): RunConfig => ({
   tasks: {
     ...paraglideAppTasks,
     "check:effect": {
-      ...awaitingEffectDiagnostics(packageRoot)["check:effect"],
+      ...effectDiagnostics(packageRoot)["check:effect"],
       dependsOn: paraglideCompileDependency,
     },
   },

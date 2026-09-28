@@ -7,7 +7,6 @@ import { localizedApps } from "./paraglide-options.ts";
 import {
   appConfig,
   appRun,
-  awaitingEffectDiagnostics,
   checkCode,
   effectDiagnostics,
   effectRun,
@@ -93,7 +92,7 @@ describe("appRun", () => {
   it("type-checks, builds, and starts before the stages that ship an app", ({ applicationRun }) => {
     expect(applicationRun).toStrictEqual({
       tasks: {
-        ...awaitingEffectDiagnostics(applicationRoot),
+        ...effectDiagnostics(applicationRoot),
         ...checkCode,
         ...workspaceCheckImports,
         "check:client": {
@@ -173,7 +172,7 @@ describe("paraglideAppRun", () => {
       tasks: {
         ...applicationRun.tasks,
         "check:effect": {
-          ...awaitingEffectDiagnostics(applicationRoot)["check:effect"],
+          ...effectDiagnostics(applicationRoot)["check:effect"],
           dependsOn: ["typescript-template#compile:paraglide"],
         },
         "check:code": {

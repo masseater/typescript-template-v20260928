@@ -1,10 +1,10 @@
 import { telemetryAsked } from "@repo/telemetry/optional-setting";
 import { sdkFilePath } from "@repo/telemetry/vitest-sdk-path";
-import { awaitingEffectRun } from "@repo/vite-config";
+import { effectRun } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
-  run: awaitingEffectRun(import.meta.dirname),
+  run: effectRun(import.meta.dirname),
   test: {
     experimental: {
       openTelemetry: {
