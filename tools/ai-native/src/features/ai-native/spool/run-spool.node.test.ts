@@ -43,8 +43,16 @@ const HUNDRED_THOUSAND_LINES_COMMAND_LINE = [NODE, "-e", HUNDRED_THOUSAND_LINES_
 const HUNDRED_THOUSAND_LINES_ROOT = joinPath(TEST_ROOT, "hundred-thousand-lines");
 
 describe("runSpool", () => {
+  const spoolTest = standardIoTest.extend(
+    "spoolWorkspaceRemoval",
+    { auto: true, scope: "file" },
+    ({}, { onCleanup }) => {
+      onCleanup(() => Effect.runPromise(removePath(TEST_ROOT)));
+    },
+  );
+
   describe("an argv naming no command at all", () => {
-    const it = standardIoTest.extend("theCodeOfAnEmptyArgv", { auto: true }, () =>
+    const it = spoolTest.extend("theCodeOfAnEmptyArgv", { auto: true }, () =>
       runSpool([], { stdout: process.stdout, stderr: process.stderr }),
     );
 
@@ -83,7 +91,7 @@ describe("runSpool", () => {
   });
 
   describe("a command printing five thousand lines", () => {
-    const it = standardIoTest
+    const it = spoolTest
       .extend("theCodeOfFiveThousandLines", ({}, { onCleanup }) => {
         onCleanup(() => Effect.runPromise(removePath(FIVE_THOUSAND_LINES_ROOT)));
         return Effect.runPromise(
@@ -202,7 +210,7 @@ describe("runSpool", () => {
   });
 
   describe("a command printing ten thousand lines of a hundred bytes", () => {
-    const it = standardIoTest
+    const it = spoolTest
       .extend("theCodeOfTenThousandLines", ({}, { onCleanup }) => {
         onCleanup(() => Effect.runPromise(removePath(TEN_THOUSAND_LINES_ROOT)));
         return Effect.runPromise(
@@ -295,7 +303,7 @@ describe("runSpool", () => {
   });
 
   describe("a command printing a hundred thousand lines of a hundred bytes", () => {
-    const it = standardIoTest
+    const it = spoolTest
       .extend("theCodeOfHundredThousandLines", ({}, { onCleanup }) => {
         onCleanup(() => Effect.runPromise(removePath(HUNDRED_THOUSAND_LINES_ROOT)));
         return Effect.runPromise(

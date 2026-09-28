@@ -3,7 +3,7 @@ import { Effect, Schema } from "effect";
 import { describe, expect, test, vi } from "vite-plus/test";
 
 import { runCaptured } from "../child-process.ts";
-import { filesystem, joinPath, optionalSetting, writeFileString } from "../host.ts";
+import { filesystem, joinPath, optionalSetting, removePath, writeFileString } from "../host.ts";
 import { hook } from "./hook.ts";
 import { instructionFor } from "./message.ts";
 
@@ -12,6 +12,10 @@ vi.mock(import("cc-hooks-ts"), { spy: true });
 const CLI_PATH = joinPath(import.meta.dirname, "cli.ts");
 const BEHIND_GH_SCRIPT = `#!/bin/sh
 echo '{"baseRefName":"main","mergeStateStatus":"BEHIND","number":11,"url":"https://example.com/11"}'
+`;
+const NO_PULL_REQUEST_GH_SCRIPT = `#!/bin/sh
+echo 'no pull requests found for branch "work"' >&2
+exit 1
 `;
 
 describe("sync-base cli", () => {
@@ -33,26 +37,50 @@ describe("sync-base cli", () => {
 
   describe("a Stop where gh finds no pull request", () => {
     const it = test
-      .extend("theWorkTreeWithoutAPullRequest", () =>
-        Effect.runPromise(filesystem.makeTempDirectory({ prefix: "sync-base-no-pr-" })))
-      .extend("theRunOverAStopWithoutAPullRequest", ({ theWorkTreeWithoutAPullRequest }) =>
-        Effect.runPromise(
-          runCaptured({
-            executable: process.execPath,
-            handed: [CLI_PATH],
-            env: {
-              ...process.env,
-              PATH: `/nonexistent-gh-bin:${optionalSetting("PATH") ?? ""}`,
-            },
-            input: JSON.stringify({
-              cwd: theWorkTreeWithoutAPullRequest,
-              hook_event_name: "Stop",
-              session_id: "session",
-              stop_hook_active: false,
-              transcript_path: `${theWorkTreeWithoutAPullRequest}/transcript.jsonl`,
-            }),
+      .extend("theWorkTreeWithoutAPullRequest", ({}, { onCleanup }) => {
+        const made = Effect.runPromise(
+          filesystem.makeTempDirectory({ prefix: "sync-base-no-pr-" }),
+        );
+        onCleanup(() =>
+          Effect.runPromise(Effect.promise(() => made).pipe(Effect.flatMap(removePath))),
+        );
+        return made;
+      })
+      .extend("theBinWithAGhThatFindsNoPullRequest", ({}, { onCleanup }) => {
+        const made = Effect.runPromise(filesystem.makeTempDirectory({ prefix: "sync-base-gh-" }));
+        onCleanup(() =>
+          Effect.runPromise(Effect.promise(() => made).pipe(Effect.flatMap(removePath))),
+        );
+        return Effect.runPromise(
+          Effect.gen(function* () {
+            const directory = yield* Effect.promise(() => made);
+            const ghPath = joinPath(directory, "gh");
+            yield* writeFileString({ location: ghPath, written: NO_PULL_REQUEST_GH_SCRIPT });
+            yield* filesystem.chmod(ghPath, 0o755);
+            return directory;
           }),
-        ),
+        );
+      })
+      .extend(
+        "theRunOverAStopWithoutAPullRequest",
+        ({ theBinWithAGhThatFindsNoPullRequest, theWorkTreeWithoutAPullRequest }) =>
+          Effect.runPromise(
+            runCaptured({
+              executable: process.execPath,
+              handed: [CLI_PATH],
+              env: {
+                ...process.env,
+                PATH: `${theBinWithAGhThatFindsNoPullRequest}:${optionalSetting("PATH") ?? ""}`,
+              },
+              input: JSON.stringify({
+                cwd: theWorkTreeWithoutAPullRequest,
+                hook_event_name: "Stop",
+                session_id: "session",
+                stop_hook_active: false,
+                transcript_path: `${theWorkTreeWithoutAPullRequest}/transcript.jsonl`,
+              }),
+            }),
+          ),
       )
       .extend(
         "theExitCodeOverAStopWithoutAPullRequest",
@@ -88,19 +116,28 @@ describe("sync-base cli", () => {
 
   describe("a Stop where gh reports the head is behind its base", () => {
     const it = test
-      .extend("theWorkTree", () =>
-        Effect.runPromise(filesystem.makeTempDirectory({ prefix: "sync-base-pr-" })))
-      .extend("theBinWithABehindGh", () =>
-        Effect.runPromise(
+      .extend("theWorkTree", ({}, { onCleanup }) => {
+        const made = Effect.runPromise(filesystem.makeTempDirectory({ prefix: "sync-base-pr-" }));
+        onCleanup(() =>
+          Effect.runPromise(Effect.promise(() => made).pipe(Effect.flatMap(removePath))),
+        );
+        return made;
+      })
+      .extend("theBinWithABehindGh", ({}, { onCleanup }) => {
+        const made = Effect.runPromise(filesystem.makeTempDirectory({ prefix: "sync-base-gh-" }));
+        onCleanup(() =>
+          Effect.runPromise(Effect.promise(() => made).pipe(Effect.flatMap(removePath))),
+        );
+        return Effect.runPromise(
           Effect.gen(function* () {
-            const directory = yield* filesystem.makeTempDirectory({ prefix: "sync-base-gh-" });
+            const directory = yield* Effect.promise(() => made);
             const ghPath = joinPath(directory, "gh");
             yield* writeFileString({ location: ghPath, written: BEHIND_GH_SCRIPT });
             yield* filesystem.chmod(ghPath, 0o755);
             return directory;
           }),
-        ),
-      )
+        );
+      })
       .extend("theRunOverABehindPullRequest", ({ theBinWithABehindGh, theWorkTree }) =>
         Effect.runPromise(
           runCaptured({

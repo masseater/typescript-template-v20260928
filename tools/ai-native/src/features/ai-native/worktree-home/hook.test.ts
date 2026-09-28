@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { filesystem, joinPath } from "../host.ts";
+import { filesystem, joinPath, removePath } from "../host.ts";
 import { gitOutput, runGit } from "./git.ts";
 import { hook } from "./hook.ts";
 import { insideRepositoryReason } from "./message.ts";
@@ -9,14 +9,19 @@ import { insideRepositoryReason } from "./message.ts";
 describe("worktree-home hook", () => {
   describe("a Bash command adding a worktree inside the repository", () => {
     const it = test
-      .extend("theCheckout", () =>
-        Effect.runPromise(
+      .extend("theCheckout", ({}, { onCleanup }) => {
+        const made = Effect.runPromise(filesystem.makeTempDirectory({ prefix: "worktree-home-" }));
+        onCleanup(() =>
+          Effect.runPromise(Effect.promise(() => made).pipe(Effect.flatMap(removePath))),
+        );
+        return Effect.runPromise(
           Effect.gen(function* () {
-            const checkout = yield* filesystem.makeTempDirectory({ prefix: "worktree-home-" });
+            const checkout = yield* Effect.promise(() => made);
             yield* gitOutput(runGit, { cwd: checkout, handed: ["init", "--quiet", "-b", "main"] });
             return checkout;
           }),
-        ))
+        );
+      })
       .extend("theDecision", ({ theCheckout }) =>
         hook.run({
           input: {

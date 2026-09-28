@@ -5,16 +5,18 @@ import { NodeServices } from "@effect/platform-node";
 import { Effect, FileSystem } from "effect";
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
+import {
+  lintRuleWorkspace,
+  testLintRule,
+} from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { path } from "../../../../platform/path.ts";
 import { noStandaloneTsconfig } from "./no-standalone-tsconfig--extend-shared-preset.ts";
 
 const sharedPresets = ["dont-review-it/tsconfig/library.json", "dont-review-it/tsconfig/app.json"];
 
-const fixtureDir = await Effect.gen(function* fixtureDirectory() {
-  const filesystem = yield* FileSystem.FileSystem;
-  return yield* filesystem.makeTempDirectory({ prefix: "dont-review-it-no-standalone-tsconfig-" });
-}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
+const fixtureWorkspace = await lintRuleWorkspace("dont-review-it-no-standalone-tsconfig-");
+
+const fixtureDir = fixtureWorkspace.root;
 const extendsLibrary = path.join(fixtureDir, "extends-library", "index.ts");
 const extendsApp = path.join(fixtureDir, "extends-app", "index.ts");
 const extendsRelative = path.join(fixtureDir, "extends-relative", "index.ts");
@@ -100,115 +102,119 @@ await Effect.gen(function* writeFixture() {
 }).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
 describe("dont-review-it/no-standalone-tsconfig--extend-shared-preset", () => {
-  testLintRule(noStandaloneTsconfig, {
-    valid: [
-      {
-        name: "without configured presets the rule inspects nothing",
-        code: "export const total = 1;",
-        filename: standalone,
-      },
-      {
-        name: "an empty preset list inspects nothing",
-        code: "export const total = 1;",
-        filename: standalone,
-        options: [[]],
-      },
-      {
-        name: "extending the library preset by package name passes",
-        code: "export const total = 1;",
-        filename: extendsLibrary,
-        options: [sharedPresets],
-      },
-      {
-        name: "extending the app preset by package name passes",
-        code: "export const total = 1;",
-        filename: extendsApp,
-        options: [sharedPresets],
-      },
-      {
-        name: "extending the same preset by a relative path passes",
-        code: "export const total = 1;",
-        filename: extendsRelative,
-        options: [sharedPresets],
-      },
-      {
-        name: "one allowed preset among several extends entries passes",
-        code: "export const total = 1;",
-        filename: extendsArray,
-        options: [sharedPresets],
-      },
-      {
-        name: "comments and a trailing comma do not hide the extends entry",
-        code: "export const total = 1;",
-        filename: withComments,
-        options: [sharedPresets],
-      },
-      {
-        name: "the tsconfig above a file is looked up on disk",
-        code: "export const total = 1;",
-        filename: forgotten,
-        options: [sharedPresets],
-      },
-      {
-        name: "the answer is remembered, so removing the tsconfig afterwards does not change it",
-        code: "export const total = 2;",
-        filename: forgotten,
-        options: [sharedPresets],
-        before: () => {
-          rmSync(path.join(fixtureDir, "forgotten", "tsconfig.json"));
+  testLintRule(
+    noStandaloneTsconfig,
+    {
+      valid: [
+        {
+          name: "without configured presets the rule inspects nothing",
+          code: "export const total = 1;",
+          filename: standalone,
         },
-      },
-      {
-        name: "a file with no tsconfig above it is left alone",
-        code: "export const total = 1;",
-        filename: withoutAnyTsconfig,
-        options: [sharedPresets],
-      },
-    ],
-    invalid: [
-      {
-        name: "a tsconfig that writes its own compilerOptions is reported",
-        documented: true,
-        code: "export const total = 1;",
-        filename: standalone,
-        options: [sharedPresets],
-        errors: [{ messageId: "standaloneTsconfig" }],
-      },
-      {
-        name: "a file buried under a standalone tsconfig is reported too",
-        code: "export const total = 1;",
-        filename: buriedUnderStandalone,
-        options: [sharedPresets],
-        errors: [{ messageId: "standaloneTsconfig" }],
-      },
-      {
-        name: "extending the shared base directly skips the layer that decides the runtime",
-        code: "export const total = 1;",
-        filename: extendsBase,
-        options: [sharedPresets],
-        errors: [{ messageId: "standaloneTsconfig" }],
-      },
-      {
-        name: "extending a preset from somewhere else is not extending this one",
-        code: "export const total = 1;",
-        filename: extendsForeignPreset,
-        options: [sharedPresets],
-        errors: [{ messageId: "standaloneTsconfig" }],
-      },
-      {
-        name: "a path that omits the package owning the preset does not say which preset it means",
-        code: "export const total = 1;",
-        filename: extendsOwnPreset,
-        options: [sharedPresets],
-        errors: [{ messageId: "standaloneTsconfig" }],
-      },
-      {
-        name: "a tsconfig that cannot be read as JSON extends nothing",
-        code: "export const total = 1;",
-        filename: malformed,
-        options: [sharedPresets],
-        errors: [{ messageId: "standaloneTsconfig" }],
-      },
-    ],
-  });
+        {
+          name: "an empty preset list inspects nothing",
+          code: "export const total = 1;",
+          filename: standalone,
+          options: [[]],
+        },
+        {
+          name: "extending the library preset by package name passes",
+          code: "export const total = 1;",
+          filename: extendsLibrary,
+          options: [sharedPresets],
+        },
+        {
+          name: "extending the app preset by package name passes",
+          code: "export const total = 1;",
+          filename: extendsApp,
+          options: [sharedPresets],
+        },
+        {
+          name: "extending the same preset by a relative path passes",
+          code: "export const total = 1;",
+          filename: extendsRelative,
+          options: [sharedPresets],
+        },
+        {
+          name: "one allowed preset among several extends entries passes",
+          code: "export const total = 1;",
+          filename: extendsArray,
+          options: [sharedPresets],
+        },
+        {
+          name: "comments and a trailing comma do not hide the extends entry",
+          code: "export const total = 1;",
+          filename: withComments,
+          options: [sharedPresets],
+        },
+        {
+          name: "the tsconfig above a file is looked up on disk",
+          code: "export const total = 1;",
+          filename: forgotten,
+          options: [sharedPresets],
+        },
+        {
+          name: "the answer is remembered, so removing the tsconfig afterwards does not change it",
+          code: "export const total = 2;",
+          filename: forgotten,
+          options: [sharedPresets],
+          before: () => {
+            rmSync(path.join(fixtureDir, "forgotten", "tsconfig.json"));
+          },
+        },
+        {
+          name: "a file with no tsconfig above it is left alone",
+          code: "export const total = 1;",
+          filename: withoutAnyTsconfig,
+          options: [sharedPresets],
+        },
+      ],
+      invalid: [
+        {
+          name: "a tsconfig that writes its own compilerOptions is reported",
+          documented: true,
+          code: "export const total = 1;",
+          filename: standalone,
+          options: [sharedPresets],
+          errors: [{ messageId: "standaloneTsconfig" }],
+        },
+        {
+          name: "a file buried under a standalone tsconfig is reported too",
+          code: "export const total = 1;",
+          filename: buriedUnderStandalone,
+          options: [sharedPresets],
+          errors: [{ messageId: "standaloneTsconfig" }],
+        },
+        {
+          name: "extending the shared base directly skips the layer that decides the runtime",
+          code: "export const total = 1;",
+          filename: extendsBase,
+          options: [sharedPresets],
+          errors: [{ messageId: "standaloneTsconfig" }],
+        },
+        {
+          name: "extending a preset from somewhere else is not extending this one",
+          code: "export const total = 1;",
+          filename: extendsForeignPreset,
+          options: [sharedPresets],
+          errors: [{ messageId: "standaloneTsconfig" }],
+        },
+        {
+          name: "a path that omits the package owning the preset does not say which preset it means",
+          code: "export const total = 1;",
+          filename: extendsOwnPreset,
+          options: [sharedPresets],
+          errors: [{ messageId: "standaloneTsconfig" }],
+        },
+        {
+          name: "a tsconfig that cannot be read as JSON extends nothing",
+          code: "export const total = 1;",
+          filename: malformed,
+          options: [sharedPresets],
+          errors: [{ messageId: "standaloneTsconfig" }],
+        },
+      ],
+    },
+    fixtureWorkspace.test,
+  );
 });

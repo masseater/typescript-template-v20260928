@@ -32,19 +32,12 @@ const writeReleaseMaps = Effect.fn("writeReleaseMaps")(function* writeReleaseMap
   );
 });
 
-const temporaryRoot = Effect.acquireRelease(
-  FileSystem.FileSystem.pipe(
-    Effect.flatMap((fs) =>
-      fs
-        .makeTempDirectory({ prefix: "template-symbolicate-" })
-        .pipe(Effect.flatMap((root) => fs.realPath(root))),
-    ),
+const temporaryRoot = FileSystem.FileSystem.pipe(
+  Effect.flatMap((fs) =>
+    fs
+      .makeTempDirectoryScoped({ prefix: "template-symbolicate-" })
+      .pipe(Effect.flatMap((root) => fs.realPath(root))),
   ),
-  (root) =>
-    FileSystem.FileSystem.pipe(
-      Effect.flatMap((fs) => fs.remove(root, { recursive: true })),
-      Effect.ignore,
-    ),
 );
 
 const expectedFrames: unknown[] = [

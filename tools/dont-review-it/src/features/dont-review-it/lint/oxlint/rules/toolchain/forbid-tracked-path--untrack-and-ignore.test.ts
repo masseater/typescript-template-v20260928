@@ -3,7 +3,10 @@ import { Config, Effect, FileSystem, Path } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
+import {
+  lintRuleWorkspace,
+  testLintRule,
+} from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { path } from "../../../../platform/path.ts";
 import { forbidTrackedPath } from "./forbid-tracked-path--untrack-and-ignore.ts";
 
@@ -93,6 +96,8 @@ const FIXTURE_REPOSITORIES: Readonly<Record<string, FixtureRepository>> = {
   },
 };
 
+const fixtureWorkspace = await lintRuleWorkspace("dont-review-it-forbid-tracked-path-");
+
 const fixtureDir = await Effect.gen(function* writeFixture() {
   const filesystem = yield* FileSystem.FileSystem;
   const paths = yield* Path.Path;
@@ -115,9 +120,7 @@ const fixtureDir = await Effect.gen(function* writeFixture() {
         }),
       )
       .pipe(Effect.filterOrFail((exitCode) => exitCode === 0));
-  const root = yield* filesystem.makeTempDirectory({
-    prefix: "dont-review-it-forbid-tracked-path-",
-  });
+  const { root } = fixtureWorkspace;
   for (const [name, repository] of Object.entries(FIXTURE_REPOSITORIES)) {
     const repositoryDir = paths.join(root, name);
     yield* filesystem.makeDirectory(repositoryDir, { recursive: true });
@@ -163,161 +166,165 @@ const vendorRow = {
 };
 
 describe("dont-review-it/forbid-tracked-path--untrack-and-ignore", () => {
-  testLintRule(forbidTrackedPath, {
-    valid: [
-      {
-        name: "a repository that tracks nothing under a registered pattern passes",
-        code: HOST_CODE,
-        filename: path.join(clean, HOST_FILE_NAME),
-      },
-      {
-        name: "an untracked file of the same name is left where it stands",
-        code: HOST_CODE,
-        filename: path.join(untrackedEnv, HOST_FILE_NAME),
-      },
-      {
-        name: "a tracked path outside every registered pattern is left alone",
-        code: HOST_CODE,
-        filename: path.join(trackedOutsideEveryPattern, HOST_FILE_NAME),
-      },
-      {
-        name: "an ignore entry spelled with a directory slash or an anchor still covers the row",
-        code: HOST_CODE,
-        filename: path.join(spelledDifferently, HOST_FILE_NAME),
-      },
-      {
-        name: "a tracked path covered by an exception that carries grounds is left alone",
-        code: HOST_CODE,
-        filename: path.join(vendored, HOST_FILE_NAME),
-        options: [
-          {
-            forbidden: [
-              {
-                ...vendorRow,
-                exceptions: [
-                  { pattern: "vendor/**", reason: "the bundle is the shipped artifact" },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-      {
-        name: "a release that carries grounds lifts the registered row",
-        code: HOST_CODE,
-        filename: path.join(trackedEnv, HOST_FILE_NAME),
-        options: [
-          { released: [{ pattern: "**/.env", reason: "this repository ships no runtime" }] },
-        ],
-      },
-      {
-        name: "a row that asks for no ignore entry passes without one",
-        code: HOST_CODE,
-        filename: path.join(clean, HOST_FILE_NAME),
-        options: [
-          {
-            forbidden: [
-              {
-                pattern: "**/scratch/**",
-                reason: "scratch output stays visible in the status output",
-                ignoreListing: false,
-              },
-            ],
-          },
-        ],
-      },
-      {
-        name: "a working tree outside version control carries no tracked path",
-        code: HOST_CODE,
-        filename: path.join(withoutVersionControl, HOST_FILE_NAME),
-      },
-      {
-        name: "a file below the workspace root reports nothing",
-        code: HOST_CODE,
-        filename: path.join(trackedEnv, "src", "index.ts"),
-      },
-    ],
-    invalid: [
-      {
-        name: "an environment file that reached the index is reported",
-        documented: true,
-        code: HOST_CODE,
-        filename: path.join(trackedEnv, HOST_FILE_NAME),
-        errors: [{ messageId: "trackedForbiddenPath" }],
-      },
-      {
-        name: "build output that reached the index is reported",
-        code: HOST_CODE,
-        filename: path.join(trackedBuildOutput, HOST_FILE_NAME),
-        errors: [{ messageId: "trackedForbiddenPath" }],
-      },
-      {
-        name: "a registered pattern missing from the ignore settings is reported",
-        code: HOST_CODE,
-        filename: path.join(missingListing, HOST_FILE_NAME),
-        errors: [{ messageId: "unignoredForbiddenPattern" }],
-      },
-      {
-        name: "a negated ignore entry does not list the pattern",
-        code: HOST_CODE,
-        filename: path.join(negatedListing, HOST_FILE_NAME),
-        errors: [{ messageId: "unignoredForbiddenPattern" }],
-      },
-      {
-        name: "a repository without ignore settings leaves every registered pattern unlisted",
-        code: HOST_CODE,
-        filename: path.join(withoutIgnoreSettings, HOST_FILE_NAME),
-        errors: [
-          { messageId: "unignoredForbiddenPattern" },
-          { messageId: "unignoredForbiddenPattern" },
-          { messageId: "unignoredForbiddenPattern" },
-          { messageId: "unignoredForbiddenPattern" },
-        ],
-      },
-      {
-        name: "an exception whose reason is empty is reported and excuses nothing",
-        code: HOST_CODE,
-        filename: path.join(vendored, HOST_FILE_NAME),
-        options: [
-          { forbidden: [{ ...vendorRow, exceptions: [{ pattern: "vendor/**", reason: "" }] }] },
-        ],
-        errors: [{ messageId: "groundlessException" }, { messageId: "trackedForbiddenPath" }],
-      },
-      {
-        name: "a release whose reason is empty is reported and lifts nothing",
-        code: HOST_CODE,
-        filename: path.join(trackedEnv, HOST_FILE_NAME),
-        options: [{ released: [{ pattern: "**/.env", reason: "" }] }],
-        errors: [{ messageId: "groundlessRelease" }, { messageId: "trackedForbiddenPath" }],
-      },
-      {
-        name: "a release naming a pattern no row carries is reported",
-        code: HOST_CODE,
-        filename: path.join(clean, HOST_FILE_NAME),
-        options: [
-          { released: [{ pattern: "**/nowhere/**", reason: "the row moved to another table" }] },
-        ],
-        errors: [{ messageId: "deadRelease" }],
-      },
-      {
-        name: "a groundless release of a pattern outside the defaults is reported twice over",
-        code: HOST_CODE,
-        filename: path.join(clean, HOST_FILE_NAME),
-        options: [{ released: [{ pattern: "**/nowhere/**", reason: "" }] }],
-        errors: [{ messageId: "groundlessRelease" }, { messageId: "deadRelease" }],
-      },
-      {
-        name: "a release of a row the configuration itself added is dead and lifts nothing",
-        code: HOST_CODE,
-        filename: path.join(vendored, HOST_FILE_NAME),
-        options: [
-          {
-            forbidden: [vendorRow],
-            released: [{ pattern: "vendor/**", reason: "the bundle is the shipped artifact" }],
-          },
-        ],
-        errors: [{ messageId: "deadRelease" }, { messageId: "trackedForbiddenPath" }],
-      },
-    ],
-  });
+  testLintRule(
+    forbidTrackedPath,
+    {
+      valid: [
+        {
+          name: "a repository that tracks nothing under a registered pattern passes",
+          code: HOST_CODE,
+          filename: path.join(clean, HOST_FILE_NAME),
+        },
+        {
+          name: "an untracked file of the same name is left where it stands",
+          code: HOST_CODE,
+          filename: path.join(untrackedEnv, HOST_FILE_NAME),
+        },
+        {
+          name: "a tracked path outside every registered pattern is left alone",
+          code: HOST_CODE,
+          filename: path.join(trackedOutsideEveryPattern, HOST_FILE_NAME),
+        },
+        {
+          name: "an ignore entry spelled with a directory slash or an anchor still covers the row",
+          code: HOST_CODE,
+          filename: path.join(spelledDifferently, HOST_FILE_NAME),
+        },
+        {
+          name: "a tracked path covered by an exception that carries grounds is left alone",
+          code: HOST_CODE,
+          filename: path.join(vendored, HOST_FILE_NAME),
+          options: [
+            {
+              forbidden: [
+                {
+                  ...vendorRow,
+                  exceptions: [
+                    { pattern: "vendor/**", reason: "the bundle is the shipped artifact" },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          name: "a release that carries grounds lifts the registered row",
+          code: HOST_CODE,
+          filename: path.join(trackedEnv, HOST_FILE_NAME),
+          options: [
+            { released: [{ pattern: "**/.env", reason: "this repository ships no runtime" }] },
+          ],
+        },
+        {
+          name: "a row that asks for no ignore entry passes without one",
+          code: HOST_CODE,
+          filename: path.join(clean, HOST_FILE_NAME),
+          options: [
+            {
+              forbidden: [
+                {
+                  pattern: "**/scratch/**",
+                  reason: "scratch output stays visible in the status output",
+                  ignoreListing: false,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          name: "a working tree outside version control carries no tracked path",
+          code: HOST_CODE,
+          filename: path.join(withoutVersionControl, HOST_FILE_NAME),
+        },
+        {
+          name: "a file below the workspace root reports nothing",
+          code: HOST_CODE,
+          filename: path.join(trackedEnv, "src", "index.ts"),
+        },
+      ],
+      invalid: [
+        {
+          name: "an environment file that reached the index is reported",
+          documented: true,
+          code: HOST_CODE,
+          filename: path.join(trackedEnv, HOST_FILE_NAME),
+          errors: [{ messageId: "trackedForbiddenPath" }],
+        },
+        {
+          name: "build output that reached the index is reported",
+          code: HOST_CODE,
+          filename: path.join(trackedBuildOutput, HOST_FILE_NAME),
+          errors: [{ messageId: "trackedForbiddenPath" }],
+        },
+        {
+          name: "a registered pattern missing from the ignore settings is reported",
+          code: HOST_CODE,
+          filename: path.join(missingListing, HOST_FILE_NAME),
+          errors: [{ messageId: "unignoredForbiddenPattern" }],
+        },
+        {
+          name: "a negated ignore entry does not list the pattern",
+          code: HOST_CODE,
+          filename: path.join(negatedListing, HOST_FILE_NAME),
+          errors: [{ messageId: "unignoredForbiddenPattern" }],
+        },
+        {
+          name: "a repository without ignore settings leaves every registered pattern unlisted",
+          code: HOST_CODE,
+          filename: path.join(withoutIgnoreSettings, HOST_FILE_NAME),
+          errors: [
+            { messageId: "unignoredForbiddenPattern" },
+            { messageId: "unignoredForbiddenPattern" },
+            { messageId: "unignoredForbiddenPattern" },
+            { messageId: "unignoredForbiddenPattern" },
+          ],
+        },
+        {
+          name: "an exception whose reason is empty is reported and excuses nothing",
+          code: HOST_CODE,
+          filename: path.join(vendored, HOST_FILE_NAME),
+          options: [
+            { forbidden: [{ ...vendorRow, exceptions: [{ pattern: "vendor/**", reason: "" }] }] },
+          ],
+          errors: [{ messageId: "groundlessException" }, { messageId: "trackedForbiddenPath" }],
+        },
+        {
+          name: "a release whose reason is empty is reported and lifts nothing",
+          code: HOST_CODE,
+          filename: path.join(trackedEnv, HOST_FILE_NAME),
+          options: [{ released: [{ pattern: "**/.env", reason: "" }] }],
+          errors: [{ messageId: "groundlessRelease" }, { messageId: "trackedForbiddenPath" }],
+        },
+        {
+          name: "a release naming a pattern no row carries is reported",
+          code: HOST_CODE,
+          filename: path.join(clean, HOST_FILE_NAME),
+          options: [
+            { released: [{ pattern: "**/nowhere/**", reason: "the row moved to another table" }] },
+          ],
+          errors: [{ messageId: "deadRelease" }],
+        },
+        {
+          name: "a groundless release of a pattern outside the defaults is reported twice over",
+          code: HOST_CODE,
+          filename: path.join(clean, HOST_FILE_NAME),
+          options: [{ released: [{ pattern: "**/nowhere/**", reason: "" }] }],
+          errors: [{ messageId: "groundlessRelease" }, { messageId: "deadRelease" }],
+        },
+        {
+          name: "a release of a row the configuration itself added is dead and lifts nothing",
+          code: HOST_CODE,
+          filename: path.join(vendored, HOST_FILE_NAME),
+          options: [
+            {
+              forbidden: [vendorRow],
+              released: [{ pattern: "vendor/**", reason: "the bundle is the shipped artifact" }],
+            },
+          ],
+          errors: [{ messageId: "deadRelease" }, { messageId: "trackedForbiddenPath" }],
+        },
+      ],
+    },
+    fixtureWorkspace.test,
+  );
 });

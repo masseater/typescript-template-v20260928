@@ -408,7 +408,7 @@ const projectPlugin = definePlugin({
     "temp-directory": {
       create: tempDirectoryVisitor,
       meta: metadata(
-        "テストと fixture では tmpdir() の戻り値を mkdtemp / mkdtempSync に渡す以外に使えません。固定パスの一時ディレクトリは並行実行で互いの作業ディレクトリを消します。",
+        "テストと fixture では tmpdir() の戻り値を mkdtemp / mkdtempSync に渡す以外に使えません。固定パスの一時ディレクトリは並行実行で互いの作業ディレクトリを消します。一時ディレクトリは makeTempDirectoryScoped で作るか、作った fixture の onCleanup で消してください。後始末のない一時ディレクトリはテストのたびにホストに積み上がります。",
       ),
     },
     "test-import-graph": {

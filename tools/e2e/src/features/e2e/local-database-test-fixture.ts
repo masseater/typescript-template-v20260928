@@ -17,7 +17,6 @@ type IsolatedDatabase = {
   readonly directory: string;
   readonly environment: DatabaseEnvironment;
   readonly promoteToAdministrator: (email: string) => Effect.Effect<void, JourneyFailure>;
-  readonly remove: Effect.Effect<void, JourneyFailure>;
 };
 
 const runVitePlus = (
@@ -51,7 +50,9 @@ const removeDirectory = (directory: string): Effect.Effect<void, JourneyFailure>
       .pipe(Effect.mapError((cause) => failed("E2E_DATABASE_NOT_REMOVED", cause)));
   }).pipe(Effect.provide(NodeServices.layer));
 
-const startIsolatedDatabase = (): Effect.Effect<
+const startIsolatedDatabase = (
+  onCleanup: (disposer: Effect.Effect<void, JourneyFailure>) => void,
+): Effect.Effect<
   IsolatedDatabase,
   JourneyFailure,
   ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem
@@ -61,6 +62,7 @@ const startIsolatedDatabase = (): Effect.Effect<
     const directory = yield* filesystem
       .makeTempDirectory({ prefix })
       .pipe(Effect.mapError((cause) => failed("E2E_DATABASE_DIRECTORY_UNAVAILABLE", cause)));
+    onCleanup(removeDirectory(directory));
     const environment = { [localDatabaseVariable]: directory };
     yield* runVitePlus(["run", "--filter", databasePackage, "db:migrate:local"], environment);
     return {
@@ -71,7 +73,6 @@ const startIsolatedDatabase = (): Effect.Effect<
           ["run", "--filter", databasePackage, "db:bootstrap:local", email],
           environment,
         ).pipe(Effect.provide(NodeServices.layer)),
-      remove: removeDirectory(directory),
     };
   });
 

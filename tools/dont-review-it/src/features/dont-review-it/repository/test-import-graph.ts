@@ -8,6 +8,7 @@ import {
   type NodeOf,
 } from "./lint-context.ts";
 import { origins, propertyName, staticText, type Origin } from "./references.ts";
+import { unremovedTempDirectoryVisitor } from "./temp-directory-cleanup.ts";
 
 import type { Visitor } from "vite-plus/lint/plugins";
 
@@ -192,7 +193,7 @@ const gitEnvironmentVisitor = (inspection: LintContext): Visitor =>
   });
 
 const tempDirectoryVisitor = (inspection: LintContext): Visitor =>
-  testCallVisitor(inspection, (node) => {
+  unremovedTempDirectoryVisitor(inspection, (node) => {
     if (calledFrom(inspection, node, osModules, tmpdirNames) && !underMktemp(inspection, node)) {
       reportViolation(inspection, node);
     }

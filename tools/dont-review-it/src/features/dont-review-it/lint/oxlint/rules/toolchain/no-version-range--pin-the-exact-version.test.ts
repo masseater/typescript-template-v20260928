@@ -2,16 +2,18 @@ import { NodeServices } from "@effect/platform-node";
 import { Effect, FileSystem, Path } from "effect";
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
+import {
+  lintRuleWorkspace,
+  testLintRule,
+} from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { path } from "../../../../platform/path.ts";
 import { loadCatalogEntries } from "../../lib/dependency-catalog/catalog-entries.ts";
 import { loadWorkspaceDependencies } from "../../lib/dependency-catalog/workspace-manifests.ts";
 import { createNoVersionRange } from "./no-version-range--pin-the-exact-version.ts";
 
-const fixtureDir = await Effect.gen(function* fixtureDirectory() {
-  const filesystem = yield* FileSystem.FileSystem;
-  return yield* filesystem.makeTempDirectory({ prefix: "dont-review-it-no-version-range-" });
-}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
+const fixtureWorkspace = await lintRuleWorkspace("dont-review-it-no-version-range-");
+
+const fixtureDir = fixtureWorkspace.root;
 
 const MODULE_SOURCE = "export const shipped = true;\n";
 
@@ -112,87 +114,91 @@ const noVersionRange = createNoVersionRange({
 });
 
 describe("dont-review-it/no-version-range--pin-the-exact-version", () => {
-  testLintRule(noVersionRange, {
-    valid: [
-      {
-        name: "a repository whose manifests and catalog all spelled one release passes",
-        code: MODULE_SOURCE,
-        filename: exactRootEntry,
-      },
-      {
-        name: "a workspace declaring references, an exact alias, a tag and a host passes",
-        code: MODULE_SOURCE,
-        filename: exactMemberEntry,
-      },
-      {
-        name: "names registered as intentional ranges are not asked to be pinned",
-        code: MODULE_SOURCE,
-        filename: rangedRootEntry,
-        options: INTENTIONAL,
-      },
-      {
-        name: "a repository without a workspace definition holds no catalog to read",
-        code: MODULE_SOURCE,
-        filename: definitionlessEntry,
-      },
-      {
-        name: "a workspace definition that does not parse yields no catalog entries",
-        code: MODULE_SOURCE,
-        filename: unparsableEntry,
-      },
-      {
-        name: "a file no manifest governs belongs to no workspace",
-        code: MODULE_SOURCE,
-        filename: manifestlessEntry,
-      },
-    ],
-    invalid: [
-      {
-        name: "the root workspace carries both its own ranges and the ones the catalog registers",
-        documented: true,
-        code: MODULE_SOURCE,
-        filename: rangedRootEntry,
-        errors: [
-          {
-            messageId: "rangedManifestVersion",
-            data: { packageName: "knip", declaredVersion: "^6.32.0", workspace: "." },
-          },
-          {
-            messageId: "rangedCatalogVersion",
-            data: { packageName: "react", declaredVersion: "^19.0.0" },
-          },
-        ],
-      },
-      {
-        name: "an alias carrying a range is reported under the package it resolves to",
-        code: MODULE_SOURCE,
-        filename: alphaEntry,
-        errors: [
-          {
-            messageId: "rangedManifestVersion",
-            data: {
-              packageName: "left-pad",
-              declaredVersion: "npm:left-pad@^1.0.0",
-              workspace: "packages/alpha",
+  testLintRule(
+    noVersionRange,
+    {
+      valid: [
+        {
+          name: "a repository whose manifests and catalog all spelled one release passes",
+          code: MODULE_SOURCE,
+          filename: exactRootEntry,
+        },
+        {
+          name: "a workspace declaring references, an exact alias, a tag and a host passes",
+          code: MODULE_SOURCE,
+          filename: exactMemberEntry,
+        },
+        {
+          name: "names registered as intentional ranges are not asked to be pinned",
+          code: MODULE_SOURCE,
+          filename: rangedRootEntry,
+          options: INTENTIONAL,
+        },
+        {
+          name: "a repository without a workspace definition holds no catalog to read",
+          code: MODULE_SOURCE,
+          filename: definitionlessEntry,
+        },
+        {
+          name: "a workspace definition that does not parse yields no catalog entries",
+          code: MODULE_SOURCE,
+          filename: unparsableEntry,
+        },
+        {
+          name: "a file no manifest governs belongs to no workspace",
+          code: MODULE_SOURCE,
+          filename: manifestlessEntry,
+        },
+      ],
+      invalid: [
+        {
+          name: "the root workspace carries both its own ranges and the ones the catalog registers",
+          documented: true,
+          code: MODULE_SOURCE,
+          filename: rangedRootEntry,
+          errors: [
+            {
+              messageId: "rangedManifestVersion",
+              data: { packageName: "knip", declaredVersion: "^6.32.0", workspace: "." },
             },
-          },
-        ],
-      },
-      {
-        name: "an optional dependency carries the same demand and brings no catalog report",
-        code: MODULE_SOURCE,
-        filename: betaEntry,
-        errors: [
-          {
-            messageId: "rangedManifestVersion",
-            data: {
-              packageName: "opt",
-              declaredVersion: "~4.0.0",
-              workspace: "packages/beta",
+            {
+              messageId: "rangedCatalogVersion",
+              data: { packageName: "react", declaredVersion: "^19.0.0" },
             },
-          },
-        ],
-      },
-    ],
-  });
+          ],
+        },
+        {
+          name: "an alias carrying a range is reported under the package it resolves to",
+          code: MODULE_SOURCE,
+          filename: alphaEntry,
+          errors: [
+            {
+              messageId: "rangedManifestVersion",
+              data: {
+                packageName: "left-pad",
+                declaredVersion: "npm:left-pad@^1.0.0",
+                workspace: "packages/alpha",
+              },
+            },
+          ],
+        },
+        {
+          name: "an optional dependency carries the same demand and brings no catalog report",
+          code: MODULE_SOURCE,
+          filename: betaEntry,
+          errors: [
+            {
+              messageId: "rangedManifestVersion",
+              data: {
+                packageName: "opt",
+                declaredVersion: "~4.0.0",
+                workspace: "packages/beta",
+              },
+            },
+          ],
+        },
+      ],
+    },
+    fixtureWorkspace.test,
+  );
 });

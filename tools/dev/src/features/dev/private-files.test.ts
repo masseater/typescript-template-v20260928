@@ -1,5 +1,5 @@
 import { applicationOrigins } from "@repo/config";
-import { Effect, FileSystem, Path, PlatformError } from "effect";
+import { Effect, FileSystem, Path, PlatformError, Scope } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
 import { layer } from "./platform.ts";
@@ -8,11 +8,15 @@ import { appVariables, sharedRunnerCredentials } from "./shared-runner-credentia
 
 function privateFile(
   name: string,
-): Effect.Effect<URL, PlatformError.PlatformError, FileSystem.FileSystem | Path.Path> {
+): Effect.Effect<
+  URL,
+  PlatformError.PlatformError,
+  FileSystem.FileSystem | Path.Path | Scope.Scope
+> {
   return Effect.gen(function* privateFileProgram() {
     const path = yield* Path.Path;
     const fs = yield* FileSystem.FileSystem;
-    const base = yield* fs.makeTempDirectory({ prefix: "private-files-" });
+    const base = yield* fs.makeTempDirectoryScoped({ prefix: "private-files-" });
     return new URL(`file://${path.join(base, name)}`);
   });
 }
@@ -45,7 +49,7 @@ describe("replacing a private file", () => {
           return yield* fs.readFileString(resolved);
         });
         expect(content).toBe("same\n");
-      }).pipe(Effect.provide(layer)),
+      }).pipe(Effect.scoped, Effect.provide(layer)),
     ));
 
   it("rewrites a file that holds different content", () =>
@@ -62,7 +66,7 @@ describe("replacing a private file", () => {
           return yield* fs.readFileString(resolved);
         });
         expect(content).toBe("after\n");
-      }).pipe(Effect.provide(layer)),
+      }).pipe(Effect.scoped, Effect.provide(layer)),
     ));
 });
 
@@ -77,7 +81,7 @@ describe("the variables every runner shares", () => {
           APP_ORIGIN: applicationOrigins["service-member"],
           AUTH_SECRET: credentials.authSecret,
         });
-      }).pipe(Effect.provide(layer)),
+      }).pipe(Effect.scoped, Effect.provide(layer)),
     ));
 
   it("gives the member app test-mode Stripe placeholders until real test keys are stored", () =>
@@ -108,6 +112,6 @@ describe("the variables every runner shares", () => {
         expect(Object.keys(appVariables("service-admin", credentials, "loopback"))).not.toContain(
           "STRIPE_SECRET_KEY",
         );
-      }).pipe(Effect.provide(layer)),
+      }).pipe(Effect.scoped, Effect.provide(layer)),
     ));
 });

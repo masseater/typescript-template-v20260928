@@ -108,8 +108,7 @@ type JourneyEnvironment = {
 
 const launch = (collect: Collect): Journey<Omit<JourneyEnvironment, "stop">> =>
   Effect.gen(function* launchEnvironment() {
-    const database = yield* startIsolatedDatabase();
-    collect(database.remove);
+    const database = yield* startIsolatedDatabase(collect);
     const mail = yield* startMailSink();
     collect(mail.stop);
     const configured = yield* configureApplications(collect, mail.origin);

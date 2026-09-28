@@ -1,16 +1,27 @@
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { fileExists, filesystem, joinPath, parentPath, writeFileString } from "../host.ts";
+import {
+  fileExists,
+  filesystem,
+  joinPath,
+  parentPath,
+  removePath,
+  writeFileString,
+} from "../host.ts";
 import { gitOutput, runGit } from "./git.ts";
 import { removeWorktree } from "./remove-worktree.ts";
 
 describe("removeWorktree", () => {
   const it = test
-    .extend("theCheckout", () =>
-      Effect.runPromise(
+    .extend("theCheckout", ({}, { onCleanup }) => {
+      const made = Effect.runPromise(filesystem.makeTempDirectory({ prefix: "worktree-home-" }));
+      onCleanup(() =>
+        Effect.runPromise(Effect.promise(() => made).pipe(Effect.flatMap(removePath))),
+      );
+      return Effect.runPromise(
         Effect.gen(function* () {
-          const sandbox = yield* filesystem.makeTempDirectory({ prefix: "worktree-home-" });
+          const sandbox = yield* Effect.promise(() => made);
           const checkout = joinPath(sandbox, "checkout");
           for (const gitStep of [
             { cwd: sandbox, handed: ["init", "--quiet", "-b", "main", checkout] },
@@ -39,7 +50,8 @@ describe("removeWorktree", () => {
           });
           return checkout;
         }),
-      ))
+      );
+    })
     .extend("theCleanWorktreeLeft", ({ theCheckout }) =>
       Effect.runPromise(
         Effect.gen(function* () {

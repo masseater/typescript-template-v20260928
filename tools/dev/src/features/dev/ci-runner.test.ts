@@ -1,6 +1,6 @@
 import { homedir, userInfo } from "node:os";
 
-import { Effect, FileSystem, Path, PlatformError } from "effect";
+import { Effect, FileSystem, Path, PlatformError, Scope } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
 import { ciRunner } from "./ci-runner.ts";
@@ -9,12 +9,12 @@ import { layer } from "./platform.ts";
 function runnerDirectory(): Effect.Effect<
   { plistFile: string; root: string },
   PlatformError.PlatformError,
-  FileSystem.FileSystem | Path.Path
+  FileSystem.FileSystem | Path.Path | Scope.Scope
 > {
   return Effect.gen(function* runnerDirectoryProgram() {
     const path = yield* Path.Path;
     const fs = yield* FileSystem.FileSystem;
-    const base = yield* fs.makeTempDirectory({ prefix: "ci-runner-" });
+    const base = yield* fs.makeTempDirectoryScoped({ prefix: "ci-runner-" });
     const plistFile = path.join(base, "reported.only.plist");
     yield* fs.writeFileString(path.join(base, ".service"), `${plistFile}\n`);
     return { plistFile, root: base };
@@ -36,7 +36,7 @@ describe("the ci runner service document", () => {
           Effect.flatMap((fs) => fs.exists(plistFile)),
         );
         expect(existed).toBe(false);
-      }).pipe(Effect.provide(layer)),
+      }).pipe(Effect.scoped, Effect.provide(layer)),
     ));
 
   it("runs the runner service under caffeinate", () =>
@@ -45,7 +45,7 @@ describe("the ci runner service document", () => {
         expect.hasAssertions();
         const path = yield* Path.Path;
         const fs = yield* FileSystem.FileSystem;
-        const base = yield* fs.makeTempDirectory({ prefix: "ci-runner-" });
+        const base = yield* fs.makeTempDirectoryScoped({ prefix: "ci-runner-" });
         const file = path.join(base, "written.service.plist");
         yield* fs.writeFileString(path.join(base, ".service"), `${file}\n`);
         const report = yield* ciRunner([base, "--write"]);
@@ -56,7 +56,7 @@ describe("the ci runner service document", () => {
         expect(document).toContain(
           `    <array>\n      <string>/usr/bin/caffeinate</string>\n      <string>-s</string>\n      <string>${path.join(base, "runsvc.sh")}</string>\n    </array>`,
         );
-      }).pipe(Effect.provide(layer)),
+      }).pipe(Effect.scoped, Effect.provide(layer)),
     ));
 
   it("names the service, its account and its logs", () =>
@@ -65,7 +65,7 @@ describe("the ci runner service document", () => {
         expect.hasAssertions();
         const path = yield* Path.Path;
         const fs = yield* FileSystem.FileSystem;
-        const base = yield* fs.makeTempDirectory({ prefix: "ci-runner-" });
+        const base = yield* fs.makeTempDirectoryScoped({ prefix: "ci-runner-" });
         const file = path.join(base, "named.service.plist");
         yield* fs.writeFileString(path.join(base, ".service"), `${file}\n`);
         yield* ciRunner([base, "--write"]);
@@ -76,7 +76,7 @@ describe("the ci runner service document", () => {
         expect(document).toContain(
           `<string>${path.join(homedir(), "Library/Logs/named.service/stdout.log")}</string>`,
         );
-      }).pipe(Effect.provide(layer)),
+      }).pipe(Effect.scoped, Effect.provide(layer)),
     ));
 
   it("leaves a service that already runs under caffeinate alone", () =>
@@ -85,7 +85,7 @@ describe("the ci runner service document", () => {
         expect.hasAssertions();
         const path = yield* Path.Path;
         const fs = yield* FileSystem.FileSystem;
-        const base = yield* fs.makeTempDirectory({ prefix: "ci-runner-" });
+        const base = yield* fs.makeTempDirectoryScoped({ prefix: "ci-runner-" });
         const file = path.join(base, "settled.service.plist");
         yield* fs.writeFileString(path.join(base, ".service"), `${file}\n`);
         yield* ciRunner([base, "--write"]);
@@ -93,7 +93,7 @@ describe("the ci runner service document", () => {
         expect(report.services).toStrictEqual([
           { changed: false, label: "settled.service", plistFile: file, written: false },
         ]);
-      }).pipe(Effect.provide(layer)),
+      }).pipe(Effect.scoped, Effect.provide(layer)),
     ));
 });
 
@@ -104,7 +104,7 @@ describe("a ci runner directory the command cannot read", () => {
         expect.hasAssertions();
         const failed = yield* Effect.flip(ciRunner([]));
         expect(failed.reason).toBe("ci_runner_root_required");
-      }).pipe(Effect.provide(layer)),
+      }).pipe(Effect.scoped, Effect.provide(layer)),
     ));
 
   it("refuses a runner directory that names no service", () =>
@@ -112,9 +112,9 @@ describe("a ci runner directory the command cannot read", () => {
       Effect.gen(function* program() {
         expect.hasAssertions();
         const fs = yield* FileSystem.FileSystem;
-        const root = yield* fs.makeTempDirectory({ prefix: "ci-runner-bare-" });
+        const root = yield* fs.makeTempDirectoryScoped({ prefix: "ci-runner-bare-" });
         const failed = yield* Effect.flip(ciRunner([root]));
         expect(failed.reason).toBe("file_io_failed");
-      }).pipe(Effect.provide(layer)),
+      }).pipe(Effect.scoped, Effect.provide(layer)),
     ));
 });

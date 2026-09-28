@@ -1,7 +1,12 @@
-import { Effect } from "effect";
+import { Data, Effect } from "effect";
 import { describe, expect, test, vi } from "vite-plus/test";
 
 import { signalProcessTree } from "./process-tree.ts";
+
+class MissingProcessError extends Data.Error<{
+  readonly code: "ESRCH";
+  readonly message: string;
+}> {}
 
 type SignalTreeInput = Parameters<typeof signalProcessTree>[0];
 type TaskkillExecutor = NonNullable<
@@ -114,20 +119,61 @@ describe("signalProcessTree", () => {
     });
   });
 
-  describe("the native taskkill invocation aimed at a nonexistent process", () => {
-    const it = test.extend("theNativeTaskkillOutcomeForANonexistentProcessIsAFailure", () =>
-      Effect.runPromise(
-        signalProcessTree({
-          pid: 999_999_999,
-          signal: "SIGTERM",
-          dependencies: { platform: "win32" },
-        }).pipe(Effect.map((nativeTaskkillFailure) => nativeTaskkillFailure instanceof Error)),
-      ));
+  describe("a taskkill that found no process under the pid", () => {
+    const it = test
+      .extend("theOutcomeOfATaskkillThatFoundNoProcess", () => {
+        return Effect.runSync(
+          signalProcessTree({
+            pid: 4321,
+            signal: "SIGTERM",
+            dependencies: {
+              platform: "win32",
+              executeTaskkill: () => Effect.succeed({ status: 128 }),
+              signalProcess: () =>
+                new MissingProcessError({ code: "ESRCH", message: "kill ESRCH" }),
+            },
+          }),
+        );
+      })
+      .extend("theRootSignalAfterATaskkillThatFoundNoProcess", () => {
+        const signalProcess = vi.fn<(pid: number, signal: NodeJS.Signals) => Error | null>(
+          () => new MissingProcessError({ code: "ESRCH", message: "kill ESRCH" }),
+        );
+        Effect.runSync(
+          signalProcessTree({
+            pid: 4321,
+            signal: "SIGTERM",
+            dependencies: {
+              platform: "win32",
+              executeTaskkill: () => Effect.succeed({ status: 128 }),
+              signalProcess,
+            },
+          }),
+        );
+        return signalProcess;
+      });
 
-    it("reports the nonexistent process as a failure", ({
-      theNativeTaskkillOutcomeForANonexistentProcessIsAFailure,
+    it("reports the taskkill exit and the missing root together", ({
+      theOutcomeOfATaskkillThatFoundNoProcess,
     }) => {
-      expect(theNativeTaskkillOutcomeForANonexistentProcessIsAFailure).toBe(true);
+      expect(theOutcomeOfATaskkillThatFoundNoProcess).toStrictEqual(
+        new AggregateError(
+          [
+            new Error("taskkill exited with code 128"),
+            new MissingProcessError({ code: "ESRCH", message: "kill ESRCH" }),
+          ],
+          "Could not signal the command tree or its root process",
+        ),
+      );
+    });
+
+    it("forces the root down once taskkill has failed", ({
+      theRootSignalAfterATaskkillThatFoundNoProcess,
+    }) => {
+      expect(theRootSignalAfterATaskkillThatFoundNoProcess).toHaveBeenCalledExactlyOnceWith(
+        4321,
+        "SIGKILL",
+      );
     });
   });
 

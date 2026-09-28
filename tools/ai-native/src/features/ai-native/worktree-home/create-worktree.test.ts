@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { filesystem, joinPath } from "../host.ts";
+import { filesystem, joinPath, removePath } from "../host.ts";
 import { createWorktree } from "./create-worktree.ts";
 import { gitOutput, runGit, WorktreeHomeFailure } from "./git.ts";
 
@@ -10,10 +10,14 @@ const originAddress = "https://git.example.test/acme/widgets.git";
 describe("createWorktree", () => {
   describe("a repository whose origin is known", () => {
     const it = test
-      .extend("theCheckout", () =>
-        Effect.runPromise(
+      .extend("theCheckout", ({}, { onCleanup }) => {
+        const made = Effect.runPromise(filesystem.makeTempDirectory({ prefix: "worktree-home-" }));
+        onCleanup(() =>
+          Effect.runPromise(Effect.promise(() => made).pipe(Effect.flatMap(removePath))),
+        );
+        return Effect.runPromise(
           Effect.gen(function* () {
-            const theSandbox = yield* filesystem.makeTempDirectory({ prefix: "worktree-home-" });
+            const theSandbox = yield* Effect.promise(() => made);
             const origin = joinPath(theSandbox, "origin.git");
             const checkout = joinPath(theSandbox, "checkout");
             for (const gitStep of [
@@ -41,15 +45,22 @@ describe("createWorktree", () => {
             }
             return checkout;
           }),
-        ))
-      .extend("theWorktree", ({ theCheckout }) =>
-        Effect.runPromise(
+        );
+      })
+      .extend("theWorktree", ({ theCheckout }, { onCleanup }) => {
+        const made = Effect.runPromise(
+          filesystem.makeTempDirectory({ prefix: "worktree-home-home-" }),
+        );
+        onCleanup(() =>
+          Effect.runPromise(Effect.promise(() => made).pipe(Effect.flatMap(removePath))),
+        );
+        return Effect.runPromise(
           Effect.gen(function* () {
-            const home = yield* filesystem.makeTempDirectory({ prefix: "worktree-home-home-" });
+            const home = yield* Effect.promise(() => made);
             return yield* createWorktree({ cwd: theCheckout, home, name: "claude/fix-login" });
           }),
-        ),
-      )
+        );
+      })
       .extend("theWorktreeUnderHome", ({ theWorktree }) =>
         theWorktree.slice(theWorktree.indexOf("/worktrees/")),
       )
@@ -89,8 +100,13 @@ describe("createWorktree", () => {
 
   describe("a directory outside any repository", () => {
     const it = test
-      .extend("theSandbox", () =>
-        Effect.runPromise(filesystem.makeTempDirectory({ prefix: "worktree-home-" })))
+      .extend("theSandbox", ({}, { onCleanup }) => {
+        const made = Effect.runPromise(filesystem.makeTempDirectory({ prefix: "worktree-home-" }));
+        onCleanup(() =>
+          Effect.runPromise(Effect.promise(() => made).pipe(Effect.flatMap(removePath))),
+        );
+        return made;
+      })
       .extend("theFailure", ({ theSandbox }) =>
         Effect.runPromise(
           Effect.flip(createWorktree({ cwd: theSandbox, home: theSandbox, name: "stray" })),

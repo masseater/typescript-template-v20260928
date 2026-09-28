@@ -145,8 +145,16 @@ const DEFAULT_RUN_SCRIPT = 'console.log("default run")';
 const DEFAULT_RUN_COMMAND_LINE = [NODE, "-e", DEFAULT_RUN_SCRIPT].join(" ");
 
 describe("runSpool", () => {
+  const spoolTest = standardIoTest.extend(
+    "spoolWorkspaceRemoval",
+    { auto: true, scope: "file" },
+    ({}, { onCleanup }) => {
+      onCleanup(() => Effect.runPromise(removePath(TEST_ROOT)));
+    },
+  );
+
   describe("an argv naming no command at all", () => {
-    const it = standardIoTest.extend("theCodeOfAnEmptyArgv", { auto: true }, () =>
+    const it = spoolTest.extend("theCodeOfAnEmptyArgv", { auto: true }, () =>
       runSpool([], { stdout: process.stdout, stderr: process.stderr }),
     );
 
@@ -185,7 +193,7 @@ describe("runSpool", () => {
   });
 
   describe("a command printing nothing at all", () => {
-    const it = standardIoTest
+    const it = spoolTest
       .extend("theCodeOfASilentCommand", ({}, { onCleanup }) => {
         onCleanup(() => Effect.runPromise(removePath(SILENT_COMMAND_ROOT)));
         return Effect.runPromise(
@@ -238,7 +246,7 @@ describe("runSpool", () => {
   });
 
   describe("a command colouring its output with escape sequences", () => {
-    const it = standardIoTest.extend("theRunColouringItsOutput", ({}, { onCleanup }) => {
+    const it = spoolTest.extend("theRunColouringItsOutput", ({}, { onCleanup }) => {
       onCleanup(() => Effect.runPromise(removePath(ESCAPED_OUTPUT_ROOT)));
       return Effect.runPromise(
         Effect.gen(function* () {
@@ -265,7 +273,7 @@ describe("runSpool", () => {
   });
 
   describe("a command writing to both of its streams in turn", () => {
-    const it = standardIoTest
+    const it = spoolTest
       .extend("theCodeOfBothStreams", ({}, { onCleanup }) => {
         onCleanup(() => Effect.runPromise(removePath(INTERLEAVED_OUTPUT_ROOT)));
         return Effect.runPromise(
@@ -326,7 +334,7 @@ describe("runSpool", () => {
   });
 
   describe("a command still running after its first line", () => {
-    const it = standardIoTest
+    const it = spoolTest
       .extend("theRecordSeenWhileStillGoing", ({}, { onCleanup }) => {
         onCleanup(() => Effect.runPromise(removePath(DELAYED_MARK_ROOT)));
         return Effect.runPromise(
@@ -459,7 +467,7 @@ describe("runSpool", () => {
   });
 
   describe("a command exiting with a code of its own", () => {
-    const it = standardIoTest
+    const it = spoolTest
       .extend("theCodeOfARunExitingWithSeven", ({}, { onCleanup }) => {
         onCleanup(() => Effect.runPromise(removePath(FAILING_ROOT)));
         return Effect.runPromise(
@@ -538,7 +546,7 @@ describe("runSpool", () => {
   });
 
   describe("a command printing thirty rows before failing", () => {
-    const it = standardIoTest
+    const it = spoolTest
       .extend("theCodeOfThirtyRows", ({}, { onCleanup }) => {
         onCleanup(() => Effect.runPromise(removePath(THIRTY_ROWS_ROOT)));
         return Effect.runPromise(
@@ -591,7 +599,7 @@ describe("runSpool", () => {
   });
 
   describe("a command failing on a line it never closed", () => {
-    const it = standardIoTest
+    const it = spoolTest
       .extend("theCodeOfAnOpenLine", ({}, { onCleanup }) => {
         onCleanup(() => Effect.runPromise(removePath(PARTIAL_LINE_ROOT)));
         return Effect.runPromise(
@@ -644,7 +652,7 @@ describe("runSpool", () => {
   });
 
   describe("a command killing itself with a signal", () => {
-    const it = standardIoTest
+    const it = spoolTest
       .extend("theCodeOfAKilledCommand", ({}, { onCleanup }) => {
         onCleanup(() => Effect.runPromise(removePath(SELF_KILLING_ROOT)));
         return Effect.runPromise(
@@ -721,7 +729,7 @@ describe("runSpool", () => {
   });
 
   describe("a command that cannot be started at all", () => {
-    const it = standardIoTest
+    const it = spoolTest
       .extend("theCodeOfAMissingExecutable", ({}, { onCleanup }) => {
         onCleanup(() => Effect.runPromise(removePath(MISSING_EXECUTABLE_ROOT)));
         return Effect.runPromise(
@@ -826,7 +834,7 @@ describe("runSpool", () => {
   });
 
   describe("a spool root that cannot be made a directory", () => {
-    const it = standardIoTest
+    const it = spoolTest
       .extend("theCodeOfABlockedRoot", ({}, { onCleanup }) => {
         onCleanup(() => Effect.runPromise(removePath(BLOCKED_ROOT_PARENT)));
         return Effect.runPromise(
@@ -935,7 +943,7 @@ describe("runSpool", () => {
   });
 
   describe("a record that breaks while the command is still writing", () => {
-    const it = standardIoTest
+    const it = spoolTest
       .extend("theCodeOfALostRecord", ({}, { onCleanup }) => {
         onCleanup(() =>
           Effect.runPromise(
@@ -1164,7 +1172,7 @@ describe("runSpool", () => {
   });
 
   describe("a run told to pass the streams through", () => {
-    const it = standardIoTest.extend("theSummaryOfAPassedThroughRun", ({ stdout }) =>
+    const it = spoolTest.extend("theSummaryOfAPassedThroughRun", ({ stdout }) =>
       Effect.runPromise(
         Effect.gen(function* () {
           yield* Effect.promise(() =>
@@ -1190,7 +1198,7 @@ describe("runSpool", () => {
   });
 
   describe("five runs recording into one spool root at once", () => {
-    const it = standardIoTest
+    const it = spoolTest
       .extend("theCodesOfFiveConcurrentRuns", ({}, { onCleanup }) => {
         onCleanup(() => Effect.runPromise(removePath(CONCURRENT_ROOT)));
         return Effect.runPromise(
@@ -1350,30 +1358,27 @@ describe("runSpool", () => {
   });
 
   describe("a run measured at twelve and a bit seconds", () => {
-    const it = standardIoTest.extend(
-      "theSummaryOfATwelveSecondRun",
-      ({ stdout }, { onCleanup }) => {
-        onCleanup(() => Effect.runPromise(removePath(ELAPSED_SECONDS_ROOT)));
-        return Effect.runPromise(
-          Effect.gen(function* () {
-            yield* removePath(ELAPSED_SECONDS_ROOT);
-            const ticks = [0, 12_399].values();
-            yield* Effect.promise(() =>
-              runSpool(["--", NODE, "-e", ELAPSED_SECONDS_SCRIPT], {
-                stdout: process.stdout,
-                stderr: process.stderr,
-                isPassthrough: () => false,
-                spoolRoot: () => ELAPSED_SECONDS_ROOT,
-                now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
-                uniqueSuffix: () => SEAM_SUFFIX,
-                monotonicNow: () => ticks.next().value ?? 0,
-              }),
-            );
-            return stdout.text();
-          }),
-        );
-      },
-    );
+    const it = spoolTest.extend("theSummaryOfATwelveSecondRun", ({ stdout }, { onCleanup }) => {
+      onCleanup(() => Effect.runPromise(removePath(ELAPSED_SECONDS_ROOT)));
+      return Effect.runPromise(
+        Effect.gen(function* () {
+          yield* removePath(ELAPSED_SECONDS_ROOT);
+          const ticks = [0, 12_399].values();
+          yield* Effect.promise(() =>
+            runSpool(["--", NODE, "-e", ELAPSED_SECONDS_SCRIPT], {
+              stdout: process.stdout,
+              stderr: process.stderr,
+              isPassthrough: () => false,
+              spoolRoot: () => ELAPSED_SECONDS_ROOT,
+              now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
+              uniqueSuffix: () => SEAM_SUFFIX,
+              monotonicNow: () => ticks.next().value ?? 0,
+            }),
+          );
+          return stdout.text();
+        }),
+      );
+    });
 
     it("cuts the elapsed time down to a tenth of a second", ({ theSummaryOfATwelveSecondRun }) => {
       expect(theSummaryOfATwelveSecondRun).toBe(
@@ -1383,7 +1388,7 @@ describe("runSpool", () => {
   });
 
   describe("a run handed no seams at all", () => {
-    const it = standardIoTest
+    const it = spoolTest
       .extend("theCodeOfADefaultRun", ({ stdout }, { onCleanup }) => {
         onCleanup(() =>
           Effect.runPromise(

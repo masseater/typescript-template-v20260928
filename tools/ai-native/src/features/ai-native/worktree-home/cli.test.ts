@@ -3,7 +3,7 @@ import { Effect } from "effect";
 import { describe, expect, test, vi } from "vite-plus/test";
 
 import { runCaptured } from "../child-process.ts";
-import { filesystem, joinPath } from "../host.ts";
+import { filesystem, joinPath, removePath } from "../host.ts";
 import { gitOutput, runGit } from "./git.ts";
 import { hook } from "./hook.ts";
 
@@ -32,8 +32,13 @@ describe("worktree-home cli", () => {
 
   describe("a WorktreeCreate event in a repository with an origin", () => {
     const it = test
-      .extend("theSandbox", () =>
-        Effect.runPromise(filesystem.makeTempDirectory({ prefix: "worktree-home-" })))
+      .extend("theSandbox", ({}, { onCleanup }) => {
+        const made = Effect.runPromise(filesystem.makeTempDirectory({ prefix: "worktree-home-" }));
+        onCleanup(() =>
+          Effect.runPromise(Effect.promise(() => made).pipe(Effect.flatMap(removePath))),
+        );
+        return made;
+      })
       .extend("theRun", ({ theSandbox }) => {
         const origin = joinPath(theSandbox, "origin.git");
         const checkout = joinPath(theSandbox, "checkout");
@@ -96,8 +101,13 @@ describe("worktree-home cli", () => {
 
   describe("a WorktreeCreate event outside any repository", () => {
     const it = test
-      .extend("theSandbox", () =>
-        Effect.runPromise(filesystem.makeTempDirectory({ prefix: "worktree-home-" })))
+      .extend("theSandbox", ({}, { onCleanup }) => {
+        const made = Effect.runPromise(filesystem.makeTempDirectory({ prefix: "worktree-home-" }));
+        onCleanup(() =>
+          Effect.runPromise(Effect.promise(() => made).pipe(Effect.flatMap(removePath))),
+        );
+        return made;
+      })
       .extend("theExitCode", ({ theSandbox }) =>
         Effect.runPromise(
           runCaptured({

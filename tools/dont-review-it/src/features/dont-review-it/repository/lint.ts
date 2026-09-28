@@ -304,7 +304,6 @@ const softPresetRules = Object.fromEntries(
     "project/process-boundary",
     "project/retired-imports",
     "project/span-mutation",
-    "project/temp-directory",
     "project/test-import-graph",
     "project/thin-app-routes",
     "project/wareki-format",
@@ -985,6 +984,10 @@ const lintOptions = {
     {
       files: reactElementTypeFiles,
       rules: { "typescript/prefer-readonly-parameter-types": LINT_SEVERITY.OFF },
+    },
+    {
+      files: ["tools/ai-native/**"],
+      rules: { "project/temp-directory": LINT_SEVERITY.ERROR },
     },
     {
       files: [

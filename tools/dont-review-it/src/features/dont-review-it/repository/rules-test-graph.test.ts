@@ -43,7 +43,7 @@ const inGraphDependencies = [
   ["json-import", 'import manifest from "../../../../../../package.json" with { type: "json" };'],
   [
     "temporary-files",
-    'import { mkdtemp } from "node:fs/promises"; import { tmpdir } from "node:os"; await mkdtemp(tmpdir());',
+    'import { mkdtemp, rm } from "node:fs/promises"; import { tmpdir } from "node:os"; import { test } from "vitest"; export const it = test.extend("root", async ({}, { onCleanup }) => { const root = await mkdtemp(tmpdir()); onCleanup(() => rm(root, { recursive: true })); return root; });',
   ],
 ] as const;
 

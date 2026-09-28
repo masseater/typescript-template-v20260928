@@ -2,15 +2,17 @@ import { NodeServices } from "@effect/platform-node";
 import { Effect, FileSystem } from "effect";
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
+import {
+  lintRuleWorkspace,
+  testLintRule,
+} from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { path } from "../../../../platform/path.ts";
 import { loadWorkspaceDependencies } from "../../lib/dependency-catalog/workspace-manifests.ts";
 import { createRequireCatalogEntry } from "./require-catalog-entry--register-shared-dependency.ts";
 
-const fixtureDir = await Effect.gen(function* fixtureDirectory() {
-  const filesystem = yield* FileSystem.FileSystem;
-  return yield* filesystem.makeTempDirectory({ prefix: "dont-review-it-require-catalog-entry-" });
-}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
+const fixtureWorkspace = await lintRuleWorkspace("dont-review-it-require-catalog-entry-");
+
+const fixtureDir = fixtureWorkspace.root;
 
 const MODULE_SOURCE = "export const shipped = true;\n";
 
@@ -161,150 +163,154 @@ await Effect.gen(function* writeFixture() {
 }).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
 describe("dont-review-it/require-catalog-entry--register-shared-dependency", () => {
-  testLintRule(requireCatalogEntry, {
-    valid: [
-      {
-        name: "without a catalog the rule holds no answer about what is registered",
-        code: MODULE_SOURCE,
-        filename: alphaEntry,
-      },
-      {
-        name: "options that carry deviations but no catalog leave the rule without a catalog",
-        code: MODULE_SOURCE,
-        filename: alphaEntry,
-        options: [{ deviations: [] }],
-      },
-      {
-        name: "an empty catalog registers nothing and compares against nothing",
-        code: MODULE_SOURCE,
-        filename: alphaEntry,
-        options: [{ catalog: [] }],
-      },
-      {
-        name: "a workspace whose every dependency is registered passes",
-        code: MODULE_SOURCE,
-        filename: gammaEntry,
-        options: CATALOG,
-      },
-      {
-        name: "a package the catalog registers is left to the rule on catalog references",
-        code: MODULE_SOURCE,
-        filename: nestedGammaEntry,
-        options: CATALOG,
-      },
-      {
-        name: "a name registered as a deviation for this workspace is not asked for again",
-        code: MODULE_SOURCE,
-        filename: alphaEntry,
-        options: [
-          {
-            catalog: ["es-toolkit"],
-            deviations: [{ workspace: "packages/alpha", packages: ["left-pad"] }],
-          },
-        ],
-      },
-      {
-        name: "a file no manifest governs belongs to no workspace",
-        code: MODULE_SOURCE,
-        filename: looseEntry,
-        options: CATALOG,
-      },
-    ],
-    invalid: [
-      {
-        name: "a name shared with two other workspaces is reported in the root workspace",
-        documented: true,
-        code: MODULE_SOURCE,
-        filename: rootEntry,
-        options: CATALOG,
-        errors: [
-          {
-            messageId: "unregisteredSharedDependency",
-            data: { packageName: "left-pad", sites: LEFT_PAD_SITES },
-          },
-        ],
-      },
-      {
-        name: "the same name is reported again in the workspace that shares it",
-        code: MODULE_SOURCE,
-        filename: alphaEntry,
-        options: CATALOG,
-        errors: [
-          {
-            messageId: "unregisteredSharedDependency",
-            data: { packageName: "left-pad", sites: LEFT_PAD_SITES },
-          },
-        ],
-      },
-      {
-        name: "a development dependency counts as a workspace declaring the name",
-        code: MODULE_SOURCE,
-        filename: betaEntry,
-        options: CATALOG,
-        errors: [
-          {
-            messageId: "unregisteredSharedDependency",
-            data: { packageName: "left-pad", sites: LEFT_PAD_SITES },
-          },
-        ],
-      },
-      {
-        name: "a deviation registered for another workspace does not cover this one",
-        code: MODULE_SOURCE,
-        filename: alphaEntry,
-        options: [
-          {
-            catalog: ["es-toolkit"],
-            deviations: [{ workspace: "packages/beta", packages: ["left-pad"] }],
-          },
-        ],
-        errors: [
-          {
-            messageId: "unregisteredSharedDependency",
-            data: { packageName: "left-pad", sites: LEFT_PAD_SITES },
-          },
-        ],
-      },
-      {
-        name: "an alias is counted under the package it resolves to",
-        code: MODULE_SOURCE,
-        filename: packageOneEntry,
-        options: CATALOG,
-        errors: [
-          {
-            messageId: "unregisteredSharedDependency",
-            data: { packageName: "@fixture/tool", sites: ALIASED_TOOL_SITES },
-          },
-          {
-            messageId: "unregisteredSharedDependency",
-            data: { packageName: "left-pad", sites: ALIASED_LEFT_PAD_SITES },
-          },
-          {
-            messageId: "unregisteredSharedDependency",
-            data: { packageName: "opt-shared", sites: OPTIONAL_SITES },
-          },
-        ],
-      },
-      {
-        name: "the workspace on the other side of the alias carries the version it declared once",
-        code: MODULE_SOURCE,
-        filename: twoEntry,
-        options: CATALOG,
-        errors: [
-          {
-            messageId: "unregisteredSharedDependency",
-            data: { packageName: "@fixture/tool", sites: ALIASED_TOOL_SITES },
-          },
-          {
-            messageId: "unregisteredSharedDependency",
-            data: { packageName: "left-pad", sites: ALIASED_LEFT_PAD_SITES },
-          },
-          {
-            messageId: "unregisteredSharedDependency",
-            data: { packageName: "opt-shared", sites: OPTIONAL_SITES },
-          },
-        ],
-      },
-    ],
-  });
+  testLintRule(
+    requireCatalogEntry,
+    {
+      valid: [
+        {
+          name: "without a catalog the rule holds no answer about what is registered",
+          code: MODULE_SOURCE,
+          filename: alphaEntry,
+        },
+        {
+          name: "options that carry deviations but no catalog leave the rule without a catalog",
+          code: MODULE_SOURCE,
+          filename: alphaEntry,
+          options: [{ deviations: [] }],
+        },
+        {
+          name: "an empty catalog registers nothing and compares against nothing",
+          code: MODULE_SOURCE,
+          filename: alphaEntry,
+          options: [{ catalog: [] }],
+        },
+        {
+          name: "a workspace whose every dependency is registered passes",
+          code: MODULE_SOURCE,
+          filename: gammaEntry,
+          options: CATALOG,
+        },
+        {
+          name: "a package the catalog registers is left to the rule on catalog references",
+          code: MODULE_SOURCE,
+          filename: nestedGammaEntry,
+          options: CATALOG,
+        },
+        {
+          name: "a name registered as a deviation for this workspace is not asked for again",
+          code: MODULE_SOURCE,
+          filename: alphaEntry,
+          options: [
+            {
+              catalog: ["es-toolkit"],
+              deviations: [{ workspace: "packages/alpha", packages: ["left-pad"] }],
+            },
+          ],
+        },
+        {
+          name: "a file no manifest governs belongs to no workspace",
+          code: MODULE_SOURCE,
+          filename: looseEntry,
+          options: CATALOG,
+        },
+      ],
+      invalid: [
+        {
+          name: "a name shared with two other workspaces is reported in the root workspace",
+          documented: true,
+          code: MODULE_SOURCE,
+          filename: rootEntry,
+          options: CATALOG,
+          errors: [
+            {
+              messageId: "unregisteredSharedDependency",
+              data: { packageName: "left-pad", sites: LEFT_PAD_SITES },
+            },
+          ],
+        },
+        {
+          name: "the same name is reported again in the workspace that shares it",
+          code: MODULE_SOURCE,
+          filename: alphaEntry,
+          options: CATALOG,
+          errors: [
+            {
+              messageId: "unregisteredSharedDependency",
+              data: { packageName: "left-pad", sites: LEFT_PAD_SITES },
+            },
+          ],
+        },
+        {
+          name: "a development dependency counts as a workspace declaring the name",
+          code: MODULE_SOURCE,
+          filename: betaEntry,
+          options: CATALOG,
+          errors: [
+            {
+              messageId: "unregisteredSharedDependency",
+              data: { packageName: "left-pad", sites: LEFT_PAD_SITES },
+            },
+          ],
+        },
+        {
+          name: "a deviation registered for another workspace does not cover this one",
+          code: MODULE_SOURCE,
+          filename: alphaEntry,
+          options: [
+            {
+              catalog: ["es-toolkit"],
+              deviations: [{ workspace: "packages/beta", packages: ["left-pad"] }],
+            },
+          ],
+          errors: [
+            {
+              messageId: "unregisteredSharedDependency",
+              data: { packageName: "left-pad", sites: LEFT_PAD_SITES },
+            },
+          ],
+        },
+        {
+          name: "an alias is counted under the package it resolves to",
+          code: MODULE_SOURCE,
+          filename: packageOneEntry,
+          options: CATALOG,
+          errors: [
+            {
+              messageId: "unregisteredSharedDependency",
+              data: { packageName: "@fixture/tool", sites: ALIASED_TOOL_SITES },
+            },
+            {
+              messageId: "unregisteredSharedDependency",
+              data: { packageName: "left-pad", sites: ALIASED_LEFT_PAD_SITES },
+            },
+            {
+              messageId: "unregisteredSharedDependency",
+              data: { packageName: "opt-shared", sites: OPTIONAL_SITES },
+            },
+          ],
+        },
+        {
+          name: "the workspace on the other side of the alias carries the version it declared once",
+          code: MODULE_SOURCE,
+          filename: twoEntry,
+          options: CATALOG,
+          errors: [
+            {
+              messageId: "unregisteredSharedDependency",
+              data: { packageName: "@fixture/tool", sites: ALIASED_TOOL_SITES },
+            },
+            {
+              messageId: "unregisteredSharedDependency",
+              data: { packageName: "left-pad", sites: ALIASED_LEFT_PAD_SITES },
+            },
+            {
+              messageId: "unregisteredSharedDependency",
+              data: { packageName: "opt-shared", sites: OPTIONAL_SITES },
+            },
+          ],
+        },
+      ],
+    },
+    fixtureWorkspace.test,
+  );
 });
