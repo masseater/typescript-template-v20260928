@@ -1,1 +1,1 @@
-export { memberOptions, membersKey } from "./api/member.ts";
+export { memberOptions } from "./api/member.ts";

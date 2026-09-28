@@ -29,4 +29,4 @@ function memberOptions(id: string) {
   });
 }
 
-export { memberOptions, membersKey };
+export { memberOptions };
