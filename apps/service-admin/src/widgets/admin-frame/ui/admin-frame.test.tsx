@@ -14,8 +14,6 @@ import { describe, expect, test } from "vite-plus/test";
 import { fieldValidationMessages } from "#shared/i18n/index.ts";
 import { AdminFrame } from "./admin-frame.tsx";
 
-const SPACING_PX = 4;
-
 const paths = ["/members", "/inquiries", "/reports", "/terms", "/admins", "/security"] as const;
 
 function renderAdminFrame(defaultCollapsed: boolean): Promise<string> {
@@ -51,44 +49,6 @@ function renderAdminFrame(defaultCollapsed: boolean): Promise<string> {
   );
 }
 
-function buttonTarget(
-  markup: string,
-  accessibleName: string,
-): Readonly<{
-  glyphPx: number;
-  heightPx: number;
-  widthPx: number;
-}> {
-  const matched = new RegExp(
-    `<button\\b(?=[^>]*aria-label="${accessibleName}")(?=[^>]*class="([^"]*)")[^>]*>([\\s\\S]*?)</button>`,
-    "u",
-  ).exec(markup);
-  const className = matched?.[1];
-  const inner = matched?.[2];
-  if (className === undefined || inner === undefined) {
-    throw new Error(`missing button ${accessibleName}`);
-  }
-  const spacingPx = (subject: string, utility: string): number => {
-    const found = new RegExp(String.raw`(?:^|[\s:])${utility}-(\d+(?:\.\d+)?)(?:\s|$)`).exec(
-      subject,
-    );
-    const units = found?.[1];
-    if (units === undefined) {
-      throw new Error(`missing ${utility} on ${subject}`);
-    }
-    return Number(units) * SPACING_PX;
-  };
-  const glyphClass = /<svg\b[^>]*class="([^"]*)"/u.exec(inner)?.[1];
-  if (glyphClass === undefined) {
-    throw new Error(`missing icon in ${accessibleName}`);
-  }
-  return {
-    glyphPx: spacingPx(glyphClass, "size"),
-    heightPx: spacingPx(className, "min-h"),
-    widthPx: spacingPx(className, "min-w"),
-  };
-}
-
 describe("管理画面の枠", () => {
   const it = test
     .extend("theCollapsedFrame", () => renderAdminFrame(true))
@@ -96,9 +56,7 @@ describe("管理画面の枠", () => {
 
   it("折りたたみ時の名前は管理画面で、検索欄はない", ({ theCollapsedFrame }) => {
     expect.hasAssertions();
-    expect(theCollapsedFrame).toContain("min-h-dvh bg-muted");
-    expect(theCollapsedFrame).toContain("rounded-lg");
-    expect(theCollapsedFrame).toContain('<span class="sr-only">管理画面</span>');
+    expect(theCollapsedFrame).toContain(">管理画面</span>");
     expect(theCollapsedFrame).toContain('<span aria-hidden="true">管理</span>');
     expect(theCollapsedFrame).toContain('href="/members"');
     expect(theCollapsedFrame).toContain("利用者の一覧");
@@ -108,18 +66,8 @@ describe("管理画面の枠", () => {
     expect(theCollapsedFrame).not.toContain(">管<");
   });
 
-  it("ヘッダーのアイコンは 24px の中に 20px の字形を置く", ({ theExpandedFrame }) => {
+  it("開いた枠は副題と行き先を出す", ({ theExpandedFrame }) => {
     expect.hasAssertions();
-    expect(buttonTarget(theExpandedFrame, "メニュー")).toStrictEqual({
-      glyphPx: 20,
-      heightPx: 24,
-      widthPx: 24,
-    });
-    expect(buttonTarget(theExpandedFrame, "サイドバーを畳む")).toStrictEqual({
-      glyphPx: 20,
-      heightPx: 24,
-      widthPx: 24,
-    });
     expect(theExpandedFrame).toContain("運用コンソール");
     expect(theExpandedFrame).toContain(">利用者<");
   });

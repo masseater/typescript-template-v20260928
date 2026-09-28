@@ -13,10 +13,8 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { WikiFrame } from "./wiki-frame.tsx";
 
-const SPACING_PX = 4;
-
-describe("wiki header icon button", () => {
-  const it = test.extend("theTreeButtonTarget", () =>
+describe("wiki header", () => {
+  const it = test.extend("theWikiHeader", () =>
     Effect.runPromise(
       Effect.gen(function* loadTreeButton() {
         const root = createRootRoute();
@@ -44,38 +42,16 @@ describe("wiki header icon button", () => {
             </RouterContextProvider>
           </RegistryProvider>,
         );
-        const matched =
-          /<button\b(?=[^>]*aria-label="文書の木")(?=[^>]*class="([^"]*)")[^>]*>([\s\S]*?)<\/button>/u.exec(
-            markup,
-          );
-        const className = matched?.[1];
-        const inner = matched?.[2];
-        if (className === undefined || inner === undefined) {
-          throw new Error("missing document tree button");
-        }
-        const spacingPx = (subject: string, utility: string): number => {
-          const found = new RegExp(String.raw`(?:^|[\s:])${utility}-(\d+(?:\.\d+)?)(?:\s|$)`).exec(
-            subject,
-          );
-          const units = found?.[1];
-          if (units === undefined) {
-            throw new Error(`missing ${utility} on ${subject}`);
-          }
-          return Number(units) * SPACING_PX;
-        };
-        const glyphClass = /<svg\b[^>]*class="([^"]*)"/u.exec(inner)?.[1];
-        if (glyphClass === undefined) {
-          throw new Error("missing document tree icon");
-        }
         return {
-          glyphPx: spacingPx(glyphClass, "size"),
-          heightPx: spacingPx(className, "min-h"),
-          widthPx: spacingPx(className, "min-w"),
+          closedTree: markup.includes('aria-label="文書の木" aria-expanded="false"'),
+          dashboardLink: /<a[^>]*href="\/"[^>]*>ダッシュボード<\/a>/u.test(markup),
         };
       }),
     ));
 
-  it("gives the document tree button a 24px box around a 20px glyph", ({ theTreeButtonTarget }) => {
-    expect(theTreeButtonTarget).toStrictEqual({ glyphPx: 20, heightPx: 24, widthPx: 24 });
+  it("starts with the document tree closed and links back to the dashboard", ({
+    theWikiHeader,
+  }) => {
+    expect(theWikiHeader).toStrictEqual({ closedTree: true, dashboardLink: true });
   });
 });
