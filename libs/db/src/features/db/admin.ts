@@ -1,7 +1,6 @@
 import { APPLICATION, AUDIT_ACTION } from "@repo/config";
 import {
   ACCOUNT_STATE,
-  ADMIN_PERMISSION,
   ROLE,
   accountStates,
   adminPermissions,
@@ -72,11 +71,11 @@ export const listUsers = Effect.fn("listUsers")(function* listUsers(
   sessionId: string,
   page: typeof UserPage.Type,
 ) {
-  yield* requireAdmin(sessionId);
+  yield* requireAdmin(sessionId, "browseAdminConsole");
   const checkedAt = DateTime.toDate(yield* DateTime.now);
 
   const matching = (database: DrizzleDatabase): SQL | undefined =>
-    and(liveAdmin(database, { checkedAt, sessionId }), matchesPage(page));
+    and(liveAdmin(database, { checkedAt, operation: "browseAdminConsole", sessionId }), matchesPage(page));
 
   const users = yield* query((database) =>
     database
@@ -126,7 +125,7 @@ const ownerAudited = (
 ): Readonly<{ audit: ReturnType<DrizzleDatabase["run"]>; live: SQL }> => {
   const live = liveAdmin(database, {
     checkedAt: updatedAt,
-    required: ADMIN_PERMISSION.owner,
+    operation: "manageAdmins",
     sessionId,
   });
   const audit = database.run(
@@ -139,7 +138,7 @@ export const getMember = Effect.fn("getMember")(function* getMember(
   sessionId: string,
   memberId: string,
 ) {
-  yield* requireAdmin(sessionId);
+  yield* requireAdmin(sessionId, "browseAdminConsole");
   const checkedAt = DateTime.toDate(yield* DateTime.now);
   const [member] = yield* query((database) =>
     database
@@ -149,7 +148,7 @@ export const getMember = Effect.fn("getMember")(function* getMember(
         and(
           eq(user.id, memberId),
           eq(user.role, ROLE.member),
-          liveAdmin(database, { checkedAt, sessionId }),
+          liveAdmin(database, { checkedAt, operation: "browseAdminConsole", sessionId }),
         ),
       )
       .limit(1),
@@ -167,7 +166,7 @@ export const setMemberState = Effect.fn("setMemberState")(function* setMemberSta
   readonly sessionId: string;
 }) {
   const { accountState, channel = AUDIT_CHANNEL.ui, memberId, sessionId } = change;
-  const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.operator);
+  const actor = yield* requireAdmin(sessionId, "manageMembers");
   const action =
     accountState === ACCOUNT_STATE.suspended
       ? AUDIT_ACTION.memberSuspended
@@ -176,7 +175,7 @@ export const setMemberState = Effect.fn("setMemberState")(function* setMemberSta
   const [, changedMembers] = yield* query((database) => {
     const live = liveAdmin(database, {
       checkedAt: updatedAt,
-      required: ADMIN_PERMISSION.operator,
+      operation: "manageMembers",
       sessionId,
     });
     const audit = database.run(
@@ -205,10 +204,10 @@ export const deleteUser = Effect.fn("deleteUser")(function* deleteUser(removal: 
   readonly targetId: string;
 }) {
   const { channel = AUDIT_CHANNEL.ui, sessionId, targetId } = removal;
-  const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.operator);
+  const actor = yield* requireAdmin(sessionId, "manageMembers");
   const checkedAt = DateTime.toDate(yield* DateTime.now);
   const [, removedUsers] = yield* query((database) => {
-    const live = liveAdmin(database, { checkedAt, required: ADMIN_PERMISSION.operator, sessionId });
+    const live = liveAdmin(database, { checkedAt, operation: "manageMembers", sessionId });
     const audit = database.run(
       auditWhenTargeted(database, {
         actorIsLive: live,
@@ -232,7 +231,7 @@ const adminPermissionOf = (permission: string | null): AdminPermission | undefin
   adminPermissions.find((level) => level === permission);
 
 export const listAdmins = Effect.fn("listAdmins")(function* listAdmins(sessionId: string) {
-  yield* requireAdmin(sessionId, ADMIN_PERMISSION.owner);
+  yield* requireAdmin(sessionId, "manageAdmins");
   const checkedAt = DateTime.toDate(yield* DateTime.now);
   const admins = yield* query((database) =>
     database
@@ -248,7 +247,7 @@ export const listAdmins = Effect.fn("listAdmins")(function* listAdmins(sessionId
       .where(
         and(
           eq(user.role, ROLE.administrator),
-          liveAdmin(database, { checkedAt, required: ADMIN_PERMISSION.owner, sessionId }),
+          liveAdmin(database, { checkedAt, operation: "manageAdmins", sessionId }),
         ),
       )
       .orderBy(desc(user.createdAt), user.id),
@@ -262,7 +261,7 @@ export const inviteAdmin = Effect.fn("inviteAdmin")(function* inviteAdmin(draft:
   readonly permission: AdminPermission;
   readonly sessionId: string;
 }) {
-  const actor = yield* requireAdmin(draft.sessionId, ADMIN_PERMISSION.owner);
+  const actor = yield* requireAdmin(draft.sessionId, "manageAdmins");
   const channel = draft.channel;
   return yield* issueInvite({
     audience: APPLICATION.admin,
@@ -283,7 +282,7 @@ export const setAdminPermission = Effect.fn("setAdminPermission")(
     readonly sessionId: string;
   }) {
     const { adminId, channel = AUDIT_CHANNEL.ui, permission, sessionId } = change;
-    const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.owner);
+    const actor = yield* requireAdmin(sessionId, "manageAdmins");
     const updatedAt = DateTime.toDate(yield* DateTime.now);
     const [, changedAdmins] = yield* query((database) => {
       const { audit, live } = ownerAudited(database, {
@@ -314,7 +313,7 @@ export const setAdminState = Effect.fn("setAdminState")(function* setAdminState(
   readonly sessionId: string;
 }) {
   const { accountState, adminId, channel = AUDIT_CHANNEL.ui, sessionId } = change;
-  const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.owner);
+  const actor = yield* requireAdmin(sessionId, "manageAdmins");
   if (actor.user.id === adminId) {
     return yield* new TargetUnavailable();
   }

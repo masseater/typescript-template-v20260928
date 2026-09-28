@@ -1,4 +1,4 @@
-import { ADMIN_PERMISSION, AUDIT_ACTION, maximumAdminPageSize } from "@repo/config";
+import { AUDIT_ACTION, maximumAdminPageSize } from "@repo/config";
 import { and, desc, eq, sql, type SQL } from "drizzle-orm";
 import { DateTime, Effect, Schema } from "effect";
 
@@ -89,7 +89,7 @@ const auditInquiryReply = (
     auditColumns.map(([, columnValue]) => sql`${columnValue}`),
     sql`, `,
   );
-  const targeted = sql`SELECT 1 FROM ${inquiry} WHERE ${inquiry.id} = ${inquiryId} AND ${liveAdmin(database, { checkedAt, required: ADMIN_PERMISSION.operator, sessionId })}`;
+  const targeted = sql`SELECT 1 FROM ${inquiry} WHERE ${inquiry.id} = ${inquiryId} AND ${liveAdmin(database, { checkedAt, operation: "answerInquiries", sessionId })}`;
   return sql`INSERT INTO ${auditEvent} (${columnNames}) SELECT ${columnValues} WHERE EXISTS (${targeted})`;
 };
 
@@ -203,7 +203,7 @@ const listAdminInquiries = Effect.fn("listAdminInquiries")(function* listAdminIn
   sessionId: string,
   page: typeof InquiryPage.Type,
 ) {
-  yield* requireAdmin(sessionId);
+  yield* requireAdmin(sessionId, "browseAdminConsole");
   const where = matchesInquiryPage(page);
   const inquiries = yield* adminInquiryRows(() => where, page);
   const matchingCount = yield* countRows(inquiry, () => where);
@@ -214,7 +214,7 @@ const getAdminInquiry = Effect.fn("getAdminInquiry")(function* getAdminInquiry(
   sessionId: string,
   inquiryId: string,
 ) {
-  yield* requireAdmin(sessionId);
+  yield* requireAdmin(sessionId, "browseAdminConsole");
   const found = adminInquiryRows(() => eq(inquiry.id, inquiryId), { limit: 1, offset: 0 });
   return (yield* inquiryThread(inquiryId, found)) satisfies AdminInquiryThread;
 });
@@ -222,7 +222,7 @@ const getAdminInquiry = Effect.fn("getAdminInquiry")(function* getAdminInquiry(
 const countPendingInquiries = Effect.fn("countPendingInquiries")(function* countPendingInquiries(
   sessionId: string,
 ) {
-  yield* requireAdmin(sessionId);
+  yield* requireAdmin(sessionId, "browseAdminConsole");
   return yield* countRows(inquiry, () => eq(inquiry.status, INQUIRY_STATUS.open));
 });
 
@@ -231,7 +231,7 @@ const replyAsAdmin = Effect.fn("replyAsAdmin")(function* replyAsAdmin({
   inquiryId,
   sessionId,
 }: Readonly<{ body: string; inquiryId: string; sessionId: string }>) {
-  const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.operator);
+  const actor = yield* requireAdmin(sessionId, "answerInquiries");
   const [existing] = yield* query((database) =>
     database
       .select({ id: inquiry.id, status: inquiry.status })
@@ -277,7 +277,7 @@ const closeInquiry = Effect.fn("closeInquiry")(function* closeInquiry(
   sessionId: string,
   inquiryId: string,
 ) {
-  yield* requireAdmin(sessionId, ADMIN_PERMISSION.operator);
+  yield* requireAdmin(sessionId, "answerInquiries");
   const closedAt = DateTime.toDate(yield* DateTime.now);
   const [closed] = yield* query((database) =>
     database
@@ -294,7 +294,7 @@ const closeInquiry = Effect.fn("closeInquiry")(function* closeInquiry(
 
 const getInquiryMemberSummary = Effect.fn("getInquiryMemberSummary")(
   function* getInquiryMemberSummary(sessionId: string, memberId: string) {
-    yield* requireAdmin(sessionId);
+    yield* requireAdmin(sessionId, "browseAdminConsole");
     const [member] = yield* query((database) =>
       database
         .select({ email: user.email, id: user.id, name: user.name })

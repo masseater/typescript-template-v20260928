@@ -1,5 +1,5 @@
 import { verifySession } from "@repo/auth";
-import { STAFF_PERMISSION, grantsStaffLevel, httpStatus } from "@repo/config";
+import { httpStatus, operationVerdict } from "@repo/config";
 import {
   WikiDraftConflict,
   discardWikiDraft,
@@ -76,7 +76,7 @@ const publishedSource = Effect.fn("publishedSource")(function* publishedSource(p
 });
 
 const canPublish = (user: Readonly<{ permission: string | null }>): boolean =>
-  grantsStaffLevel(user.permission, STAFF_PERMISSION.editor);
+  operationVerdict("publishWiki", user.permission).permitted;
 
 const settledDraft = Effect.fn("settledWikiDraft")(function* settledDraft(
   path: string,

@@ -1,6 +1,5 @@
 import {
   ACCOUNT_STATE,
-  ADMIN_PERMISSION,
   AUDIT_ACTION,
   MODERATION_KIND,
   REPORT_STATUS,
@@ -42,7 +41,7 @@ const listReports = Effect.fn("listReports")(function* listReports(
   sessionId: string,
   page: { readonly limit: number; readonly offset: number; readonly status?: ReportStatus },
 ) {
-  yield* requireAdmin(sessionId);
+  yield* requireAdmin(sessionId, "browseAdminConsole");
   const listedReports = yield* query((database) =>
     database
       .select({
@@ -79,7 +78,7 @@ const readReport = Effect.fn("readReport")(function* readReport(
   sessionId: string,
   reportId: string,
 ) {
-  yield* requireAdmin(sessionId);
+  yield* requireAdmin(sessionId, "browseAdminConsole");
   const [report] = yield* query((database) =>
     database
       .select({
@@ -155,7 +154,7 @@ const suspendTarget = Effect.fn("suspendTarget")(function* suspendTarget({
   readonly sessionId: string;
   readonly suspended: boolean;
 }) {
-  const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.operator);
+  const actor = yield* requireAdmin(sessionId, "moderateReports");
   const [report] = yield* reportTarget(reportId);
   const targetId = report?.targetMemberId;
   if (targetId === undefined || targetId === null) {
@@ -165,7 +164,7 @@ const suspendTarget = Effect.fn("suspendTarget")(function* suspendTarget({
   const [, suspendedMembers] = yield* query((database) => {
     const live = liveAdmin(database, {
       checkedAt: suspendedAt,
-      required: ADMIN_PERMISSION.operator,
+      operation: "moderateReports",
       sessionId,
     });
     const audit = database.run(
@@ -211,7 +210,7 @@ const warnTarget = Effect.fn("warnTarget")(function* warnTarget(
   sessionId: string,
   reportId: string,
 ) {
-  const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.operator);
+  const actor = yield* requireAdmin(sessionId, "moderateReports");
   const [report] = yield* reportTarget(reportId);
   if (report === undefined) {
     return yield* new TrustSubjectNotFound();
@@ -239,7 +238,7 @@ const dismissReport = Effect.fn("dismissReport")(function* dismissReport(
   sessionId: string,
   reportId: string,
 ) {
-  yield* requireAdmin(sessionId, ADMIN_PERMISSION.operator);
+  yield* requireAdmin(sessionId, "moderateReports");
   const dismissedReports = yield* query((database) =>
     database
       .update(memberReport)
