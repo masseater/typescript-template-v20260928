@@ -1,12 +1,10 @@
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
 import { Effect, FileSystem, Path } from "effect";
-import { describe, expect, vi } from "vite-plus/test";
+import { describe, expect } from "vite-plus/test";
 
 import { readTextFile } from "../canonical-values/source-files.ts";
-import { loadRepositoryCellClassIndex } from "./builder.ts";
-
-vi.mock(import("../canonical-values/source-files.ts"), { spy: true });
+import { buildRepositoryCellClassIndex, loadRepositoryCellClassIndex } from "./builder.ts";
 
 const TALLY = `class Tally {
   total = 0;
@@ -101,9 +99,10 @@ layer(NodeServices.layer)("loadRepositoryCellClassIndex", (it) => {
 
       yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
       yield* filesystem.writeFileString(paths.join(root, "src", "vanished.ts"), TALLY);
-      // mock-factory-exemption no-replaced-double-behaviour--let-the-replaced-module-answer -- whether the source still exists between the listing and the read is settled inside the boundary this spec replaces
-      vi.mocked(readTextFile).mockReturnValueOnce(null);
-      return loadRepositoryCellClassIndex({ repositoryRoot: root });
+      return buildRepositoryCellClassIndex({
+        repositoryRoot: root,
+        readText: (path) => (path.endsWith("vanished.ts") ? null : readTextFile(path)),
+      });
     });
 
     it.effect("is left out of the index", () =>

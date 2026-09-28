@@ -5,6 +5,7 @@ import {
   listRepositoryFiles,
   readTextFile,
   type ScannedFile,
+  type TextReader,
 } from "../canonical-values/source-files.ts";
 import { isOutOfScopeSource } from "../out-of-scope-source.ts";
 import {
@@ -14,25 +15,27 @@ import {
 } from "./declaration-index.ts";
 import { valueDeclarationsIn } from "./declarations.ts";
 
-const readValueFileAt = (file: ScannedFile): IndexedValueFile | null => {
-  const source = readTextFile(file.absolutePath);
+const readValueFileAt = (readText: TextReader, file: ScannedFile): IndexedValueFile | null => {
+  const source = readText(file.absolutePath);
   if (source === null) return null;
 
   const declarations = valueDeclarationsIn({ source, relativePath: file.relativePath });
   return declarations.length === 0 ? null : { relativePath: file.relativePath, declarations };
 };
 
-const buildRepositoryValueDeclarationIndex = ({
+export const buildRepositoryValueDeclarationIndex = ({
   repositoryRoot,
+  readText = readTextFile,
 }: {
   readonly repositoryRoot: string;
+  readonly readText?: TextReader;
 }): ValueDeclarationIndex => {
   const { declarationSources } = listRepositoryFiles(path.resolve(repositoryRoot));
 
   return buildValueDeclarationIndex(
     declarationSources
       .filter((file) => !isOutOfScopeSource(file.relativePath))
-      .map(readValueFileAt)
+      .map((file) => readValueFileAt(readText, file))
       .filter((file) => file !== null),
   );
 };

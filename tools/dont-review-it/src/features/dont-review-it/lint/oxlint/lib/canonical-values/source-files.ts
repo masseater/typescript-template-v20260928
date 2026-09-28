@@ -36,7 +36,9 @@ export const nearestPackageDirectory = (
   return parent === fileDirectory ? null : nearestPackageDirectory(parent, repositoryRoot);
 };
 
-export const readTextFile = (targetPath: string): string | null =>
+export type TextReader = (targetPath: string) => string | null;
+
+export const readTextFile: TextReader = (targetPath) =>
   readUnlessMissing(() => readFileSync(targetPath, "utf8"));
 
 const SCRIPT_FILE_NAME_PATTERN = /\.[cm]?[jt]sx?$/u;

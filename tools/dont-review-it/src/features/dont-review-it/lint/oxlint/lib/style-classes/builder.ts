@@ -5,29 +5,38 @@ import {
   listRepositoryFiles,
   readTextFile,
   type ScannedFile,
+  type TextReader,
 } from "../canonical-values/source-files.ts";
 import { buildStyleClassIndex, type ReadStyleSheet, type StyleClassIndex } from "./class-index.ts";
 
-const readableFilesIn = (files: readonly ScannedFile[]): readonly ReadStyleSheet[] =>
+const readableFilesIn = (
+  readText: TextReader,
+  files: readonly ScannedFile[],
+): readonly ReadStyleSheet[] =>
   files.flatMap((file) => {
-    const source = readTextFile(file.absolutePath);
+    const source = readText(file.absolutePath);
     return source === null ? [] : [{ relativePath: file.relativePath, source }];
   });
 
-const buildRepositoryStyleClassIndex = ({
+export const buildRepositoryStyleClassIndex = ({
   repositoryRoot,
+  readText = readTextFile,
 }: {
   readonly repositoryRoot: string;
+  readonly readText?: TextReader;
 }): StyleClassIndex => {
   const listed = listRepositoryFiles(path.resolve(repositoryRoot));
   return buildStyleClassIndex({
-    styleSheets: readableFilesIn(listed.styleSheets),
-    referenceTexts: readableFilesIn([...listed.commentSources, ...listed.markupSources]).map(
-      (file) => file.source,
-    ),
+    styleSheets: readableFilesIn(readText, listed.styleSheets),
+    referenceTexts: readableFilesIn(readText, [
+      ...listed.commentSources,
+      ...listed.markupSources,
+    ]).map((file) => file.source),
   });
 };
 
-export const loadStyleClassIndex = memoize(buildRepositoryStyleClassIndex, {
-  getCacheKey: (ruleOptions) => path.resolve(ruleOptions.repositoryRoot),
-});
+export const loadStyleClassIndex = memoize(
+  (ruleOptions: { readonly repositoryRoot: string }): StyleClassIndex =>
+    buildRepositoryStyleClassIndex({ repositoryRoot: ruleOptions.repositoryRoot }),
+  { getCacheKey: (ruleOptions) => path.resolve(ruleOptions.repositoryRoot) },
+);

@@ -1,12 +1,10 @@
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
 import { Effect, FileSystem, Path } from "effect";
-import { describe, expect, vi } from "vite-plus/test";
+import { describe, expect } from "vite-plus/test";
 
 import { readTextFile } from "../canonical-values/source-files.ts";
 import { buildRepositoryBodyIndex, loadRepositoryBodyIndex } from "./builder.ts";
-
-vi.mock(import("../canonical-values/source-files.ts"), { spy: true });
 
 const VANISHED_FILE_NAME = "vanished.ts";
 
@@ -96,16 +94,12 @@ layer(NodeServices.layer)("buildRepositoryBodyIndex", (it) => {
         paths.join(repositoryRoot, "src", VANISHED_FILE_NAME),
         TWICE,
       );
-      const listedSources = yield* Effect.promise(() =>
-        vi.importActual<typeof import("../canonical-values/source-files.ts")>(
-          "../canonical-values/source-files.ts",
-        ),
+      return Array.from(
+        buildRepositoryBodyIndex({
+          repositoryRoot,
+          readText: (path) => (path.endsWith(VANISHED_FILE_NAME) ? null : readTextFile(path)),
+        }).bodiesByPath.keys(),
       );
-      // mock-factory-exemption no-replaced-double-behaviour--let-the-replaced-module-answer -- whether a listed source is still readable is settled by the file system between the listing and the read, and that window is inside the boundary this spec replaces
-      vi.mocked(readTextFile).mockImplementation((path) =>
-        path.endsWith(VANISHED_FILE_NAME) ? null : listedSources.readTextFile(path),
-      );
-      return Array.from(buildRepositoryBodyIndex({ repositoryRoot }).bodiesByPath.keys());
     });
 
     it.effect("leaves that source out of the index", () =>

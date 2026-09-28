@@ -1,6 +1,7 @@
 import { parseSync } from "oxc-parser";
 import { describe, expect, test } from "vite-plus/test";
 
+import { parsedConfig } from "./lint-config-suppression-test-fixture.ts";
 import { ignoreEntriesIn, lintBlockOf, weakenedTargetRulesIn } from "./lint-config-suppression.ts";
 
 import type { ESTree } from "@oxlint/plugins";
@@ -11,143 +12,43 @@ const TARGET_KEY = "dont-review-it/no-duplicate-exported-type--reuse-authoritati
 
 describe("lintBlockOf", () => {
   describe("a lint block written inline", () => {
-    const it = test.extend("lintBlockOfAnInlineLintBlock", () =>
-      lintBlockOf({
-        body: parseSync(
-          "vite.config.ts",
-          "export default { lint: { rules: {} } };",
-        ).program.body.map((statement) => statement as ESTree.Statement),
-      }));
+    const it = test.extend("lintBlockOfAnInlineLintBlock", () => {
+      const config = parsedConfig("export default { lint: { rules: {} } };");
+      return {
+        read: lintBlockOf({ body: config.body }),
+        expected: config.propertyNamed("lint").value,
+      };
+    });
 
     it("is the block that is read", ({ lintBlockOfAnInlineLintBlock }) => {
-      expect(lintBlockOfAnInlineLintBlock).toMatchInlineSnapshot(`
-        {
-          "end": 36,
-          "properties": [
-            {
-              "computed": false,
-              "end": 34,
-              "key": {
-                "decorators": [],
-                "end": 30,
-                "name": "rules",
-                "optional": false,
-                "start": 25,
-                "type": "Identifier",
-                "typeAnnotation": null,
-              },
-              "kind": "init",
-              "method": false,
-              "optional": false,
-              "shorthand": false,
-              "start": 25,
-              "type": "Property",
-              "value": {
-                "end": 34,
-                "properties": [],
-                "start": 32,
-                "type": "ObjectExpression",
-              },
-            },
-          ],
-          "start": 23,
-          "type": "ObjectExpression",
-        }
-      `);
+      expect(lintBlockOfAnInlineLintBlock.read).toBe(lintBlockOfAnInlineLintBlock.expected);
     });
   });
 
   describe("a lint block wrapped in a call", () => {
-    const it = test.extend("lintBlockOfALintBlockInsideACall", () =>
-      lintBlockOf({
-        body: parseSync(
-          "vite.config.ts",
-          "export default { lint: withGitExcludes({ rules: {} }) };",
-        ).program.body.map((statement) => statement as ESTree.Statement),
-      }));
+    const it = test.extend("lintBlockOfALintBlockInsideACall", () => {
+      const config = parsedConfig("export default { lint: withGitExcludes({ rules: {} }) };");
+      return { read: lintBlockOf({ body: config.body }), expected: config.objectHolding("rules") };
+    });
 
     it("is read through that call", ({ lintBlockOfALintBlockInsideACall }) => {
-      expect(lintBlockOfALintBlockInsideACall).toMatchInlineSnapshot(`
-        {
-          "end": 52,
-          "properties": [
-            {
-              "computed": false,
-              "end": 50,
-              "key": {
-                "decorators": [],
-                "end": 46,
-                "name": "rules",
-                "optional": false,
-                "start": 41,
-                "type": "Identifier",
-                "typeAnnotation": null,
-              },
-              "kind": "init",
-              "method": false,
-              "optional": false,
-              "shorthand": false,
-              "start": 41,
-              "type": "Property",
-              "value": {
-                "end": 50,
-                "properties": [],
-                "start": 48,
-                "type": "ObjectExpression",
-              },
-            },
-          ],
-          "start": 39,
-          "type": "ObjectExpression",
-        }
-      `);
+      expect(lintBlockOfALintBlockInsideACall.read).toBe(lintBlockOfALintBlockInsideACall.expected);
     });
   });
 
   describe("a config wrapped in a call", () => {
-    const it = test.extend("lintBlockOfALintBlockInsideDefineConfig", () =>
-      lintBlockOf({
-        body: parseSync(
-          "vite.config.ts",
-          "export default defineConfig({ lint: { rules: {} } });",
-        ).program.body.map((statement) => statement as ESTree.Statement),
-      }));
+    const it = test.extend("lintBlockOfALintBlockInsideDefineConfig", () => {
+      const config = parsedConfig("export default defineConfig({ lint: { rules: {} } });");
+      return {
+        read: lintBlockOf({ body: config.body }),
+        expected: config.propertyNamed("lint").value,
+      };
+    });
 
     it("is read through that call too", ({ lintBlockOfALintBlockInsideDefineConfig }) => {
-      expect(lintBlockOfALintBlockInsideDefineConfig).toMatchInlineSnapshot(`
-        {
-          "end": 49,
-          "properties": [
-            {
-              "computed": false,
-              "end": 47,
-              "key": {
-                "decorators": [],
-                "end": 43,
-                "name": "rules",
-                "optional": false,
-                "start": 38,
-                "type": "Identifier",
-                "typeAnnotation": null,
-              },
-              "kind": "init",
-              "method": false,
-              "optional": false,
-              "shorthand": false,
-              "start": 38,
-              "type": "Property",
-              "value": {
-                "end": 47,
-                "properties": [],
-                "start": 45,
-                "type": "ObjectExpression",
-              },
-            },
-          ],
-          "start": 36,
-          "type": "ObjectExpression",
-        }
-      `);
+      expect(lintBlockOfALintBlockInsideDefineConfig.read).toBe(
+        lintBlockOfALintBlockInsideDefineConfig.expected,
+      );
     });
   });
 
@@ -195,417 +96,203 @@ describe("lintBlockOf", () => {
 describe("weakenedTargetRulesIn", () => {
   describe("a target rule held off", () => {
     const it = test.extend("weakenedOfARuleHeldOff", () => {
-      const lint = lintBlockOf({
-        body: parseSync(
-          "vite.config.ts",
-          `export default { lint: { rules: { "${TARGET_KEY}": "off" } } };`,
-        ).program.body.map((statement) => statement as ESTree.Statement),
-      });
-      if (lint === null) throw new Error("the configuration under test must hold a lint block");
-      return weakenedTargetRulesIn({ lint, targetRules: TARGET_RULES });
+      const config = parsedConfig(
+        `export default { lint: { rules: { "${TARGET_KEY}": "off" } } };`,
+      );
+      return {
+        weakened: weakenedTargetRulesIn({ lint: config.lint, targetRules: TARGET_RULES }),
+        property: config.propertyNamed(TARGET_KEY),
+      };
     });
 
     it("is weakened", ({ weakenedOfARuleHeldOff }) => {
-      expect(weakenedOfARuleHeldOff).toMatchInlineSnapshot(`
-        [
-          {
-            "property": {
-              "computed": false,
-              "end": 110,
-              "key": {
-                "end": 103,
-                "raw": ""dont-review-it/no-duplicate-exported-type--reuse-authoritative-type"",
-                "start": 34,
-                "type": "Literal",
-                "value": "dont-review-it/no-duplicate-exported-type--reuse-authoritative-type",
-              },
-              "kind": "init",
-              "method": false,
-              "optional": false,
-              "shorthand": false,
-              "start": 34,
-              "type": "Property",
-              "value": {
-                "end": 110,
-                "raw": ""off"",
-                "start": 105,
-                "type": "Literal",
-                "value": "off",
-              },
-            },
-            "ruleName": "dont-review-it/no-duplicate-exported-type--reuse-authoritative-type",
-            "severity": "off",
-          },
-        ]
-      `);
+      expect(
+        weakenedOfARuleHeldOff.weakened.map(({ ruleName, severity }) => ({ ruleName, severity })),
+      ).toStrictEqual([{ ruleName: TARGET_KEY, severity: "off" }]);
+    });
+
+    it("is reported at the property that spells it", ({ weakenedOfARuleHeldOff }) => {
+      expect(weakenedOfARuleHeldOff.weakened[0]?.property).toBe(weakenedOfARuleHeldOff.property);
     });
   });
 
   describe("a target rule held at warn", () => {
     const it = test.extend("weakenedOfARuleHeldWarn", () => {
-      const lint = lintBlockOf({
-        body: parseSync(
-          "vite.config.ts",
-          `export default { lint: { rules: { "${TARGET_KEY}": "warn" } } };`,
-        ).program.body.map((statement) => statement as ESTree.Statement),
-      });
-      if (lint === null) throw new Error("the configuration under test must hold a lint block");
-      return weakenedTargetRulesIn({ lint, targetRules: TARGET_RULES });
+      const config = parsedConfig(
+        `export default { lint: { rules: { "${TARGET_KEY}": "warn" } } };`,
+      );
+      return {
+        weakened: weakenedTargetRulesIn({ lint: config.lint, targetRules: TARGET_RULES }),
+        property: config.propertyNamed(TARGET_KEY),
+      };
     });
 
     it("is weakened", ({ weakenedOfARuleHeldWarn }) => {
-      expect(weakenedOfARuleHeldWarn).toMatchInlineSnapshot(`
-        [
-          {
-            "property": {
-              "computed": false,
-              "end": 111,
-              "key": {
-                "end": 103,
-                "raw": ""dont-review-it/no-duplicate-exported-type--reuse-authoritative-type"",
-                "start": 34,
-                "type": "Literal",
-                "value": "dont-review-it/no-duplicate-exported-type--reuse-authoritative-type",
-              },
-              "kind": "init",
-              "method": false,
-              "optional": false,
-              "shorthand": false,
-              "start": 34,
-              "type": "Property",
-              "value": {
-                "end": 111,
-                "raw": ""warn"",
-                "start": 105,
-                "type": "Literal",
-                "value": "warn",
-              },
-            },
-            "ruleName": "dont-review-it/no-duplicate-exported-type--reuse-authoritative-type",
-            "severity": "warn",
-          },
-        ]
-      `);
+      expect(
+        weakenedOfARuleHeldWarn.weakened.map(({ ruleName, severity }) => ({ ruleName, severity })),
+      ).toStrictEqual([{ ruleName: TARGET_KEY, severity: "warn" }]);
+    });
+
+    it("is reported at the property that spells it", ({ weakenedOfARuleHeldWarn }) => {
+      expect(weakenedOfARuleHeldWarn.weakened[0]?.property).toBe(weakenedOfARuleHeldWarn.property);
     });
   });
 
   describe("a target rule held at allow", () => {
     const it = test.extend("weakenedOfARuleHeldAllow", () => {
-      const lint = lintBlockOf({
-        body: parseSync(
-          "vite.config.ts",
-          `export default { lint: { rules: { "${TARGET_KEY}": "allow" } } };`,
-        ).program.body.map((statement) => statement as ESTree.Statement),
-      });
-      if (lint === null) throw new Error("the configuration under test must hold a lint block");
-      return weakenedTargetRulesIn({ lint, targetRules: TARGET_RULES });
+      const config = parsedConfig(
+        `export default { lint: { rules: { "${TARGET_KEY}": "allow" } } };`,
+      );
+      return {
+        weakened: weakenedTargetRulesIn({ lint: config.lint, targetRules: TARGET_RULES }),
+        property: config.propertyNamed(TARGET_KEY),
+      };
     });
 
     it("is weakened", ({ weakenedOfARuleHeldAllow }) => {
-      expect(weakenedOfARuleHeldAllow).toMatchInlineSnapshot(`
-        [
-          {
-            "property": {
-              "computed": false,
-              "end": 112,
-              "key": {
-                "end": 103,
-                "raw": ""dont-review-it/no-duplicate-exported-type--reuse-authoritative-type"",
-                "start": 34,
-                "type": "Literal",
-                "value": "dont-review-it/no-duplicate-exported-type--reuse-authoritative-type",
-              },
-              "kind": "init",
-              "method": false,
-              "optional": false,
-              "shorthand": false,
-              "start": 34,
-              "type": "Property",
-              "value": {
-                "end": 112,
-                "raw": ""allow"",
-                "start": 105,
-                "type": "Literal",
-                "value": "allow",
-              },
-            },
-            "ruleName": "dont-review-it/no-duplicate-exported-type--reuse-authoritative-type",
-            "severity": "allow",
-          },
-        ]
-      `);
+      expect(
+        weakenedOfARuleHeldAllow.weakened.map(({ ruleName, severity }) => ({ ruleName, severity })),
+      ).toStrictEqual([{ ruleName: TARGET_KEY, severity: "allow" }]);
+    });
+
+    it("is reported at the property that spells it", ({ weakenedOfARuleHeldAllow }) => {
+      expect(weakenedOfARuleHeldAllow.weakened[0]?.property).toBe(
+        weakenedOfARuleHeldAllow.property,
+      );
     });
   });
 
   describe("a target rule held at a number below the failing one", () => {
     const it = test.extend("weakenedOfARuleHeldAtOne", () => {
-      const lint = lintBlockOf({
-        body: parseSync(
-          "vite.config.ts",
-          `export default { lint: { rules: { "${TARGET_KEY}": 1 } } };`,
-        ).program.body.map((statement) => statement as ESTree.Statement),
-      });
-      if (lint === null) throw new Error("the configuration under test must hold a lint block");
-      return weakenedTargetRulesIn({ lint, targetRules: TARGET_RULES });
+      const config = parsedConfig(`export default { lint: { rules: { "${TARGET_KEY}": 1 } } };`);
+      return {
+        weakened: weakenedTargetRulesIn({ lint: config.lint, targetRules: TARGET_RULES }),
+        property: config.propertyNamed(TARGET_KEY),
+      };
     });
 
     it("is weakened", ({ weakenedOfARuleHeldAtOne }) => {
-      expect(weakenedOfARuleHeldAtOne).toMatchInlineSnapshot(`
-        [
-          {
-            "property": {
-              "computed": false,
-              "end": 106,
-              "key": {
-                "end": 103,
-                "raw": ""dont-review-it/no-duplicate-exported-type--reuse-authoritative-type"",
-                "start": 34,
-                "type": "Literal",
-                "value": "dont-review-it/no-duplicate-exported-type--reuse-authoritative-type",
-              },
-              "kind": "init",
-              "method": false,
-              "optional": false,
-              "shorthand": false,
-              "start": 34,
-              "type": "Property",
-              "value": {
-                "end": 106,
-                "raw": "1",
-                "start": 105,
-                "type": "Literal",
-                "value": 1,
-              },
-            },
-            "ruleName": "dont-review-it/no-duplicate-exported-type--reuse-authoritative-type",
-            "severity": "1",
-          },
-        ]
-      `);
+      expect(
+        weakenedOfARuleHeldAtOne.weakened.map(({ ruleName, severity }) => ({ ruleName, severity })),
+      ).toStrictEqual([{ ruleName: TARGET_KEY, severity: "1" }]);
+    });
+
+    it("is reported at the property that spells it", ({ weakenedOfARuleHeldAtOne }) => {
+      expect(weakenedOfARuleHeldAtOne.weakened[0]?.property).toBe(
+        weakenedOfARuleHeldAtOne.property,
+      );
     });
   });
 
   describe("a severity written first in a list", () => {
     const it = test.extend("weakenedOfARuleHeldOffThroughAList", () => {
-      const lint = lintBlockOf({
-        body: parseSync(
-          "vite.config.ts",
-          `export default { lint: { rules: { "${TARGET_KEY}": ["off", "error"] } } };`,
-        ).program.body.map((statement) => statement as ESTree.Statement),
-      });
-      if (lint === null) throw new Error("the configuration under test must hold a lint block");
-      return weakenedTargetRulesIn({ lint, targetRules: TARGET_RULES });
+      const config = parsedConfig(
+        `export default { lint: { rules: { "${TARGET_KEY}": ["off", "error"] } } };`,
+      );
+      return {
+        weakened: weakenedTargetRulesIn({ lint: config.lint, targetRules: TARGET_RULES }),
+        property: config.propertyNamed(TARGET_KEY),
+      };
     });
 
     it("is the one that counts", ({ weakenedOfARuleHeldOffThroughAList }) => {
-      expect(weakenedOfARuleHeldOffThroughAList).toMatchInlineSnapshot(`
-        [
-          {
-            "property": {
-              "computed": false,
-              "end": 121,
-              "key": {
-                "end": 103,
-                "raw": ""dont-review-it/no-duplicate-exported-type--reuse-authoritative-type"",
-                "start": 34,
-                "type": "Literal",
-                "value": "dont-review-it/no-duplicate-exported-type--reuse-authoritative-type",
-              },
-              "kind": "init",
-              "method": false,
-              "optional": false,
-              "shorthand": false,
-              "start": 34,
-              "type": "Property",
-              "value": {
-                "elements": [
-                  {
-                    "end": 111,
-                    "raw": ""off"",
-                    "start": 106,
-                    "type": "Literal",
-                    "value": "off",
-                  },
-                  {
-                    "end": 120,
-                    "raw": ""error"",
-                    "start": 113,
-                    "type": "Literal",
-                    "value": "error",
-                  },
-                ],
-                "end": 121,
-                "start": 105,
-                "type": "ArrayExpression",
-              },
-            },
-            "ruleName": "dont-review-it/no-duplicate-exported-type--reuse-authoritative-type",
-            "severity": "off",
-          },
-        ]
-      `);
+      expect(
+        weakenedOfARuleHeldOffThroughAList.weakened.map(({ ruleName, severity }) => ({
+          ruleName,
+          severity,
+        })),
+      ).toStrictEqual([{ ruleName: TARGET_KEY, severity: "off" }]);
+    });
+
+    it("is reported at the property that spells it", ({ weakenedOfARuleHeldOffThroughAList }) => {
+      expect(weakenedOfARuleHeldOffThroughAList.weakened[0]?.property).toBe(
+        weakenedOfARuleHeldOffThroughAList.property,
+      );
     });
   });
 
   describe("a severity spelled through a named constant", () => {
     const it = test.extend("weakenedOfARuleHeldOffThroughANamedConstant", () => {
-      const lint = lintBlockOf({
-        body: parseSync(
-          "vite.config.ts",
-          `export default { lint: { rules: { "${TARGET_KEY}": LINT_SEVERITY.OFF } } };`,
-        ).program.body.map((statement) => statement as ESTree.Statement),
-      });
-      if (lint === null) throw new Error("the configuration under test must hold a lint block");
-      return weakenedTargetRulesIn({ lint, targetRules: TARGET_RULES });
+      const config = parsedConfig(
+        `export default { lint: { rules: { "${TARGET_KEY}": LINT_SEVERITY.OFF } } };`,
+      );
+      return {
+        weakened: weakenedTargetRulesIn({ lint: config.lint, targetRules: TARGET_RULES }),
+        property: config.propertyNamed(TARGET_KEY),
+      };
     });
 
     it("is read by its member name", ({ weakenedOfARuleHeldOffThroughANamedConstant }) => {
-      expect(weakenedOfARuleHeldOffThroughANamedConstant).toMatchInlineSnapshot(`
-        [
-          {
-            "property": {
-              "computed": false,
-              "end": 122,
-              "key": {
-                "end": 103,
-                "raw": ""dont-review-it/no-duplicate-exported-type--reuse-authoritative-type"",
-                "start": 34,
-                "type": "Literal",
-                "value": "dont-review-it/no-duplicate-exported-type--reuse-authoritative-type",
-              },
-              "kind": "init",
-              "method": false,
-              "optional": false,
-              "shorthand": false,
-              "start": 34,
-              "type": "Property",
-              "value": {
-                "computed": false,
-                "end": 122,
-                "object": {
-                  "decorators": [],
-                  "end": 118,
-                  "name": "LINT_SEVERITY",
-                  "optional": false,
-                  "start": 105,
-                  "type": "Identifier",
-                  "typeAnnotation": null,
-                },
-                "optional": false,
-                "property": {
-                  "decorators": [],
-                  "end": 122,
-                  "name": "OFF",
-                  "optional": false,
-                  "start": 119,
-                  "type": "Identifier",
-                  "typeAnnotation": null,
-                },
-                "start": 105,
-                "type": "MemberExpression",
-              },
-            },
-            "ruleName": "dont-review-it/no-duplicate-exported-type--reuse-authoritative-type",
-            "severity": "off",
-          },
-        ]
-      `);
+      expect(
+        weakenedOfARuleHeldOffThroughANamedConstant.weakened.map(({ ruleName, severity }) => ({
+          ruleName,
+          severity,
+        })),
+      ).toStrictEqual([{ ruleName: TARGET_KEY, severity: "off" }]);
+    });
+
+    it("is reported at the property that spells it", ({
+      weakenedOfARuleHeldOffThroughANamedConstant,
+    }) => {
+      expect(weakenedOfARuleHeldOffThroughANamedConstant.weakened[0]?.property).toBe(
+        weakenedOfARuleHeldOffThroughANamedConstant.property,
+      );
     });
   });
 
   describe("a rules block assembled by spreading another block", () => {
     const it = test.extend("weakenedOfARulesBlockAssembledBySpreading", () => {
-      const lint = lintBlockOf({
-        body: parseSync(
-          "vite.config.ts",
-          `export default { lint: { rules: { ...shared, "${TARGET_KEY}": "off" } } };`,
-        ).program.body.map((statement) => statement as ESTree.Statement),
-      });
-      if (lint === null) throw new Error("the configuration under test must hold a lint block");
-      return weakenedTargetRulesIn({ lint, targetRules: TARGET_RULES });
+      const config = parsedConfig(
+        `export default { lint: { rules: { ...shared, "${TARGET_KEY}": "off" } } };`,
+      );
+      return {
+        weakened: weakenedTargetRulesIn({ lint: config.lint, targetRules: TARGET_RULES }),
+        property: config.propertyNamed(TARGET_KEY),
+      };
     });
 
     it("is read for what it spells", ({ weakenedOfARulesBlockAssembledBySpreading }) => {
-      expect(weakenedOfARulesBlockAssembledBySpreading).toMatchInlineSnapshot(`
-        [
-          {
-            "property": {
-              "computed": false,
-              "end": 121,
-              "key": {
-                "end": 114,
-                "raw": ""dont-review-it/no-duplicate-exported-type--reuse-authoritative-type"",
-                "start": 45,
-                "type": "Literal",
-                "value": "dont-review-it/no-duplicate-exported-type--reuse-authoritative-type",
-              },
-              "kind": "init",
-              "method": false,
-              "optional": false,
-              "shorthand": false,
-              "start": 45,
-              "type": "Property",
-              "value": {
-                "end": 121,
-                "raw": ""off"",
-                "start": 116,
-                "type": "Literal",
-                "value": "off",
-              },
-            },
-            "ruleName": "dont-review-it/no-duplicate-exported-type--reuse-authoritative-type",
-            "severity": "off",
-          },
-        ]
-      `);
+      expect(
+        weakenedOfARulesBlockAssembledBySpreading.weakened.map(({ ruleName, severity }) => ({
+          ruleName,
+          severity,
+        })),
+      ).toStrictEqual([{ ruleName: TARGET_KEY, severity: "off" }]);
+    });
+
+    it("is reported at the property that spells it", ({
+      weakenedOfARulesBlockAssembledBySpreading,
+    }) => {
+      expect(weakenedOfARulesBlockAssembledBySpreading.weakened[0]?.property).toBe(
+        weakenedOfARulesBlockAssembledBySpreading.property,
+      );
     });
   });
 
   describe("the rules an override carries", () => {
     const it = test.extend("weakenedOfARuleAnOverrideCarries", () => {
-      const lint = lintBlockOf({
-        body: parseSync(
-          "vite.config.ts",
-          `export default { lint: { overrides: [{ files: ["a/**"], rules: { "${TARGET_KEY}": "off" } }] } };`,
-        ).program.body.map((statement) => statement as ESTree.Statement),
-      });
-      if (lint === null) throw new Error("the configuration under test must hold a lint block");
-      return weakenedTargetRulesIn({ lint, targetRules: TARGET_RULES });
+      const config = parsedConfig(
+        `export default { lint: { overrides: [{ files: ["a/**"], rules: { "${TARGET_KEY}": "off" } }] } };`,
+      );
+      return {
+        weakened: weakenedTargetRulesIn({ lint: config.lint, targetRules: TARGET_RULES }),
+        property: config.propertyNamed(TARGET_KEY),
+      };
     });
 
     it("are read the same way", ({ weakenedOfARuleAnOverrideCarries }) => {
-      expect(weakenedOfARuleAnOverrideCarries).toMatchInlineSnapshot(`
-        [
-          {
-            "property": {
-              "computed": false,
-              "end": 141,
-              "key": {
-                "end": 134,
-                "raw": ""dont-review-it/no-duplicate-exported-type--reuse-authoritative-type"",
-                "start": 65,
-                "type": "Literal",
-                "value": "dont-review-it/no-duplicate-exported-type--reuse-authoritative-type",
-              },
-              "kind": "init",
-              "method": false,
-              "optional": false,
-              "shorthand": false,
-              "start": 65,
-              "type": "Property",
-              "value": {
-                "end": 141,
-                "raw": ""off"",
-                "start": 136,
-                "type": "Literal",
-                "value": "off",
-              },
-            },
-            "ruleName": "dont-review-it/no-duplicate-exported-type--reuse-authoritative-type",
-            "severity": "off",
-          },
-        ]
-      `);
+      expect(
+        weakenedOfARuleAnOverrideCarries.weakened.map(({ ruleName, severity }) => ({
+          ruleName,
+          severity,
+        })),
+      ).toStrictEqual([{ ruleName: TARGET_KEY, severity: "off" }]);
+    });
+
+    it("is reported at the property that spells it", ({ weakenedOfARuleAnOverrideCarries }) => {
+      expect(weakenedOfARuleAnOverrideCarries.weakened[0]?.property).toBe(
+        weakenedOfARuleAnOverrideCarries.property,
+      );
     });
   });
 
@@ -867,71 +554,52 @@ describe("weakenedTargetRulesIn", () => {
 describe("ignoreEntriesIn", () => {
   describe("two patterns the config spells out", () => {
     const it = test.extend("patternsOfTwoSpelledPatterns", () => {
-      const lint = lintBlockOf({
-        body: parseSync(
-          "vite.config.ts",
-          'export default { lint: { ignorePatterns: ["dist/**", "src/legacy/**"] } };',
-        ).program.body.map((statement) => statement as ESTree.Statement),
-      });
-      if (lint === null) throw new Error("the configuration under test must hold a lint block");
-      return ignoreEntriesIn(lint);
+      const config = parsedConfig(
+        'export default { lint: { ignorePatterns: ["dist/**", "src/legacy/**"] } };',
+      );
+      return {
+        entries: ignoreEntriesIn(config.lint),
+        elements: [config.literalSpelling("dist/**"), config.literalSpelling("src/legacy/**")],
+      };
     });
 
     it("are the ignore patterns", ({ patternsOfTwoSpelledPatterns }) => {
-      expect(patternsOfTwoSpelledPatterns).toMatchInlineSnapshot(`
-        [
-          {
-            "element": {
-              "end": 51,
-              "raw": ""dist/**"",
-              "start": 42,
-              "type": "Literal",
-              "value": "dist/**",
-            },
-            "pattern": "dist/**",
-          },
-          {
-            "element": {
-              "end": 68,
-              "raw": ""src/legacy/**"",
-              "start": 53,
-              "type": "Literal",
-              "value": "src/legacy/**",
-            },
-            "pattern": "src/legacy/**",
-          },
-        ]
-      `);
+      expect(patternsOfTwoSpelledPatterns.entries.map(({ pattern }) => pattern)).toStrictEqual([
+        "dist/**",
+        "src/legacy/**",
+      ]);
+    });
+
+    it("points each pattern at the element that spells it", ({ patternsOfTwoSpelledPatterns }) => {
+      expect(patternsOfTwoSpelledPatterns.entries.map(({ element }) => element)).toStrictEqual(
+        patternsOfTwoSpelledPatterns.elements,
+      );
     });
   });
 
   describe("a list holding things that are not spellings", () => {
     const it = test.extend("patternsOfAListHoldingThingsThatAreNotSpellings", () => {
-      const lint = lintBlockOf({
-        body: parseSync(
-          "vite.config.ts",
-          'export default { lint: { ignorePatterns: ["dist/**", chosen, 1, ...more] } };',
-        ).program.body.map((statement) => statement as ESTree.Statement),
-      });
-      if (lint === null) throw new Error("the configuration under test must hold a lint block");
-      return ignoreEntriesIn(lint);
+      const config = parsedConfig(
+        'export default { lint: { ignorePatterns: ["dist/**", chosen, 1, ...more] } };',
+      );
+      return {
+        entries: ignoreEntriesIn(config.lint),
+        elements: [config.literalSpelling("dist/**")],
+      };
     });
 
     it("carries only the spellings", ({ patternsOfAListHoldingThingsThatAreNotSpellings }) => {
-      expect(patternsOfAListHoldingThingsThatAreNotSpellings).toMatchInlineSnapshot(`
-        [
-          {
-            "element": {
-              "end": 51,
-              "raw": ""dist/**"",
-              "start": 42,
-              "type": "Literal",
-              "value": "dist/**",
-            },
-            "pattern": "dist/**",
-          },
-        ]
-      `);
+      expect(
+        patternsOfAListHoldingThingsThatAreNotSpellings.entries.map(({ pattern }) => pattern),
+      ).toStrictEqual(["dist/**"]);
+    });
+
+    it("points each pattern at the element that spells it", ({
+      patternsOfAListHoldingThingsThatAreNotSpellings,
+    }) => {
+      expect(
+        patternsOfAListHoldingThingsThatAreNotSpellings.entries.map(({ element }) => element),
+      ).toStrictEqual(patternsOfAListHoldingThingsThatAreNotSpellings.elements);
     });
   });
 

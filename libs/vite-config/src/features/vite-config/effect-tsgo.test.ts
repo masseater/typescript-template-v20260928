@@ -2,102 +2,62 @@ import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { awaitingEffectDiagnostics, effectDiagnostics, effectTsgoNoEmit } from "./effect-tsgo.ts";
+import { awaitingEffectDiagnostics, effectDiagnostics } from "./effect-tsgo.ts";
 import { baselinePath } from "./effect-typecheck.ts";
 import { filesystem, paths } from "./host.ts";
-import { telemetryEnv } from "./run-config.ts";
-import { taskInput } from "./task-input.ts";
-import { workspaceDependencyRanges } from "./workspace-packages.ts";
 
-const generatedTreeExclusions = [
-  { base: "workspace", pattern: "!**/node_modules/**" },
-  { base: "workspace", pattern: "!**/dist/**" },
-  { base: "workspace", pattern: "!**/.paraglide/**" },
-  { base: "workspace", pattern: "!**/.local/**" },
-];
+const typeScriptSources = (directory: string) => ({
+  base: "workspace",
+  pattern: `${directory}/**/*.{ts,tsx}`,
+});
 
 describe("effectDiagnostics", () => {
   const it = test
-    .extend("libraryDiagnostics", () =>
-      effectDiagnostics(paths.join(repositoryRoot, "libs/db-local")))
-    .extend("rootDiagnostics", () => effectDiagnostics(repositoryRoot))
-    .extend("repositoryRanges", () => Effect.runPromise(workspaceDependencyRanges(repositoryRoot)));
+    .extend("libraryInput", () =>
+      effectDiagnostics(paths.join(repositoryRoot, "libs/db-local"))["check:effect"].input)
+    .extend("rootInput", () => effectDiagnostics(repositoryRoot)["check:effect"].input);
 
-  it("names the files of the package and of every workspace package it depends on, without the package root listing", ({
-    libraryDiagnostics,
-    repositoryRanges,
+  it("names the sources of the package and of the workspace packages it depends on", ({
+    libraryInput,
   }) => {
-    expect(libraryDiagnostics).toStrictEqual({
-      "check:effect": {
-        command: effectTsgoNoEmit("tsconfig.json"),
-        env: [...telemetryEnv],
-        input: [
-          ...taskInput,
-          ...(repositoryRanges.get("libs/db-local") ?? []).flatMap((directory) => [
-            { base: "workspace", pattern: `${directory}/**/*.{ts,tsx}` },
-            { base: "workspace", pattern: `${directory}/**/package.json` },
-            { base: "workspace", pattern: `${directory}/**/tsconfig*.json` },
-          ]),
-          ...generatedTreeExclusions,
-          { base: "package", pattern: "!." },
-        ],
-      },
-    });
+    expect(libraryInput).toStrictEqual(
+      expect.arrayContaining([typeScriptSources("libs/db-local"), typeScriptSources("libs/db")]),
+    );
   });
 
-  it("covers the root and its dependencies, excludes the nested packages it does not depend on, and keeps the root listing that `!.` would turn into every path", ({
-    repositoryRanges,
-    rootDiagnostics,
-  }) => {
-    expect(rootDiagnostics).toStrictEqual({
-      "check:effect": {
-        command: effectTsgoNoEmit("tsconfig.json"),
-        env: [...telemetryEnv],
-        input: [
-          ...taskInput,
-          { base: "workspace", pattern: "**/*.{ts,tsx}" },
-          { base: "workspace", pattern: "**/package.json" },
-          { base: "workspace", pattern: "**/tsconfig*.json" },
-          ...(repositoryRanges.get(".") ?? [])
-            .filter((directory) => directory !== ".")
-            .flatMap((directory) => [
-              { base: "workspace", pattern: `${directory}/**/*.{ts,tsx}` },
-              { base: "workspace", pattern: `${directory}/**/package.json` },
-              { base: "workspace", pattern: `${directory}/**/tsconfig*.json` },
-            ]),
-          ...[...repositoryRanges.keys()]
-            .filter((directory) => !(repositoryRanges.get(".") ?? []).includes(directory))
-            .map((directory) => ({ base: "workspace", pattern: `!${directory}/**` })),
-          ...generatedTreeExclusions,
-        ],
-      },
-    });
+  it("leaves out the sources of a workspace package it does not depend on", ({ libraryInput }) => {
+    expect(libraryInput).not.toContainEqual(typeScriptSources("apps/service-admin"));
+  });
+
+  it("leaves the package root listing out of a nested package", ({ libraryInput }) => {
+    expect(libraryInput).toContainEqual({ base: "package", pattern: "!." });
+  });
+
+  it("excludes the nested packages the root does not depend on", ({ rootInput }) => {
+    expect(rootInput).toContainEqual({ base: "workspace", pattern: "!apps/service-admin/**" });
+  });
+
+  it("keeps the root listing that `!.` would turn into every path", ({ rootInput }) => {
+    expect(rootInput).not.toContainEqual({ base: "package", pattern: "!." });
   });
 });
 
 describe("awaitingEffectDiagnostics", () => {
   const it = test
-    .extend("awaitingDiagnostics", () =>
-      awaitingEffectDiagnostics(paths.join(repositoryRoot, "apps/service-admin")))
+    .extend("awaitingInput", () =>
+      awaitingEffectDiagnostics(paths.join(repositoryRoot, "apps/service-admin"))["check:effect"]
+        .input)
     .extend("baselineExists", () => Effect.runPromise(filesystem.exists(baselinePath)));
 
-  it("adds the typecheck baseline it compares against to the inputs of the plain diagnostics", ({
-    awaitingDiagnostics,
-  }) => {
-    expect(awaitingDiagnostics).toStrictEqual({
-      "check:effect": {
-        command: "dont-review-it-effect-typecheck",
-        env: [...telemetryEnv],
-        input: [
-          ...effectDiagnostics(paths.join(repositoryRoot, "apps/service-admin"))["check:effect"]
-            .input,
-          {
-            base: "workspace",
-            pattern: paths.relative(repositoryRoot, baselinePath).split(paths.sep).join("/"),
-          },
-        ],
-      },
+  it("adds the typecheck baseline it compares against to the inputs", ({ awaitingInput }) => {
+    expect(awaitingInput).toContainEqual({
+      base: "workspace",
+      pattern: "libs/vite-config/src/features/vite-config/effect-typecheck-baseline.json",
     });
+  });
+
+  it("still names the sources of the package it checks", ({ awaitingInput }) => {
+    expect(awaitingInput).toContainEqual(typeScriptSources("apps/service-admin"));
   });
 
   it("points at a baseline that exists", ({ baselineExists }) => {

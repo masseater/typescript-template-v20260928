@@ -1,12 +1,10 @@
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
 import { Effect, FileSystem, Path } from "effect";
-import { describe, expect, vi } from "vite-plus/test";
+import { describe, expect } from "vite-plus/test";
 
 import { readTextFile } from "../canonical-values/source-files.ts";
-import { loadRepositoryTypeAuthorityIndex } from "./builder.ts";
-
-vi.mock(import("../canonical-values/source-files.ts"), { spy: true });
+import { buildRepositoryTypeAuthorityIndex, loadRepositoryTypeAuthorityIndex } from "./builder.ts";
 
 const SHAPE =
   "export type Shape = { readonly a: string; readonly b: number; readonly c: Named };\n";
@@ -115,10 +113,11 @@ layer(NodeServices.layer)("loadRepositoryTypeAuthorityIndex", (it) => {
       yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
       yield* filesystem.writeFileString(paths.join(root, "src", "a-unreadable.ts"), SHAPE);
       yield* filesystem.writeFileString(paths.join(root, "src", "b-present.ts"), SHAPE);
-      // mock-factory-exemption no-replaced-double-behaviour--let-the-replaced-module-answer -- whether a source that the scan already found can still be opened is settled by the file system inside the boundary this spec replaces, and every source this spec can write is readable
-      vi.mocked(readTextFile).mockReturnValueOnce(null);
       return Array.from(
-        loadRepositoryTypeAuthorityIndex({ repositoryRoot: root }).typesByPath.keys(),
+        buildRepositoryTypeAuthorityIndex({
+          repositoryRoot: root,
+          readText: (path) => (path.endsWith("a-unreadable.ts") ? null : readTextFile(path)),
+        }).typesByPath.keys(),
       );
     });
 

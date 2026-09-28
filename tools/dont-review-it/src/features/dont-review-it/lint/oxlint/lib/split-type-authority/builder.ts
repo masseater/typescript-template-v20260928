@@ -6,6 +6,7 @@ import {
   nearestPackageDirectory,
   readTextFile,
   type ScannedFile,
+  type TextReader,
 } from "../canonical-values/source-files.ts";
 import { isOutOfScopeSource } from "../out-of-scope-source.ts";
 import { toPosixPath } from "../posix-path.ts";
@@ -30,8 +31,12 @@ const workspacePathOf = ({
     : toPosixPath(path.relative(repositoryRoot, packageDirectory));
 };
 
-const scannedTypeFileAt = (repositoryRoot: string, file: ScannedFile): ScannedTypeFile | null => {
-  const source = readTextFile(file.absolutePath);
+const scannedTypeFileAt = (
+  scan: { readonly repositoryRoot: string; readonly readText: TextReader },
+  file: ScannedFile,
+): ScannedTypeFile | null => {
+  const { repositoryRoot } = scan;
+  const source = scan.readText(file.absolutePath);
   if (source === null) return null;
 
   const declarations = typeDeclarationsIn(source);
@@ -44,10 +49,12 @@ const scannedTypeFileAt = (repositoryRoot: string, file: ScannedFile): ScannedTy
       };
 };
 
-const buildRepositoryTypeAuthorityIndex = ({
+export const buildRepositoryTypeAuthorityIndex = ({
   repositoryRoot,
+  readText = readTextFile,
 }: {
   readonly repositoryRoot: string;
+  readonly readText?: TextReader;
 }): TypeAuthorityIndex => {
   const root = path.resolve(repositoryRoot);
   const { declarationSources } = listRepositoryFiles(root);
@@ -55,7 +62,9 @@ const buildRepositoryTypeAuthorityIndex = ({
   if (scanned.length === 0) return EMPTY_TYPE_AUTHORITY_INDEX;
 
   return buildTypeAuthorityIndex(
-    scanned.map((file) => scannedTypeFileAt(root, file)).filter((file) => file !== null),
+    scanned
+      .map((file) => scannedTypeFileAt({ repositoryRoot: root, readText }, file))
+      .filter((file) => file !== null),
   );
 };
 

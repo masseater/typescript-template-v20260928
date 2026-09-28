@@ -6,6 +6,7 @@ import {
   listRepositoryFiles,
   readTextFile,
   type ScannedFile,
+  type TextReader,
 } from "../canonical-values/source-files.ts";
 import { isOutOfScopeSource } from "../out-of-scope-source.ts";
 import {
@@ -16,24 +17,36 @@ import {
 } from "./cell-class-index.ts";
 import { sourceFactsIn } from "./construction-sites.ts";
 
-const scannedSourceAt = (file: ScannedFile): ScannedSource | null => {
-  const source = readTextFile(file.absolutePath);
+const scannedSourceAt = (readText: TextReader, file: ScannedFile): ScannedSource | null => {
+  const source = readText(file.absolutePath);
   if (source === null) return null;
 
   const { program } = parseSync(file.relativePath, source);
   return { relativePath: file.relativePath, facts: sourceFactsIn(program) };
 };
 
-const buildRepositoryCellClassIndex = memoize((repositoryRoot: string): CellClassIndex => {
-  const { declarationSources } = listRepositoryFiles(repositoryRoot);
+export const buildRepositoryCellClassIndex = ({
+  repositoryRoot,
+  readText = readTextFile,
+}: {
+  readonly repositoryRoot: string;
+  readonly readText?: TextReader;
+}): CellClassIndex => {
+  const { declarationSources } = listRepositoryFiles(path.resolve(repositoryRoot));
   const scanned = declarationSources.filter((file) => !isOutOfScopeSource(file.relativePath));
   if (scanned.length === 0) return EMPTY_CELL_CLASS_INDEX;
 
-  return buildCellClassIndex(scanned.map(scannedSourceAt).filter((source) => source !== null));
-});
+  return buildCellClassIndex(
+    scanned.map((file) => scannedSourceAt(readText, file)).filter((source) => source !== null),
+  );
+};
+
+const cellClassIndexAt = memoize((repositoryRoot: string): CellClassIndex =>
+  buildRepositoryCellClassIndex({ repositoryRoot }),
+);
 
 export const loadRepositoryCellClassIndex = ({
   repositoryRoot,
 }: {
   readonly repositoryRoot: string;
-}): CellClassIndex => buildRepositoryCellClassIndex(path.resolve(repositoryRoot));
+}): CellClassIndex => cellClassIndexAt(path.resolve(repositoryRoot));

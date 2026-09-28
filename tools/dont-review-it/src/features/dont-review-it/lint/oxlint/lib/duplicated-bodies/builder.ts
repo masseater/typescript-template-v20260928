@@ -5,14 +5,15 @@ import {
   listRepositoryFiles,
   readTextFile,
   type ScannedFile,
+  type TextReader,
 } from "../canonical-values/source-files.ts";
 import { isOutOfScopeSource } from "../out-of-scope-source.ts";
 import { buildBodyIndex, EMPTY_BODY_INDEX, type BodyIndex } from "./body-index.ts";
 import { declarationsIn } from "./declarations.ts";
 import { separatedByPrivateBindings, type ReferencingFile } from "./private-bindings.ts";
 
-const indexedFileAt = (file: ScannedFile): ReferencingFile | null => {
-  const source = readTextFile(file.absolutePath);
+const indexedFileAt = (readText: TextReader, file: ScannedFile): ReferencingFile | null => {
+  const source = readText(file.absolutePath);
   if (source === null) return null;
 
   const declarationFingerprints = declarationsIn(source).map((declaration) => ({
@@ -29,8 +30,10 @@ const indexedFileAt = (file: ScannedFile): ReferencingFile | null => {
 
 export const buildRepositoryBodyIndex = ({
   repositoryRoot,
+  readText = readTextFile,
 }: {
   readonly repositoryRoot: string;
+  readonly readText?: TextReader;
 }): BodyIndex => {
   const root = path.resolve(repositoryRoot);
   const { declarationSources } = listRepositoryFiles(root);
@@ -40,7 +43,7 @@ export const buildRepositoryBodyIndex = ({
   return buildBodyIndex(
     separatedByPrivateBindings({
       repositoryRoot: root,
-      files: scanned.map(indexedFileAt).filter((file) => file !== null),
+      files: scanned.map((file) => indexedFileAt(readText, file)).filter((file) => file !== null),
     }),
   );
 };

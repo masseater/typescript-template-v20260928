@@ -93,7 +93,6 @@ const softPresetRules = Object.fromEntries(
     "dont-review-it/no-module-scope-mock-config--lift-into-fixture",
     "dont-review-it/no-module-scope-mutable-state--lift-into-fixture",
     "dont-review-it/no-multi-binding-declaration--declare-one-binding-per-statement",
-    "dont-review-it/no-non-boundary-double--replace-at-the-external-boundary",
     "dont-review-it/no-normalize-sut-output--assert-natural-shape",
     "dont-review-it/no-partial-rule-set--enable-the-whole-set",
     "dont-review-it/no-promise-chain--use-async-await",

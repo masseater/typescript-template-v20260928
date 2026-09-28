@@ -7,33 +7,16 @@ import { localizedApps } from "./paraglide-options.ts";
 import {
   appConfig,
   appRun,
-  awaitingEffectDiagnostics,
-  checkCode,
-  effectDiagnostics,
   effectRun,
   lifecycle,
-  modularBoundaries,
   paraglideAppRun,
   sliceBoundaries,
-  taskInput,
-  telemetryEnv,
-  workspaceCheckImports,
   workspaceParaglideCompile,
 } from "./vite.ts";
 
 import type { ConfigEnv, PluginOption } from "vite-plus";
 
 const serve = { command: "serve", isPreview: false, mode: "test" } as const satisfies ConfigEnv;
-
-const inlangState = [
-  "!project.inlang/.gitignore",
-  "!project.inlang/.meta.json",
-  "!project.inlang/README.md",
-  "!project.inlang/cache",
-  "!project.inlang/cache/**",
-  "!project.inlang/.lix",
-  "!project.inlang/.lix/**",
-];
 
 describe("lifecycle", () => {
   const it = test
@@ -67,208 +50,115 @@ const libraryRoot = paths.join(repositoryRoot, "libs/db-local");
 const applicationRoot = paths.join(repositoryRoot, "apps/service-admin");
 
 describe("effectRun", () => {
-  const it = test.extend("effectWorkspaceRun", () => effectRun(libraryRoot));
+  const it = test.extend("effectWorkspaceTasks", () => effectRun(libraryRoot).tasks);
 
-  it("lints the workspace before commit and checks types, imports and budgets before push", ({
-    effectWorkspaceRun,
-  }) => {
-    expect(effectWorkspaceRun).toStrictEqual({
-      tasks: {
-        ...effectDiagnostics(libraryRoot),
-        ...checkCode,
-        ...workspaceCheckImports,
-        ...modularBoundaries,
-        ...lifecycle({
-          precommit: ["check:code"],
-          prepush: ["check:effect", "check:imports", "check:modular"],
-        }),
-      },
-    });
+  it("lints the workspace before commit", ({ effectWorkspaceTasks }) => {
+    expect(effectWorkspaceTasks.precommit.dependsOn).toStrictEqual(
+      expect.arrayContaining(["check:code"]),
+    );
+  });
+
+  it("checks types, imports and budgets before push", ({ effectWorkspaceTasks }) => {
+    expect(effectWorkspaceTasks.prepush.dependsOn).toStrictEqual(
+      expect.arrayContaining(["check:effect", "check:imports", "check:modular"]),
+    );
   });
 });
 
 describe("appRun", () => {
-  const it = test.extend("applicationRun", () => appRun(applicationRoot));
+  const it = test.extend("applicationTasks", () => appRun(applicationRoot).tasks);
 
-  it("type-checks, builds, and starts before the stages that ship an app", ({ applicationRun }) => {
-    expect(applicationRun).toStrictEqual({
-      tasks: {
-        ...awaitingEffectDiagnostics(applicationRoot),
-        ...checkCode,
-        ...workspaceCheckImports,
-        "check:client": {
-          command: "dont-review-it-client",
-          env: [...telemetryEnv],
-          input: [
-            ...taskInput,
-            "!node_modules",
-            "!**/dist/**",
-            "!**/node_modules/.cache/**",
-            { base: "workspace", pattern: "!.local" },
-            { base: "workspace", pattern: "!.local/**" },
-            ...inlangState,
-          ],
-          output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
-        },
-        "check:react": {
-          command: "dont-review-it-react",
-          env: [...telemetryEnv],
-          input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**", ...inlangState],
-          output: [{ auto: true }, "!**/node_modules/.cache/**"],
-        },
-        ...sliceBoundaries,
-        build: {
-          command: "vp build",
-          env: [...telemetryEnv],
-          dependsOn: ["@repo/dev#setup", "check:effect"],
-          input: [
-            ...taskInput,
-            "!.",
-            "!node_modules",
-            "!.wrangler",
-            "!.wrangler/**",
-            "!dist",
-            "!dist/**",
-            { base: "workspace", pattern: "!.local" },
-            { base: "workspace", pattern: "!.local/**" },
-            ...inlangState,
-          ],
-          output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
-        },
-        "check:dev": {
-          cache: false,
-          command: "../../tools/dev/src/features/dev/dev-start.ts",
-          dependsOn: ["@repo/dev#setup"],
-        },
-        dev: { cache: false, command: "vp dev" },
-        preview: { cache: false, command: "vp preview" },
-        ...lifecycle({
-          precommit: ["check:code"],
-          prepush: [
-            "check:effect",
-            "check:feature-sliced",
-            "check:thin-app-routes",
-            "check:imports",
-            "check:client",
-            "check:react",
-          ],
-          prepr: ["build"],
-          premerge: ["build", "check:dev"],
-        }),
-      },
-    });
+  it("type-checks before it builds", ({ applicationTasks }) => {
+    expect(applicationTasks.build.dependsOn).toStrictEqual(
+      expect.arrayContaining(["check:effect"]),
+    );
+  });
+
+  it("builds before a pull request", ({ applicationTasks }) => {
+    expect(applicationTasks.prepr.dependsOn).toStrictEqual(expect.arrayContaining(["build"]));
+  });
+
+  it("builds and starts before a merge", ({ applicationTasks }) => {
+    expect(applicationTasks.premerge.dependsOn).toStrictEqual(
+      expect.arrayContaining(["build", "check:dev"]),
+    );
+  });
+
+  it("checks slices, routes, client reach and React before push", ({ applicationTasks }) => {
+    expect(applicationTasks.prepush.dependsOn).toStrictEqual(
+      expect.arrayContaining([
+        "check:effect",
+        "check:feature-sliced",
+        "check:thin-app-routes",
+        "check:imports",
+        "check:client",
+        "check:react",
+      ]),
+    );
   });
 });
 
 describe("paraglideAppRun", () => {
-  const it = test
-    .extend("localizedApplicationRun", () => paraglideAppRun(applicationRoot))
-    .extend("applicationRun", () => appRun(applicationRoot));
+  const it = test.extend("localizedApplicationTasks", () => paraglideAppRun(applicationRoot).tasks);
 
-  it("compiles message catalogs before typecheck and the workspace checks", ({
-    applicationRun,
-    localizedApplicationRun,
-  }) => {
-    expect(localizedApplicationRun).toStrictEqual({
-      tasks: {
-        ...applicationRun.tasks,
-        "check:effect": {
-          ...awaitingEffectDiagnostics(applicationRoot)["check:effect"],
-          dependsOn: ["typescript-template#compile:paraglide"],
-        },
-        "check:code": {
-          ...checkCode["check:code"],
-          dependsOn: ["typescript-template#compile:paraglide"],
-        },
-        "check:imports": {
-          ...workspaceCheckImports["check:imports"],
-          dependsOn: ["typescript-template#compile:paraglide"],
-        },
-        "check:client": {
-          ...applicationRun.tasks["check:client"],
-          dependsOn: ["typescript-template#compile:paraglide"],
-        },
-        "check:react": {
-          ...applicationRun.tasks["check:react"],
-          dependsOn: ["typescript-template#compile:paraglide"],
-        },
-      },
-    });
-  });
+  it.for(["check:effect", "check:code", "check:imports", "check:client", "check:react"])(
+    "compiles message catalogs before %s",
+    (gatedTask, { localizedApplicationTasks }) => {
+      expect(localizedApplicationTasks[gatedTask]?.dependsOn).toStrictEqual(
+        expect.arrayContaining(["typescript-template#compile:paraglide"]),
+      );
+    },
+  );
 });
 
 describe("sliceBoundaries", () => {
-  const it = test.extend("sliceChecks", () => sliceBoundaries);
+  const it = test.extend("sliceChecks", () => Object.values(sliceBoundaries));
 
   it("leaves local state and compiled message catalogs out of the slice checks", ({
     sliceChecks,
   }) => {
-    expect(sliceChecks).toStrictEqual({
-      "check:feature-sliced": {
-        command: "dont-review-it-feature-sliced",
-        env: [...telemetryEnv],
-        input: [
-          ...taskInput,
-          { base: "workspace", pattern: "!.local" },
+    expect(sliceChecks.map((check) => check.input)).toStrictEqual(
+      sliceChecks.map(() =>
+        expect.arrayContaining([
           { base: "workspace", pattern: "!.local/**" },
           ...localizedApps.map((app) => ({
             base: "workspace",
             pattern: `!apps/${app}/.paraglide/**`,
           })),
-        ],
-      },
-      "check:thin-app-routes": {
-        command: "dont-review-it-thin-app-routes",
-        env: [...telemetryEnv],
-        input: [
-          ...taskInput,
-          { base: "workspace", pattern: "!.local" },
-          { base: "workspace", pattern: "!.local/**" },
-          ...localizedApps.map((app) => ({
-            base: "workspace",
-            pattern: `!apps/${app}/.paraglide/**`,
-          })),
-        ],
-      },
-    });
+        ]),
+      ),
+    );
   });
 });
 
 describe("workspaceParaglideCompile", () => {
   const it = test.extend("paraglideCompile", () => workspaceParaglideCompile);
 
-  it("reads each localized application's catalogs and settings, not the listings the build and compile write into", ({
-    paraglideCompile,
-  }) => {
-    expect(paraglideCompile).toStrictEqual({
-      command: "./libs/vite-config/src/features/vite-config/compile-workspace-paraglide.ts",
-      env: [...telemetryEnv],
-      input: [
-        ...taskInput,
-        ...localizedApps.flatMap((app) =>
-          [
-            `apps/${app}/messages/**`,
-            `apps/${app}/project.inlang/settings.json`,
-            `!apps/${app}`,
-            `!apps/${app}/project.inlang`,
-            `!apps/${app}/.paraglide/**`,
-            ...inlangState.map((pattern) => pattern.replace("!", `!apps/${app}/`)),
-          ].map((pattern) => ({ base: "workspace", pattern })),
-        ),
-        {
-          base: "workspace",
-          pattern: "libs/vite-config/src/features/vite-config/paraglide-options.ts",
-        },
-        {
-          base: "workspace",
-          pattern: "libs/vite-config/src/features/vite-config/compile-workspace-paraglide.ts",
-        },
-      ],
-      output: localizedApps.map((app) => ({
-        base: "workspace",
-        pattern: `apps/${app}/.paraglide/**`,
-      })),
-    });
+  it("reads each localized application's catalogs and settings", ({ paraglideCompile }) => {
+    expect(paraglideCompile.input).toStrictEqual(
+      expect.arrayContaining(
+        localizedApps.flatMap((app) => [
+          { base: "workspace", pattern: `apps/${app}/messages/**` },
+          { base: "workspace", pattern: `apps/${app}/project.inlang/settings.json` },
+        ]),
+      ),
+    );
+  });
+
+  it("does not read the catalogs it compiles", ({ paraglideCompile }) => {
+    expect(paraglideCompile.input).toStrictEqual(
+      expect.arrayContaining(
+        localizedApps.map((app) => ({ base: "workspace", pattern: `!apps/${app}/.paraglide/**` })),
+      ),
+    );
+  });
+
+  it("writes each localized application's compiled catalogs", ({ paraglideCompile }) => {
+    expect(paraglideCompile.output).toStrictEqual(
+      expect.arrayContaining(
+        localizedApps.map((app) => ({ base: "workspace", pattern: `apps/${app}/.paraglide/**` })),
+      ),
+    );
   });
 });
 

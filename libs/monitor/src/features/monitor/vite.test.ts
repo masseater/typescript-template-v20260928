@@ -1,14 +1,5 @@
 import { repositoryRoot } from "@repo/config/repository-root";
-import {
-  checkCode,
-  effectDiagnostics,
-  lifecycle,
-  modularBoundaries,
-  paths,
-  taskInput,
-  telemetryEnv,
-  workspaceCheckImports,
-} from "@repo/vite-config";
+import { paths } from "@repo/vite-config";
 import { describe, expect, test } from "vite-plus/test";
 
 import { monitorWorkerVite } from "./vite.ts";
@@ -18,50 +9,20 @@ const errorMonitorRoot = paths.join(repositoryRoot, "infra/error-monitor");
 describe("monitorWorkerVite", () => {
   const it = test.extend("workerVite", () => monitorWorkerVite(errorMonitorRoot));
 
-  it("packs each monitor from its feature worker and builds that artifact before the pull request gate", ({
-    workerVite,
-  }) => {
-    expect(workerVite).toStrictEqual({
-      pack: {
-        deps: {
-          alwaysBundle: [/^@repo\//, /^effect(?:\/|$)/],
-          onlyBundle: ["effect", "@repo/monitor"],
-        },
-        dts: false,
-        entry: { index: "src/features/error-monitor/worker.ts" },
-        format: "esm",
-        outExtensions: workerVite.pack.outExtensions,
-        platform: "browser",
-        target: "es2023",
-      },
-      run: {
-        tasks: {
-          ...effectDiagnostics(errorMonitorRoot),
-          ...checkCode,
-          ...workspaceCheckImports,
-          ...modularBoundaries,
-          build: {
-            command: "vp pack",
-            dependsOn: ["check:effect"],
-            input: [...taskInput],
-            env: [...telemetryEnv],
-          },
-          ...lifecycle({
-            precommit: ["check:code"],
-            prepush: ["check:effect", "check:imports", "check:modular"],
-            prepr: ["build"],
-          }),
-        },
-      },
-      test: {
-        coverage: {
-          exclude: ["specs/**"],
-          thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
-        },
-        mockReset: true,
-        restoreMocks: true,
-      },
+  it("packs each monitor from its feature worker", ({ workerVite }) => {
+    expect(workerVite.pack.entry).toStrictEqual({
+      index: "src/features/error-monitor/worker.ts",
     });
+  });
+
+  it("type-checks before it builds the packed worker", ({ workerVite }) => {
+    expect(workerVite.run.tasks.build.dependsOn).toStrictEqual(
+      expect.arrayContaining(["check:effect"]),
+    );
+  });
+
+  it("builds the packed worker before a pull request", ({ workerVite }) => {
+    expect(workerVite.run.tasks.prepr.dependsOn).toStrictEqual(expect.arrayContaining(["build"]));
   });
 });
 

@@ -1,12 +1,10 @@
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
 import { Effect, FileSystem, Path } from "effect";
-import { describe, expect, vi } from "vite-plus/test";
+import { describe, expect } from "vite-plus/test";
 
 import { readTextFile } from "../canonical-values/source-files.ts";
-import { loadStyleClassIndex } from "./builder.ts";
-
-vi.mock(import("../canonical-values/source-files.ts"), { spy: true });
+import { buildRepositoryStyleClassIndex, loadStyleClassIndex } from "./builder.ts";
 
 const VANISHED_FILE_NAME = "vanished.css";
 
@@ -90,16 +88,10 @@ layer(NodeServices.layer)("loadStyleClassIndex", (it) => {
         paths.join(repositoryRoot, "src", VANISHED_FILE_NAME),
         ".ghost {\n  color: red;\n}\n",
       );
-      const listedSources = yield* Effect.promise(() =>
-        vi.importActual<typeof import("../canonical-values/source-files.ts")>(
-          "../canonical-values/source-files.ts",
-        ),
-      );
-      // mock-factory-exemption no-replaced-double-behaviour--let-the-replaced-module-answer -- whether a style sheet is still there when the boundary reads it is settled between the listing and the read, both of which happen inside the boundary this spec replaces
-      vi.mocked(readTextFile).mockImplementation((path) =>
-        path.endsWith(VANISHED_FILE_NAME) ? null : listedSources.readTextFile(path),
-      );
-      return loadStyleClassIndex({ repositoryRoot });
+      return buildRepositoryStyleClassIndex({
+        repositoryRoot,
+        readText: (path) => (path.endsWith(VANISHED_FILE_NAME) ? null : readTextFile(path)),
+      });
     });
 
     it.effect("is left out of the index, and the style sheets beside it stay in", () =>
