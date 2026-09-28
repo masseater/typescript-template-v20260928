@@ -1,12 +1,12 @@
 ---
-description: "Disallow writing a caught failure to an output stream inside a catch clause that neither stops nor returns, so a failure that was caught either ends the work or produces a value the caller can use"
+description: "Disallow writing a caught failure to an output stream inside a catch clause that neither stops nor returns, or discarding an Effect failure with Effect.ignore right after logging it with Effect.tapCause, so a failure that was caught either ends the work or produces a value the caller can use"
 ---
 
 # no-logged-and-continued-failure--stop-or-recover
 
 <!-- BEGIN GENERATED rule-header -->
 
-Disallow writing a caught failure to an output stream inside a catch clause that neither stops nor returns, so a failure that was caught either ends the work or produces a value the caller can use
+Disallow writing a caught failure to an output stream inside a catch clause that neither stops nor returns, or discarding an Effect failure with Effect.ignore right after logging it with Effect.tapCause, so a failure that was caught either ends the work or produces a value the caller can use
 
 - Tool: `oxlint`
 - Fixable: no
@@ -34,6 +34,11 @@ Where the write is the program's own output rather than a report of a failure, t
 <!-- BEGIN GENERATED examples -->
 
 Code this rule rejects.
+
+```ts
+// Effect.ignore right after Effect.tapCause logs the failure and returns the same success
+yield* removePhotos(memberId).pipe(Effect.tapCause(logFailure), Effect.ignore);
+```
 
 ```ts
 // a catch clause that writes the failure and carries on is reported
@@ -81,6 +86,15 @@ try {
 }
 ```
 
+```ts
+// logging the failure and then turning it into a value the caller can tell apart recovers
+const released = removePhotos(memberId).pipe(
+  Effect.as('released'),
+  Effect.tapCause(logFailure),
+  Effect.orElseSucceed(() => 'deferred'),
+);
+```
+
 <!-- END GENERATED examples -->
 
 ### Forbidden bypasses (do not do this)
@@ -97,6 +111,7 @@ try {
 | messageId | Text |
 | --- | --- |
 | `loggedAndContinuedFailure` | A catch clause must not write the failure to an output stream and then let the surrounding code carry on. Choose one of the two endings the caller can act on. Stop: rethrow the failure, or throw one that names this layer's part in it. Recover: return the value the caller should use in place of the missing one, at the same statement level as this write. |
+| `loggedAndIgnoredEffectFailure` | Effect.ignore right after Effect.tapCause logs the failure and then hands the caller the same success as when nothing failed. Choose one of the two endings the caller can act on. Stop: drop Effect.ignore and let the failure reach the caller. Recover: replace it with Effect.orElseSucceed or Effect.catch returning a value that tells the caller the operation did not complete. |
 
 <!-- END GENERATED messages -->
 

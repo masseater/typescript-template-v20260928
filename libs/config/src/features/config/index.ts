@@ -142,7 +142,8 @@ export {
   readWikiBindings,
 } from "./environment.ts";
 export { httpStatus } from "./http-status.ts";
-export { memberRetentionDays } from "./member-retention.ts";
+export { PHOTO_PURGE, memberRetentionDays, photoPurges } from "./member-retention.ts";
+export type { PhotoPurge } from "./member-retention.ts";
 export { memberMcpCapabilities } from "./member-mcp.ts";
 export { MEMBER_MCP_SCOPE, memberMcpScopes, memberMcpToolScopes } from "./member-mcp.ts";
 export type { MemberMcpScope } from "./member-mcp.ts";

@@ -1,4 +1,4 @@
-import { APPLICATION, ROLE } from "@repo/config";
+import { APPLICATION, PHOTO_PURGE, ROLE } from "@repo/config";
 import { eq } from "drizzle-orm";
 import { DateTime, Effect, Ref } from "effect";
 import { describe, expect, test } from "vite-plus/test";
@@ -79,21 +79,98 @@ describe("withdrawMember", () => {
     });
   });
 
+  describe("a member who leaves with retention while the photo storage is reachable", () => {
+    const it = test.extend("purgedLeave", () =>
+      Effect.runPromise(
+        Effect.gen(function* leavePurged() {
+          yield* addUser({ userId: "leaver" });
+          const left = yield* withdrawMember("leaver", {
+            immediate: false,
+            removePhotos: keepPhotos,
+          });
+          const [scheduled] = yield* query((database) =>
+            database
+              .select({ purgeAt: leaveRequestTable.purgeAt })
+              .from(leaveRequestTable)
+              .where(eq(leaveRequestTable.memberId, "leaver")),
+          );
+          return { left, scheduledPurgeAt: scheduled?.purgeAt };
+        }).pipe(Effect.provide(TestDatabase)),
+      ));
+
+    it("reports the photos as purged along with the scheduled purge time", ({ purgedLeave }) => {
+      expect(purgedLeave.scheduledPurgeAt).toBeInstanceOf(Date);
+      expect(purgedLeave.left).toStrictEqual({
+        immediate: false,
+        photos: PHOTO_PURGE.purged,
+        purgeAt: purgedLeave.scheduledPurgeAt,
+      });
+    });
+  });
+
+  describe("a member who leaves with retention while the photo storage fails", () => {
+    const it = test.extend("deferredLeave", () =>
+      Effect.runPromise(
+        Effect.gen(function* leaveDeferred() {
+          yield* addUser({ userId: "stranded" });
+          const left = yield* withdrawMember("stranded", {
+            immediate: false,
+            removePhotos: () => Effect.fail("storage unavailable"),
+          });
+          const [scheduled] = yield* query((database) =>
+            database
+              .select({ purgeAt: leaveRequestTable.purgeAt })
+              .from(leaveRequestTable)
+              .where(eq(leaveRequestTable.memberId, "stranded")),
+          );
+          return {
+            left,
+            member: yield* findUser("stranded"),
+            scheduledPurgeAt: scheduled?.purgeAt,
+            withdrawn: yield* withdrawnSnapshotCount("stranded"),
+          };
+        }).pipe(Effect.provide(TestDatabase)),
+      ));
+
+    it("accepts the leave and reports the photos as deferred to the scheduled purge", ({
+      deferredLeave,
+    }) => {
+      expect(deferredLeave.scheduledPurgeAt).toBeInstanceOf(Date);
+      expect(deferredLeave).toStrictEqual({
+        left: {
+          immediate: false,
+          photos: PHOTO_PURGE.deferred,
+          purgeAt: deferredLeave.scheduledPurgeAt,
+        },
+        member: undefined,
+        scheduledPurgeAt: deferredLeave.scheduledPurgeAt,
+        withdrawn: 1,
+      });
+    });
+  });
+
   describe("a member who leaves with immediate deletion", () => {
     const it = test.extend("deletedMember", () =>
       Effect.runPromise(
         Effect.gen(function* deleteMember() {
           yield* addUser({ userId: "gone" });
-          yield* withdrawMember("gone", { immediate: true, removePhotos: keepPhotos });
+          const left = yield* withdrawMember("gone", { immediate: true, removePhotos: keepPhotos });
           return {
+            left,
             member: yield* findUser("gone"),
             withdrawn: yield* withdrawnSnapshotCount("gone"),
           };
         }).pipe(Effect.provide(TestDatabase)),
       ));
 
-    it("does not keep a withdrawn snapshot", ({ deletedMember }) => {
-      expect(deletedMember).toStrictEqual({ member: undefined, withdrawn: 0 });
+    it("does not keep a withdrawn snapshot and reports the photos as purged", ({
+      deletedMember,
+    }) => {
+      expect(deletedMember).toStrictEqual({
+        left: { immediate: true, photos: PHOTO_PURGE.purged },
+        member: undefined,
+        withdrawn: 0,
+      });
     });
   });
 });

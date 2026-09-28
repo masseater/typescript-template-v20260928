@@ -1,4 +1,10 @@
-import { Email, memberRetentionDays, photoSlots, profileVisibilities } from "@repo/config";
+import {
+  Email,
+  memberRetentionDays,
+  photoPurges,
+  photoSlots,
+  profileVisibilities,
+} from "@repo/config";
 import {
   Acknowledged,
   Identifier,
@@ -112,7 +118,10 @@ const ContactAccepted = Acknowledged;
 
 const LeaveRequest = Schema.Struct({ immediate: Schema.Boolean });
 
-const LeaveAccepted = Acknowledged;
+const LeaveAccepted = Schema.Struct({
+  ok: Schema.Literal(true),
+  photos: Schema.Literals(photoPurges),
+});
 
 const RecoveryOfferAvailable = Schema.Struct({
   available: Schema.Literal(true),

@@ -1,6 +1,7 @@
 import { assert, it } from "@effect/vitest";
 import {
   PHOTO_CONTENT_TYPE,
+  PHOTO_PURGE,
   PHOTO_SLOT,
   PROFILE_VISIBILITY,
   ROLE,
@@ -147,7 +148,8 @@ it.effect.each([true, false])(
       const leaverFace = yield* uploadPhoto("leaver", PHOTO_SLOT.face, jpegWithExif);
       const leaverCompany = yield* uploadPhoto("leaver", PHOTO_SLOT.company, pngWithText);
       const kept = yield* uploadPhoto("stayer", PHOTO_SLOT.face, jpegWithExif);
-      yield* withdrawWithPhotos("leaver", { immediate });
+      const left = yield* withdrawWithPhotos("leaver", { immediate });
+      assert.strictEqual(left.photos, PHOTO_PURGE.purged);
       assert.isUndefined(yield* storedBytes(`photos/leaver/face/${leaverFace.version ?? ""}`));
       assert.isUndefined(
         yield* storedBytes(`photos/leaver/company/${leaverCompany.version ?? ""}`),
@@ -222,6 +224,26 @@ it.effect("keeps the withdrawn record for the next purge when the photos cannot 
       assert.isUndefined(yield* storedBytes(key));
     }
   }).pipe(Effect.provide(services)),
+);
+
+it.effect(
+  "a withdrawal with retention reports the photos as deferred when they cannot be deleted",
+  () =>
+    Effect.gen(function* program() {
+      yield* addUser("stranded");
+      const face = yield* uploadPhoto("stranded", PHOTO_SLOT.face, jpegWithExif);
+      const faceKey = `photos/stranded/face/${face.version ?? ""}`;
+      const left = yield* withdrawWithPhotos("stranded", { immediate: false }).pipe(
+        Effect.provide(PhotoStore.fromFileStore().pipe(Layer.provide(FileStore.layer(undefined)))),
+      );
+      assert.strictEqual(left.immediate, false);
+      assert.strictEqual(left.photos, PHOTO_PURGE.deferred);
+      assert.isDefined(yield* storedBytes(faceKey));
+      assert.strictEqual(yield* withdrawnRows("stranded"), 1);
+      const purged = yield* purgeWithdrawnWithPhotos(afterRetention);
+      assert.deepStrictEqual(purged, { memberIds: ["stranded"], retainedMemberIds: [] });
+      assert.isUndefined(yield* storedBytes(faceKey));
+    }).pipe(Effect.provide(services)),
 );
 
 it.effect(

@@ -1,4 +1,4 @@
-import { ROLE, memberRetentionDays } from "@repo/config";
+import { PHOTO_PURGE, ROLE, memberRetentionDays } from "@repo/config";
 import { logAt, logCause } from "@repo/observability";
 import { and, desc, eq, gt, inArray, isNull, lte, type SQL } from "drizzle-orm";
 import { DateTime, Effect, Schema, type Cause } from "effect";
@@ -422,6 +422,15 @@ const photoPurgeFailed =
   (cause: Cause.Cause<unknown>): Effect.Effect<void> =>
     logCause({ attributes: { memberId }, cause, eventName: "member_leave.photo_purge_failed" });
 
+const photoPurgeDeferred =
+  (memberId: string, purgeAt: Date): ((cause: Cause.Cause<unknown>) => Effect.Effect<void>) =>
+  (cause: Cause.Cause<unknown>): Effect.Effect<void> =>
+    logCause({
+      attributes: { memberId, purgeAt: purgeAt.toISOString() },
+      cause,
+      eventName: "member_leave.photo_purge_deferred",
+    });
+
 const withdrawMember = Effect.fn("withdrawMember")(function* withdrawMember<Failure, Requirements>(
   memberId: string,
   leave: Readonly<{ immediate: boolean; removePhotos: PhotoRemover<Failure, Requirements> }>,
@@ -431,14 +440,16 @@ const withdrawMember = Effect.fn("withdrawMember")(function* withdrawMember<Fail
     yield* leave.removePhotos(memberId);
     yield* revokeUserSessions(memberId);
     yield* query((database) => database.delete(user).where(eq(user.id, memberId)));
-    return { immediate: true as const };
+    return { immediate: true as const, photos: PHOTO_PURGE.purged };
   }
   yield* revokeUserSessions(memberId);
   const purgeAt = yield* retainWithdrawn(member);
-  yield* leave
-    .removePhotos(memberId)
-    .pipe(Effect.tapCause(photoPurgeFailed(memberId)), Effect.ignore);
-  return { immediate: false as const, purgeAt };
+  const photos = yield* leave.removePhotos(memberId).pipe(
+    Effect.as(PHOTO_PURGE.purged),
+    Effect.tapCause(photoPurgeDeferred(memberId, purgeAt)),
+    Effect.orElseSucceed(() => PHOTO_PURGE.deferred),
+  );
+  return { immediate: false as const, photos, purgeAt };
 });
 
 const releasePhotos = <Failure, Requirements>(

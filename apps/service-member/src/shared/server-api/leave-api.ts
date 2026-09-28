@@ -1,6 +1,7 @@
 import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import { acceptRecovery, declineRecovery, findRecoveryOffer } from "@repo/db";
+import { annotateSpan } from "@repo/observability";
 import { sessionFailures } from "@repo/runtime/account";
 import { createApi } from "@repo/runtime/http";
 import { Effect } from "effect";
@@ -39,8 +40,9 @@ const submitLeave = Effect.fn("leave.submit")(function* submitLeave(
   { immediate }: typeof LeaveRequest.Type,
 ) {
   const { user } = yield* verifySession(request.headers);
-  yield* withdrawWithPhotos(user.id, { immediate });
-  return { ok: true as const };
+  const { photos } = yield* withdrawWithPhotos(user.id, { immediate });
+  yield* annotateSpan({ "member_leave.photos": photos });
+  return { ok: true as const, photos };
 });
 
 const loadRecoveryOffer = Effect.fn("leave.recoveryOffer")(function* loadRecoveryOffer(

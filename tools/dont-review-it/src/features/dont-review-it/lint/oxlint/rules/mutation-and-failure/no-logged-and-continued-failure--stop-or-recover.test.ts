@@ -60,8 +60,45 @@ describe("dont-review-it/no-logged-and-continued-failure--stop-or-recover", () =
         name: "a write to a stream that is not a process stream is not an output sink",
         code: "try {\n  run();\n} catch (failure) {\n  buffer.write(String(failure));\n}",
       },
+      {
+        name: "logging the failure and then turning it into a value the caller can tell apart recovers",
+        documented: true,
+        code: "const released = removePhotos(memberId).pipe(\n  Effect.as('released'),\n  Effect.tapCause(logFailure),\n  Effect.orElseSucceed(() => 'deferred'),\n);",
+      },
+      {
+        name: "Effect.ignore that does not follow a logging tap is outside what this rule looks at",
+        code: "removePhotos(memberId).pipe(Effect.ignore);",
+      },
+      {
+        name: "Effect.ignore separated from the logging tap by a recovery is not the logged-and-ignored shape",
+        code: "removePhotos(memberId).pipe(\n  Effect.tapCause(logFailure),\n  Effect.orElseSucceed(() => 'deferred'),\n  Effect.ignore,\n);",
+      },
+      {
+        name: "a tapCause from another namespace is not the Effect tap",
+        code: "stream.pipe(Stream.tapCause(logFailure), Effect.ignore);",
+      },
+      {
+        name: "an ignore from another namespace is not the Effect discard",
+        code: "removePhotos(memberId).pipe(Effect.tapCause(logFailure), Stream.ignore);",
+      },
     ],
     invalid: [
+      {
+        name: "Effect.ignore right after Effect.tapCause logs the failure and returns the same success",
+        documented: true,
+        code: "yield* removePhotos(memberId).pipe(Effect.tapCause(logFailure), Effect.ignore);",
+        errors: [{ messageId: "loggedAndIgnoredEffectFailure" }],
+      },
+      {
+        name: "Effect.ignore called with options after Effect.tapCause is the same shape",
+        code: "yield* removePhotos(memberId).pipe(\n  Effect.tapCause(logFailure),\n  Effect.ignore({ log: true }),\n);",
+        errors: [{ messageId: "loggedAndIgnoredEffectFailure" }],
+      },
+      {
+        name: "the standalone pipe function carries the same shape",
+        code: "pipe(removePhotos(memberId), Effect.tapCause(logFailure), Effect.ignore);",
+        errors: [{ messageId: "loggedAndIgnoredEffectFailure" }],
+      },
       {
         name: "a catch clause that writes the failure and carries on is reported",
         documented: true,
