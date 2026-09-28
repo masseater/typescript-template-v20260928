@@ -1,17 +1,9 @@
-import { SpanStatusCode, context, metrics, propagation, trace } from "@opentelemetry/api";
+import { SpanStatusCode, context, metrics, trace } from "@opentelemetry/api";
+import { setAsideGlobalTelemetry } from "@repo/telemetry/testing";
 import { Effect } from "effect";
 import { describe, expect, onTestFinished, test, vi } from "vite-plus/test";
 
 const INSTRUMENTATION_NAME = "@repo/dont-review-it/repository-checks";
-
-const forgetTelemetry = (): void => {
-  process.exitCode = undefined;
-  process.removeAllListeners("beforeExit");
-  context.disable();
-  metrics.disable();
-  propagation.disable();
-  trace.disable();
-};
 
 describe("measureCheck", () => {
   describe("a check measured in an environment that never asked for telemetry", () => {
@@ -21,7 +13,11 @@ describe("measureCheck", () => {
           Effect.gen(function* checkProductWithoutTelemetry() {
             vi.stubEnv("MST_TELEMETRY", undefined);
             vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-            onTestFinished(forgetTelemetry);
+            const restoreGlobalTelemetry = setAsideGlobalTelemetry();
+            onTestFinished(() => {
+              process.exitCode = undefined;
+              restoreGlobalTelemetry();
+            });
             vi.resetModules();
             const telemetry = yield* Effect.promise(() => import("./check-telemetry.ts"));
             return yield* Effect.promise(() => telemetry.measureCheck(() => 41 + 1));
@@ -39,7 +35,11 @@ describe("measureCheck", () => {
           Effect.gen(function* spanWithoutTelemetry() {
             vi.stubEnv("MST_TELEMETRY", undefined);
             vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-            onTestFinished(forgetTelemetry);
+            const restoreGlobalTelemetry = setAsideGlobalTelemetry();
+            onTestFinished(() => {
+              process.exitCode = undefined;
+              restoreGlobalTelemetry();
+            });
             vi.resetModules();
             const telemetry = yield* Effect.promise(() => import("./check-telemetry.ts"));
             return yield* Effect.promise(() =>
@@ -62,7 +62,11 @@ describe("measureCheck", () => {
             vi.stubEnv("MST_TELEMETRY", "1");
             vi.stubEnv("OTEL_SDK_DISABLED", undefined);
             vi.stubEnv("TRACEPARENT", undefined);
-            onTestFinished(forgetTelemetry);
+            const restoreGlobalTelemetry = setAsideGlobalTelemetry();
+            onTestFinished(() => {
+              process.exitCode = undefined;
+              restoreGlobalTelemetry();
+            });
             vi.resetModules();
             const telemetry = yield* Effect.promise(() => import("./check-telemetry.ts"));
             return yield* Effect.promise(() => telemetry.measureCheck(() => 41 + 1));
@@ -81,7 +85,7 @@ describe("measureCheck", () => {
             vi.stubEnv("MST_TELEMETRY", "1");
             vi.stubEnv("OTEL_SDK_DISABLED", undefined);
             vi.stubEnv("TRACEPARENT", undefined);
-            forgetTelemetry();
+            const restoreGlobalTelemetry = setAsideGlobalTelemetry();
             vi.resetModules();
             vi.spyOn(process, "argv", "get").mockReturnValue([
               "/usr/local/bin/node",
@@ -120,7 +124,10 @@ describe("measureCheck", () => {
             ).mockResolvedValue();
             const started = yield* Effect.promise(() => import("@repo/ai-native-telemetry"));
             const running = started.startTelemetry("mst-check");
-            onTestFinished(() => running.shutdown().then(forgetTelemetry));
+            onTestFinished(() => {
+              process.exitCode = undefined;
+              return running.shutdown().then(restoreGlobalTelemetry);
+            });
             const telemetry = yield* Effect.promise(() => import("./check-telemetry.ts"));
             yield* Effect.promise(() => telemetry.measureCheck(() => 41 + 1));
             process.emit("beforeExit", 0);
@@ -141,7 +148,7 @@ describe("measureCheck", () => {
             vi.stubEnv("MST_TELEMETRY", "1");
             vi.stubEnv("OTEL_SDK_DISABLED", undefined);
             vi.stubEnv("TRACEPARENT", undefined);
-            forgetTelemetry();
+            const restoreGlobalTelemetry = setAsideGlobalTelemetry();
             vi.resetModules();
             vi.spyOn(process, "argv", "get").mockReturnValue(["/usr/local/bin/node"]);
             const traceExporterModule = yield* Effect.promise(
@@ -176,7 +183,10 @@ describe("measureCheck", () => {
             ).mockResolvedValue();
             const started = yield* Effect.promise(() => import("@repo/ai-native-telemetry"));
             const running = started.startTelemetry("mst-check");
-            onTestFinished(() => running.shutdown().then(forgetTelemetry));
+            onTestFinished(() => {
+              process.exitCode = undefined;
+              return running.shutdown().then(restoreGlobalTelemetry);
+            });
             const telemetry = yield* Effect.promise(() => import("./check-telemetry.ts"));
             yield* Effect.promise(() => telemetry.measureCheck(() => 41 + 1));
             process.emit("beforeExit", 0);
@@ -198,7 +208,7 @@ describe("measureCheck", () => {
             vi.stubEnv("MST_TELEMETRY", "1");
             vi.stubEnv("OTEL_SDK_DISABLED", undefined);
             vi.stubEnv("TRACEPARENT", undefined);
-            forgetTelemetry();
+            const restoreGlobalTelemetry = setAsideGlobalTelemetry();
             vi.resetModules();
             vi.spyOn(process, "argv", "get").mockReturnValue(["/usr/local/bin/node"]);
             const traceExporterModule = yield* Effect.promise(
@@ -242,7 +252,10 @@ describe("measureCheck", () => {
             ).mockResolvedValue();
             const started = yield* Effect.promise(() => import("@repo/ai-native-telemetry"));
             const running = started.startTelemetry("mst-check");
-            onTestFinished(() => running.shutdown().then(forgetTelemetry));
+            onTestFinished(() => {
+              process.exitCode = undefined;
+              return running.shutdown().then(restoreGlobalTelemetry);
+            });
             const telemetry = yield* Effect.promise(() => import("./check-telemetry.ts"));
             const rejected = yield* Effect.promise(() =>
               telemetry

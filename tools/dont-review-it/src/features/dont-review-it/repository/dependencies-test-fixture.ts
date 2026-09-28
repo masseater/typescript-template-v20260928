@@ -70,10 +70,6 @@ const retiredDependencyViolations = (workspaces: readonly WorkspaceManifest[]): 
   );
 };
 
-const rootOnlyPackages: Readonly<
-  Record<string, { readonly owners: readonly string[]; readonly runner: string }>
-> = {};
-
 const developmentOnlyPackages: Readonly<Record<string, string>> = {
   miniflare: "ローカル DB / Worker テストの実行環境",
   wrangler: "ローカル DB の構築とマイグレーション",
@@ -122,18 +118,6 @@ const libraryMixedSurfaceViolations = (workspaces: readonly WorkspaceManifest[])
   });
 };
 
-const rootOnlyDependencyViolations = (workspaces: readonly WorkspaceManifest[]): string[] => {
-  return workspaces.flatMap(({ file, manifest }) => {
-    const declared = declaredDependencies(manifest);
-    return Object.entries(rootOnlyPackages)
-      .filter(([dependency, { owners }]) => declared.includes(dependency) && !owners.includes(file))
-      .map(
-        ([dependency, { owners, runner }]) =>
-          `${file}: ${dependency} はリポジトリ全体の検査なので ${owners.join(" / ")} だけが宣言します。${runner} から実行してください。`,
-      );
-  });
-};
-
 export {
   applicationDependencyViolations,
   declaredDependencies,
@@ -142,8 +126,6 @@ export {
   libraryMixedSurfaceViolations,
   retiredDependencyViolations,
   rootManifests,
-  rootOnlyDependencyViolations,
-  rootOnlyPackages,
   workspaceManifests,
 };
 export type { WorkspaceManifest };

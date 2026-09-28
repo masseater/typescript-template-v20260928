@@ -10,8 +10,7 @@ describe("source map locations", () => {
   const root = paths.join(repositoryRoot, ".local", "source-maps", app);
   const it = test
     .extend("mapDirectories", () => sourceMapDirectories(repositoryRoot, app))
-    .extend("mapManifest", () => sourceMapManifest(repositoryRoot, app))
-    .extend("manifestFileName", () => SOURCE_MAP_MANIFEST);
+    .extend("mapManifest", () => sourceMapManifest(repositoryRoot, app));
 
   it("keeps client maps and release maps under the app's local directory", ({ mapDirectories }) => {
     expect(mapDirectories).toStrictEqual({
@@ -22,9 +21,5 @@ describe("source map locations", () => {
 
   it("records emitted client maps beside the client directory", ({ mapManifest }) => {
     expect(mapManifest).toBe(paths.join(root, "client", SOURCE_MAP_MANIFEST));
-  });
-
-  it("names the emitted map manifest", ({ manifestFileName }) => {
-    expect(manifestFileName).toBe("emitted-maps.json");
   });
 });

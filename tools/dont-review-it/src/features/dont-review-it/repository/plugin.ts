@@ -28,6 +28,7 @@ import { propertyName, staticText, type Origin } from "./references.ts";
 import { retiredImportsVisitor } from "./retired-imports.ts";
 import { retiredImportGuidance } from "./retired-packages.ts";
 import { atomHeldServerDataMessage, serverCacheApiMessage } from "./state-kinds.ts";
+import { telemetryGlobalsVisitor } from "./telemetry-globals.ts";
 import {
   gitEnvironmentVisitor,
   tempDirectoryVisitor,
@@ -403,6 +404,12 @@ const projectPlugin = definePlugin({
       create: spanMutationVisitor,
       meta: metadata(
         "Tracer.Span の attribute / event を直接呼べません。OTLP の tracer は span から属性を直接読むため、伏せ字を通さない経路になります。libs/observability の annotateSpan / withSpan を使ってください。",
+      ),
+    },
+    "telemetry-globals": {
+      create: telemetryGlobalsVisitor,
+      meta: metadata(
+        "テストでは process.removeAllListeners と、@opentelemetry/api・@opentelemetry/api-logs の disable() を直接呼べません。テストの計測のために登録された beforeExit リスナーとグローバルな provider まで消え、同じプロセスで後に走るテストの計測が欠けます。@repo/telemetry/testing の setAsideGlobalTelemetry で退避し、後始末で戻してください。",
       ),
     },
     "temp-directory": {

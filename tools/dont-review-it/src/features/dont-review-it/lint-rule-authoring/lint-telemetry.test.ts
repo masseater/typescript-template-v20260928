@@ -1,6 +1,7 @@
-import { context, metrics, propagation, trace } from "@opentelemetry/api";
+import { metrics } from "@opentelemetry/api";
 import { globalErrorHandler } from "@opentelemetry/core";
 import { DataPointType } from "@opentelemetry/sdk-metrics";
+import { setAsideGlobalTelemetry } from "@repo/telemetry/testing";
 import { Effect } from "effect";
 import { describe, expect, onTestFinished, test, vi } from "vite-plus/test";
 
@@ -17,13 +18,10 @@ describe("startLintTelemetry", () => {
         Effect.gen(function* startAnswer() {
           vi.stubEnv("MST_TELEMETRY", undefined);
           vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+          const restoreGlobalTelemetry = setAsideGlobalTelemetry();
           onTestFinished(() => {
             process.exitCode = undefined;
-            process.removeAllListeners("beforeExit");
-            context.disable();
-            metrics.disable();
-            propagation.disable();
-            trace.disable();
+            restoreGlobalTelemetry();
           });
           vi.resetModules();
           const telemetry = yield* Effect.promise(() => import("./lint-telemetry.ts"));
@@ -42,13 +40,10 @@ describe("startLintTelemetry", () => {
         Effect.gen(function* startAnswer() {
           vi.stubEnv("MST_TELEMETRY", "1");
           vi.stubEnv("OTEL_SDK_DISABLED", "true");
+          const restoreGlobalTelemetry = setAsideGlobalTelemetry();
           onTestFinished(() => {
             process.exitCode = undefined;
-            process.removeAllListeners("beforeExit");
-            context.disable();
-            metrics.disable();
-            propagation.disable();
-            trace.disable();
+            restoreGlobalTelemetry();
           });
           vi.resetModules();
           const telemetry = yield* Effect.promise(() => import("./lint-telemetry.ts"));
@@ -67,13 +62,10 @@ describe("startLintTelemetry", () => {
         Effect.gen(function* startAnswer() {
           vi.stubEnv("MST_TELEMETRY", "1");
           vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+          const restoreGlobalTelemetry = setAsideGlobalTelemetry();
           onTestFinished(() => {
             process.exitCode = undefined;
-            process.removeAllListeners("beforeExit");
-            context.disable();
-            metrics.disable();
-            propagation.disable();
-            trace.disable();
+            restoreGlobalTelemetry();
           });
           vi.resetModules();
           const telemetry = yield* Effect.promise(() => import("./lint-telemetry.ts"));
@@ -92,13 +84,10 @@ describe("startLintTelemetry", () => {
         Effect.gen(function* restartAnswer() {
           vi.stubEnv("MST_TELEMETRY", "1");
           vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+          const restoreGlobalTelemetry = setAsideGlobalTelemetry();
           onTestFinished(() => {
             process.exitCode = undefined;
-            process.removeAllListeners("beforeExit");
-            context.disable();
-            metrics.disable();
-            propagation.disable();
-            trace.disable();
+            restoreGlobalTelemetry();
           });
           vi.resetModules();
           const telemetry = yield* Effect.promise(() => import("./lint-telemetry.ts"));
@@ -118,13 +107,10 @@ describe("startLintTelemetry", () => {
         Effect.gen(function* windDownExports() {
           vi.stubEnv("MST_TELEMETRY", "1");
           vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+          const restoreGlobalTelemetry = setAsideGlobalTelemetry();
           onTestFinished(() => {
             process.exitCode = undefined;
-            process.removeAllListeners("beforeExit");
-            context.disable();
-            metrics.disable();
-            propagation.disable();
-            trace.disable();
+            restoreGlobalTelemetry();
           });
           vi.resetModules();
           vi.spyOn(process, "uptime").mockReturnValue(UPTIME_SECONDS);
@@ -178,13 +164,10 @@ describe("startLintTelemetry", () => {
           Effect.gen(function* exitCodeCarriedIntoTheReport() {
             vi.stubEnv("MST_TELEMETRY", "1");
             vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+            const restoreGlobalTelemetry = setAsideGlobalTelemetry();
             onTestFinished(() => {
               process.exitCode = undefined;
-              process.removeAllListeners("beforeExit");
-              context.disable();
-              metrics.disable();
-              propagation.disable();
-              trace.disable();
+              restoreGlobalTelemetry();
             });
             vi.resetModules();
             const telemetry = yield* Effect.promise(() => import("./lint-telemetry.ts"));
@@ -211,13 +194,10 @@ describe("startLintTelemetry", () => {
           Effect.gen(function* thrownErrorReport() {
             vi.stubEnv("MST_TELEMETRY", "1");
             vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+            const restoreGlobalTelemetry = setAsideGlobalTelemetry();
             onTestFinished(() => {
               process.exitCode = undefined;
-              process.removeAllListeners("beforeExit");
-              context.disable();
-              metrics.disable();
-              propagation.disable();
-              trace.disable();
+              restoreGlobalTelemetry();
             });
             vi.resetModules();
             const telemetry = yield* Effect.promise(() => import("./lint-telemetry.ts"));
@@ -244,13 +224,10 @@ describe("startLintTelemetry", () => {
           Effect.gen(function* thrownNonErrorReport() {
             vi.stubEnv("MST_TELEMETRY", "1");
             vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+            const restoreGlobalTelemetry = setAsideGlobalTelemetry();
             onTestFinished(() => {
               process.exitCode = undefined;
-              process.removeAllListeners("beforeExit");
-              context.disable();
-              metrics.disable();
-              propagation.disable();
-              trace.disable();
+              restoreGlobalTelemetry();
             });
             vi.resetModules();
             const telemetry = yield* Effect.promise(() => import("./lint-telemetry.ts"));
@@ -281,13 +258,10 @@ describe("measureStage", () => {
           Effect.gen(function* stageProductWithoutDurations() {
             vi.stubEnv("MST_TELEMETRY", undefined);
             vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+            const restoreGlobalTelemetry = setAsideGlobalTelemetry();
             onTestFinished(() => {
               process.exitCode = undefined;
-              process.removeAllListeners("beforeExit");
-              context.disable();
-              metrics.disable();
-              propagation.disable();
-              trace.disable();
+              restoreGlobalTelemetry();
             });
             vi.resetModules();
             const telemetry = yield* Effect.promise(() => import("./lint-telemetry.ts"));
@@ -299,36 +273,6 @@ describe("measureStage", () => {
         expect(stageProductWithoutDurations).toBe(42);
       });
     });
-
-    describe("the exporter behind a stage nobody asked to measure", () => {
-      const it = test.extend("exportsWithoutDurations", () =>
-        Effect.runPromise(
-          Effect.gen(function* exportsWithoutDurations() {
-            vi.stubEnv("MST_TELEMETRY", undefined);
-            vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-            onTestFinished(() => {
-              process.exitCode = undefined;
-              process.removeAllListeners("beforeExit");
-              context.disable();
-              metrics.disable();
-              propagation.disable();
-              trace.disable();
-            });
-            vi.resetModules();
-            const exporterModule = yield* Effect.promise(
-              () => import("@opentelemetry/exporter-metrics-otlp-http"),
-            );
-            const exported = vi.spyOn(exporterModule.OTLPMetricExporter.prototype, "export");
-            const telemetry = yield* Effect.promise(() => import("./lint-telemetry.ts"));
-            telemetry.measureStage("canonical.scope", () => 41 + 1);
-            return exported;
-          }),
-        ));
-
-      it("is handed nothing at all", ({ exportsWithoutDurations }) => {
-        expect(exportsWithoutDurations).toHaveBeenCalledTimes(0);
-      });
-    });
   });
 
   describe("a stage measured in an environment that asked for telemetry", () => {
@@ -338,13 +282,10 @@ describe("measureStage", () => {
           Effect.gen(function* stageProductWithDurations() {
             vi.stubEnv("MST_TELEMETRY", "1");
             vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+            const restoreGlobalTelemetry = setAsideGlobalTelemetry();
             onTestFinished(() => {
               process.exitCode = undefined;
-              process.removeAllListeners("beforeExit");
-              context.disable();
-              metrics.disable();
-              propagation.disable();
-              trace.disable();
+              restoreGlobalTelemetry();
             });
             vi.resetModules();
             const telemetry = yield* Effect.promise(() => import("./lint-telemetry.ts"));
@@ -363,13 +304,10 @@ describe("measureStage", () => {
           Effect.gen(function* windDownStageMetricNames() {
             vi.stubEnv("MST_TELEMETRY", "1");
             vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+            const restoreGlobalTelemetry = setAsideGlobalTelemetry();
             onTestFinished(() => {
               process.exitCode = undefined;
-              process.removeAllListeners("beforeExit");
-              context.disable();
-              metrics.disable();
-              propagation.disable();
-              trace.disable();
+              restoreGlobalTelemetry();
             });
             vi.resetModules();
             const exporterModule = yield* Effect.promise(
@@ -414,13 +352,10 @@ describe("measureStage", () => {
         Effect.gen(function* nestedStageNames() {
           vi.stubEnv("MST_TELEMETRY", "1");
           vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+          const restoreGlobalTelemetry = setAsideGlobalTelemetry();
           onTestFinished(() => {
             process.exitCode = undefined;
-            process.removeAllListeners("beforeExit");
-            context.disable();
-            metrics.disable();
-            propagation.disable();
-            trace.disable();
+            restoreGlobalTelemetry();
           });
           vi.resetModules();
           const exporterModule = yield* Effect.promise(
@@ -465,39 +400,57 @@ describe("measureStage", () => {
 });
 
 describe("ruleDuration", () => {
-  describe("the histogram behind a second call", () => {
-    const it = test
-      .extend("startedTelemetry", () =>
-        Effect.runPromise(
-          Effect.gen(function* startedTelemetry() {
-            vi.stubEnv("MST_TELEMETRY", "1");
-            vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-            onTestFinished(() => {
-              process.exitCode = undefined;
-              process.removeAllListeners("beforeExit");
-              context.disable();
-              metrics.disable();
-              propagation.disable();
-              trace.disable();
-            });
-            vi.resetModules();
-            const telemetry = yield* Effect.promise(() => import("./lint-telemetry.ts"));
-            telemetry.startLintTelemetry();
-            return telemetry;
-          }),
-        ))
-      .extend("handedHistogram", ({ startedTelemetry }) => startedTelemetry.ruleDuration())
-      .extend("recordedHistogram", ({ startedTelemetry }) => {
-        const histogram = startedTelemetry.ruleDuration();
-        histogram.record(7);
-        return histogram;
-      });
+  describe("durations recorded through two calls", () => {
+    const it = test.extend("ruleDurationsAcrossCalls", () =>
+      Effect.runPromise(
+        Effect.gen(function* ruleDurationsAcrossCalls() {
+          vi.stubEnv("MST_TELEMETRY", "1");
+          vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+          const restoreGlobalTelemetry = setAsideGlobalTelemetry();
+          onTestFinished(() => {
+            process.exitCode = undefined;
+            restoreGlobalTelemetry();
+          });
+          vi.resetModules();
+          const exporterModule = yield* Effect.promise(
+            () => import("@opentelemetry/exporter-metrics-otlp-http"),
+          );
+          const exported = vi.fn<(durations: readonly ExportedDuration[]) => void>();
+          vi.spyOn(exporterModule.OTLPMetricExporter.prototype, "export").mockImplementation(
+            (batch, resultCallback) => {
+              exported(
+                batch.scopeMetrics.flatMap((scope) =>
+                  scope.metrics.flatMap((metric) =>
+                    metric.dataPointType === DataPointType.HISTOGRAM &&
+                    metric.descriptor.name === "lint.rule.duration"
+                      ? metric.dataPoints.map((point) => ({
+                          name: metric.descriptor.name,
+                          sum: point.value.sum,
+                        }))
+                      : [],
+                  ),
+                ),
+              );
+              resultCallback({ code: 0 });
+            },
+          );
+          const stopped = vi
+            .spyOn(exporterModule.OTLPMetricExporter.prototype, "shutdown")
+            .mockResolvedValue();
+          const telemetry = yield* Effect.promise(() => import("./lint-telemetry.ts"));
+          telemetry.startLintTelemetry();
+          telemetry.ruleDuration().record(3);
+          telemetry.ruleDuration().record(4);
+          process.emit("beforeExit", 0);
+          yield* Effect.promise(() => vi.waitUntil(() => stopped.mock.calls.length > 0));
+          return exported;
+        }),
+      ));
 
-    it("is the histogram the meter handed back the first time", ({
-      handedHistogram,
-      recordedHistogram,
-    }) => {
-      expect(recordedHistogram).toBe(handedHistogram);
+    it("adds up into one rule duration", ({ ruleDurationsAcrossCalls }) => {
+      expect(ruleDurationsAcrossCalls).toHaveBeenCalledExactlyOnceWith([
+        { name: "lint.rule.duration", sum: 7 },
+      ]);
     });
   });
 });

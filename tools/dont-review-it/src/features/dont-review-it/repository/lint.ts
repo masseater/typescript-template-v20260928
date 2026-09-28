@@ -591,6 +591,7 @@ const lintOptions = {
         "project/react-legacy": LINT_SEVERITY.ERROR,
         "project/retired-imports": LINT_SEVERITY.ERROR,
         "project/span-mutation": LINT_SEVERITY.ERROR,
+        "project/telemetry-globals": LINT_SEVERITY.ERROR,
         "project/temp-directory": LINT_SEVERITY.ERROR,
         "project/test-import-graph": LINT_SEVERITY.ERROR,
         "project/wareki-format": LINT_SEVERITY.ERROR,
@@ -985,6 +986,10 @@ const lintOptions = {
     {
       files: reactElementTypeFiles,
       rules: { "typescript/prefer-readonly-parameter-types": LINT_SEVERITY.OFF },
+    },
+    {
+      files: ["tools/ai-native/**"],
+      rules: { "project/telemetry-globals": LINT_SEVERITY.ERROR },
     },
     {
       files: [

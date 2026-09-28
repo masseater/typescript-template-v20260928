@@ -2,7 +2,6 @@ type StateKindId = "server" | "url" | "device" | "screen";
 
 type StateKind = {
   readonly id: StateKindId;
-  readonly mechanism: string;
   readonly retiredPackages: Readonly<Record<string, string>>;
 };
 
@@ -11,7 +10,6 @@ const tanstackQuery = "TanStack Query (@tanstack/react-query) and route loaders"
 const stateKinds = {
   server: {
     id: "server",
-    mechanism: tanstackQuery,
     retiredPackages: {
       "@apollo/client": tanstackQuery,
       "@trpc/": tanstackQuery,
@@ -25,17 +23,14 @@ const stateKinds = {
   },
   url: {
     id: "url",
-    mechanism: "TanStack Router search params",
     retiredPackages: {},
   },
   device: {
     id: "device",
-    mechanism: "Effect Atom Atom.kvs",
     retiredPackages: {},
   },
   screen: {
     id: "screen",
-    mechanism: "Effect Atom",
     retiredPackages: {},
   },
 } as const satisfies Record<StateKindId, StateKind>;
