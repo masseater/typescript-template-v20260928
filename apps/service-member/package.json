@@ -51,5 +51,8 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"
+  },
+  "workersTest": {
+    "entry": "./src/shared/inbox/inbox.ts"
   }
 }

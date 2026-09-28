@@ -57,8 +57,7 @@
     {
       "name": "vitest-config-variants",
       "enablers": ["vite-plus"],
-      "configPatterns": ["vitest.*.config.ts"],
-      "entryPoints": ["vitest.*.main.ts"]
+      "configPatterns": ["vitest.*.config.ts"]
     },
     {
       "name": "storybook-directory",
