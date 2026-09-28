@@ -1,6 +1,6 @@
-import { OAuthClientView } from "@repo/auth-ui/consent";
-import { decodeJson } from "@repo/runtime/client";
+import { CONSENT_CLIENT, lookupConsentClient, type ConsentClient } from "@repo/auth-ui/consent";
 import { getRouteApi } from "@tanstack/react-router";
+import { Effect } from "effect";
 import { useEffect, useState } from "react";
 
 import { ConsentView } from "./consent-view.tsx";
@@ -9,26 +9,16 @@ import type { ReactElement } from "react";
 
 const consentRoute = getRouteApi("/consent");
 
-function getPublicClient(fetchImpl: typeof fetch, clientId: string): Promise<Response> {
-  return fetchImpl(
-    `/api/auth/oauth2/public-client?${new URLSearchParams({ client_id: clientId }).toString()}`,
-    { cache: "no-store", credentials: "same-origin" },
-  );
-}
+const unknownClientMessage = "連携を求めているクライアントが分かりません。";
 
-function loadClientName(clientId: string): Promise<string | undefined> {
-  return getPublicClient(fetch, clientId).then((response) => {
-    if (response.status === 401) {
-      globalThis.location.assign(`/login${globalThis.location.search}`);
-      return undefined;
-    }
-    if (!response.ok) {
-      throw new Error("クライアントの情報を取得できませんでした。");
-    }
-    return response
-      .json()
-      .then((payload) => decodeJson(OAuthClientView, payload).client_name ?? clientId);
-  });
+function loadConsentClient(clientId: string): Promise<ConsentClient> {
+  return Effect.runPromise(
+    lookupConsentClient(fetch, {
+      clientId,
+      init: { cache: "no-store", credentials: "same-origin" },
+      origin: globalThis.location.origin,
+    }),
+  );
 }
 
 function messageOf(cause: unknown): string {
@@ -43,11 +33,20 @@ function useClientName(
   useEffect(() => {
     const state = { active: true };
     function load(id: string): void {
-      void loadClientName(id)
-        .then((name) => {
-          if (state.active) {
-            setClient(name);
+      void loadConsentClient(id)
+        .then((consentClient) => {
+          if (!state.active) {
+            return;
           }
+          if (consentClient.kind === CONSENT_CLIENT.signInRequired) {
+            globalThis.location.assign(`/login${globalThis.location.search}`);
+            return;
+          }
+          if (consentClient.kind === CONSENT_CLIENT.unknown) {
+            onError(unknownClientMessage);
+            return;
+          }
+          setClient(consentClient.name);
         })
         .catch((error: unknown) => {
           if (state.active) {

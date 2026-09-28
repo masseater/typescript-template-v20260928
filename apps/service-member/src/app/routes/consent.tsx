@@ -1,11 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { CONSENT_CLIENT } from "@repo/auth-ui/consent";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Schema } from "effect";
 
-import {
-  ConsentClientUnavailable,
-  ConsentRoute,
-  loadClientName,
-} from "#pages/account/consent/index.ts";
+import { ConsentRoute, loadConsentClient } from "#pages/account/consent/index.ts";
 
 const searchSchema = Schema.toStandardSchemaV1(
   Schema.Struct({
@@ -22,15 +19,21 @@ const Route = createFileRoute("/consent")({
   loaderDeps: ({ search }: Readonly<{ search: ConsentSearch }>) => ({
     clientId: search.client_id,
   }),
-  loader: ({ deps }: Readonly<{ deps: Readonly<{ clientId: string | undefined }> }>) => {
+  loader: ({
+    deps,
+    location,
+  }: Readonly<{
+    deps: Readonly<{ clientId: string | undefined }>;
+    location: Readonly<{ searchStr: string }>;
+  }>) => {
     if (deps.clientId === undefined) {
       return Promise.resolve(undefined);
     }
-    return loadClientName(deps.clientId).catch((error: unknown) => {
-      if (Schema.is(ConsentClientUnavailable)(error)) {
-        return undefined;
+    return loadConsentClient(deps.clientId).then((client) => {
+      if (client.kind === CONSENT_CLIENT.signInRequired) {
+        throw redirect({ href: `/login${location.searchStr}` });
       }
-      throw error;
+      return client.kind === CONSENT_CLIENT.found ? client.name : undefined;
     });
   },
 });
