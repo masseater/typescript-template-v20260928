@@ -22,13 +22,11 @@ const readLiveSession = Effect.fn("readLiveSession")(function* readLiveSession(h
     return yield* new SessionRequired();
   }
   const sessionRecord = yield* lookupSessionByToken(token);
-  if (
-    sessionRecord === undefined ||
-    sessionRecord.session.expiresAt.getTime() <= DateTime.toEpochMillis(yield* DateTime.now)
-  ) {
+  const nowMillis = DateTime.toEpochMillis(yield* DateTime.now);
+  if (sessionRecord === undefined || sessionRecord.session.expiresAt.getTime() <= nowMillis) {
     return yield* new SessionRequired();
   }
-  if (!sessionIsLive(sessionRecord, audience)) {
+  if (!sessionIsLive(sessionRecord, audience, nowMillis)) {
     return yield* new SessionInvalid();
   }
   return sessionRecord;

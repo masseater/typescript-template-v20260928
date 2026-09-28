@@ -55,13 +55,13 @@ function addUser(
     database
       .insert(user)
       .values({
-        createdAt: DateTime.toDate(DateTime.nowUnsafe()),
+        createdAt: DateTime.toDate(DateTime.makeUnsafe("2026-09-20T00:00:00.000Z")),
         email: `${id}@example.com`,
         emailVerified: true,
         id,
         name: id,
         role,
-        updatedAt: DateTime.toDate(DateTime.nowUnsafe()),
+        updatedAt: DateTime.toDate(DateTime.makeUnsafe("2026-09-20T00:00:00.000Z")),
         visibility,
       })
       .then(() => undefined),

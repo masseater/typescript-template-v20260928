@@ -120,7 +120,7 @@ const signedInMember = Effect.fn("signedInMember")(function* signedInMember(app:
 
 const strongAdminSession = Effect.fn("strongAdminSession")(function* strongAdminSession() {
   const sessionId = crypto.randomUUID();
-  const now = DateTime.toEpochMillis(DateTime.nowUnsafe());
+  const now = DateTime.toEpochMillis(yield* DateTime.now);
   yield* runStatement(
     "INSERT INTO user (id, email, email_verified, name, role, permission, created_at, updated_at) VALUES ('admin', ?, 1, 'admin', ?, ?, ?, ?)",
     adminEmail,
@@ -176,8 +176,8 @@ it.effect(
       assert.strictEqual(yield* browser.status("/profile"), httpStatus.ok);
       assert.strictEqual(yield* browser.status("/onboarding", { step: "choose" }), httpStatus.ok);
 
-      const sessionId = yield* strongAdminSession();
       yield* TestClock.setTime(1_789_862_400_000 + 86_400_000);
+      const sessionId = yield* strongAdminSession();
       const draft = yield* createAgreementDraft({
         body: "revised terms",
         kind: AGREEMENT_KIND.terms,
@@ -232,8 +232,8 @@ it.effect("does not record acceptance of a draft that is not published yet", () 
   Effect.gen(function* program() {
     const { app, runtime } = memberApp();
     const { browser, userId } = yield* signedInMember(app);
-    const sessionId = yield* strongAdminSession();
     yield* TestClock.setTime(1_789_862_400_000 + 86_400_000);
+    const sessionId = yield* strongAdminSession();
     const draft = yield* createAgreementDraft({
       body: "draft",
       kind: AGREEMENT_KIND.terms,

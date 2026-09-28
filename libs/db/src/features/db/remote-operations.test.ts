@@ -3,7 +3,8 @@ import { APPLICATION, AUTHENTICATION_METHOD } from "@repo/config";
 import { EmptyTestDatabase, TestBinding, deployMigrations, runStatement } from "@repo/db-local";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
-import { Effect, FileSystem, Path } from "effect";
+import { DateTime, Effect, FileSystem, Path } from "effect";
+import { TestClock } from "effect/testing";
 import { describe, expect, test } from "vite-plus/test";
 
 import { bootstrapAdmin, BootstrapUnavailable } from "./bootstrap-statement.ts";
@@ -166,6 +167,7 @@ describe("bootstrapDatabase", () => {
         Effect.gen(function* bootstrapOther() {
           const binding = yield* TestBinding;
           const database = drizzle(binding);
+          const seededAt = DateTime.toDate(DateTime.makeUnsafe("2026-09-20T00:00:00.000Z"));
           yield* deployMigrations(binding);
           yield* query(async (database): Promise<void> => {
             await database.insert(user).values(
@@ -174,12 +176,12 @@ describe("bootstrapDatabase", () => {
                 { id: "first", verified: true },
                 { id: "second", verified: true },
               ].map((seeded) => ({
-                createdAt: new Date(),
+                createdAt: seededAt,
                 email: `${seeded.id}@example.test`,
                 emailVerified: seeded.verified,
                 id: seeded.id,
                 name: seeded.id,
-                updatedAt: new Date(),
+                updatedAt: seededAt,
               })),
             );
           });
@@ -201,31 +203,33 @@ describe("bootstrapDatabase", () => {
         Effect.gen(function* promoteFirst() {
           const binding = yield* TestBinding;
           const database = drizzle(binding);
+          const seededAt = DateTime.toDate(DateTime.makeUnsafe("2026-09-20T00:00:00.000Z"));
+          yield* TestClock.setTime(seededAt.getTime());
           yield* deployMigrations(binding);
           yield* query(async (database): Promise<void> => {
             await database.insert(user).values({
-              createdAt: new Date(),
+              createdAt: seededAt,
               email: "first@example.test",
               emailVerified: true,
               id: "first",
               name: "first",
-              updatedAt: new Date(),
+              updatedAt: seededAt,
             });
             await database.insert(session).values({
               audience: APPLICATION.user,
               authenticationMethod: AUTHENTICATION_METHOD.password,
-              createdAt: new Date(),
-              expiresAt: new Date(Date.now() + 60_000),
+              createdAt: seededAt,
+              expiresAt: new Date(seededAt.getTime() + 60_000),
               id: "old-session",
               securityVersion: 0,
               token: "old-session-token",
-              updatedAt: new Date(),
+              updatedAt: seededAt,
               userId: "first",
             });
           });
           yield* bootstrapDatabase({ database: database, email: "FIRST@example.test" });
           return yield* getSessionSecurity("old-session", APPLICATION.user);
-        }).pipe(Effect.provide(EmptyTestDatabase)),
+        }).pipe(Effect.provide([EmptyTestDatabase, TestClock.layer()])),
       ));
 
     it("is revoked", { timeout: 60_000 }, ({ earlierSession }) => {
@@ -239,16 +243,17 @@ describe("bootstrapDatabase", () => {
         Effect.gen(function* bootstrapAgain() {
           const binding = yield* TestBinding;
           const database = drizzle(binding);
+          const seededAt = DateTime.toDate(DateTime.makeUnsafe("2026-09-20T00:00:00.000Z"));
           yield* deployMigrations(binding);
           yield* query(async (database): Promise<void> => {
             await database.insert(user).values(
               ["first", "second"].map((userId) => ({
-                createdAt: new Date(),
+                createdAt: seededAt,
                 email: `${userId}@example.test`,
                 emailVerified: true,
                 id: userId,
                 name: userId,
-                updatedAt: new Date(),
+                updatedAt: seededAt,
               })),
             );
           });
@@ -273,15 +278,16 @@ describe("the last administrator guard of the migrated database", () => {
         Effect.gen(function* removeLast() {
           const binding = yield* TestBinding;
           const database = drizzle(binding);
+          const seededAt = DateTime.toDate(DateTime.makeUnsafe("2026-09-20T00:00:00.000Z"));
           yield* deployMigrations(binding);
           yield* query(async (database): Promise<void> => {
             await database.insert(user).values({
-              createdAt: new Date(),
+              createdAt: seededAt,
               email: "first@example.test",
               emailVerified: true,
               id: "first",
               name: "first",
-              updatedAt: new Date(),
+              updatedAt: seededAt,
             });
           });
           yield* bootstrapDatabase({ database: database, email: "first@example.test" });

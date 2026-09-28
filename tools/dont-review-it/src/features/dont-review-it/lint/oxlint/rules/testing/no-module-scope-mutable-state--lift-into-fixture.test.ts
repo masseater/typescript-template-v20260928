@@ -177,6 +177,12 @@ describe("dont-review-it/no-module-scope-mutable-state--lift-into-fixture", () =
         errors: [{ messageId: "sharedValueWritten" }],
       },
       {
+        name: "emptying a module scope array from a test leaves what other tests recorded until then",
+        code: "const recorded = [];\nconst handlers = [() => recorded.push('request')];\nit('reads its own requests', () => {\n  recorded.length = 0;\n  expect(recorded).toStrictEqual([]);\n});",
+        filename: SPEC_FILENAME,
+        errors: [{ messageId: "sharedValueWritten" }],
+      },
+      {
         name: "writing through a computed index needs no readable name to change the value",
         code: "const entries = ['a'];\nit('replaces the entry', () => {\n  entries[0] = 'b';\n  expect(entries).toStrictEqual(['b']);\n});",
         filename: SPEC_FILENAME,

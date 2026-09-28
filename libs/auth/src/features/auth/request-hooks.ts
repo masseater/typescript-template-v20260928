@@ -85,7 +85,7 @@ const markTotpSessionStrong = Effect.fn("markTotpSessionStrong")(function* markT
   const sessionRecord = yield* currentSessionOf(scope);
   if (
     sessionRecord &&
-    sessionIsLive(sessionRecord, scope.audience) &&
+    sessionIsLive(sessionRecord, scope.audience, DateTime.toEpochMillis(yield* DateTime.now)) &&
     totpUpgradableMethods.has(sessionRecord.session.authenticationMethod)
   ) {
     yield* Effect.promise(() =>
@@ -103,7 +103,10 @@ const markTotpSessionStrong = Effect.fn("markTotpSessionStrong")(function* markT
 const revokeSessionsAfterFactorChange = Effect.fn("revokeSessionsAfterFactorChange")(
   function* revokeSessionsAfterFactorChange(scope: HookScope) {
     const sessionRecord = yield* currentSessionOf(scope);
-    if (sessionRecord && sessionIsLive(sessionRecord, scope.audience)) {
+    if (
+      sessionRecord &&
+      sessionIsLive(sessionRecord, scope.audience, DateTime.toEpochMillis(yield* DateTime.now))
+    ) {
       yield* Effect.promise(() => scope.run(revokeUserSessions(sessionRecord.user.id)));
     }
   },
@@ -247,10 +250,11 @@ const enforceSessionPolicy = Effect.fn("enforceSessionPolicy")(function* enforce
   { audience, hookContext, run }: HookScope,
   sessionRecord: NonNullable<Effect.Success<ReturnType<typeof lookupSessionByToken>>>,
 ) {
-  if (!sessionIsLive(sessionRecord, audience)) {
+  const nowMillis = DateTime.toEpochMillis(yield* DateTime.now);
+  if (!sessionIsLive(sessionRecord, audience, nowMillis)) {
     deny("SESSION_INVALID");
   }
-  if (hookContext.path === emailChangePath && !isRecentlyStrong(sessionRecord.session)) {
+  if (hookContext.path === emailChangePath && !isRecentlyStrong(sessionRecord.session, nowMillis)) {
     deny("STRONG_AUTH_REQUIRED");
   }
   const input = {
@@ -288,7 +292,10 @@ const notifyEmailChange = Effect.fn("notifyEmailChange")(function* notifyEmailCh
   onEmailChangeRequested: (email: string) => Promise<void>,
 ) {
   const sessionRecord = yield* currentSessionOf(scope);
-  if (sessionRecord && sessionIsLive(sessionRecord, scope.audience)) {
+  if (
+    sessionRecord &&
+    sessionIsLive(sessionRecord, scope.audience, DateTime.toEpochMillis(yield* DateTime.now))
+  ) {
     yield* Effect.promise(() => onEmailChangeRequested(sessionRecord.user.email));
   }
 });

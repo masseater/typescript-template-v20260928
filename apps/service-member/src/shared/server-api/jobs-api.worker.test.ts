@@ -193,7 +193,7 @@ describe("jobs api", () => {
             attempts: 1,
             body: payload,
             id,
-            timestamp: DateTime.toDate(DateTime.nowUnsafe()),
+            timestamp: DateTime.toDate(DateTime.makeUnsafe("2026-09-20T00:00:00.000Z")),
           },
         ]);
         const context = createExecutionContext();

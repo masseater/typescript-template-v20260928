@@ -8,7 +8,6 @@ import {
   type AuthenticationMethod,
 } from "@repo/config/identity";
 import { APIError } from "better-auth/api";
-import { DateTime } from "effect";
 
 const enrollmentPaths = new Set([
   "/get-session",
@@ -33,7 +32,7 @@ const isRecentlyStrong = (
     readonly authenticatedAt: Date | null;
     readonly authenticationMethod: string;
   },
-  nowMillis: number = DateTime.toEpochMillis(DateTime.nowUnsafe()),
+  nowMillis: number,
 ): boolean =>
   isStrongMethod(sessionRecord.authenticationMethod) &&
   sessionRecord.authenticatedAt !== null &&
@@ -54,8 +53,9 @@ const sessionIsLive = (
     };
   },
   audience: Application,
+  nowMillis: number,
 ): boolean =>
-  sessionRecord.session.expiresAt.getTime() > DateTime.toEpochMillis(DateTime.nowUnsafe()) &&
+  sessionRecord.session.expiresAt.getTime() > nowMillis &&
   sessionRecord.session.audience === audience &&
   sessionRecord.session.securityVersion === sessionRecord.user.securityVersion &&
   sessionRecord.user.emailVerified &&

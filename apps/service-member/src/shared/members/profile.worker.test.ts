@@ -26,7 +26,7 @@ function addUser(
   id: string,
   settings: Readonly<{ searchable?: boolean; visibility?: ProfileVisibility }> = {},
 ): Effect.Effect<void, DatabaseFailure, Database> {
-  const now = DateTime.toDate(DateTime.nowUnsafe());
+  const now = DateTime.toDate(DateTime.makeUnsafe("2026-09-20T00:00:00.000Z"));
   return query((database) =>
     database.insert(user).values({
       createdAt: now,

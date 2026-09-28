@@ -31,14 +31,14 @@ const addUser = (added: {
       .insert(user)
       .values({
         accountState: added.accountState ?? ACCOUNT_STATE.active,
-        createdAt: DateTime.toDate(DateTime.nowUnsafe()),
+        createdAt: DateTime.toDate(DateTime.makeUnsafe("2026-09-20T00:00:00.000Z")),
         email: `${added.id}@example.com`,
         emailVerified: true,
         id: added.id,
         name: added.id,
         role: added.role ?? ROLE.member,
         searchable: true,
-        updatedAt: DateTime.toDate(DateTime.nowUnsafe()),
+        updatedAt: DateTime.toDate(DateTime.makeUnsafe("2026-09-20T00:00:00.000Z")),
       })
       .then(() => undefined),
   );

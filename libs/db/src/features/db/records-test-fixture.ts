@@ -98,12 +98,9 @@ export const addSession = Effect.fn("addSession")(function* addSession(opened: {
     database.select().from(user).where(eq(user.id, opened.userId)),
   );
   const securityVersion = owners.at(0)?.securityVersion ?? 0;
-  const createdAt = DateTime.toDate(yield* DateTime.now);
-  const effectNow = DateTime.toEpochMillis(yield* DateTime.now);
-  const wallNow = DateTime.toEpochMillis(DateTime.nowUnsafe());
-  const expiresAt = DateTime.toDate(
-    DateTime.makeUnsafe(Math.max(effectNow, wallNow) + SESSION_LIFETIME_MS),
-  );
+  const openedAt = yield* DateTime.now;
+  const createdAt = DateTime.toDate(openedAt);
+  const expiresAt = DateTime.toDate(DateTime.add(openedAt, { millis: SESSION_LIFETIME_MS }));
   yield* query((database) =>
     database
       .insert(session)

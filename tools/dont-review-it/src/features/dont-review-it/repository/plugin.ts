@@ -24,6 +24,7 @@ import {
   processMember,
 } from "./process-boundary.ts";
 import { effectEventDependencyVisitor, reactLegacyVisitor } from "./react-legacy.ts";
+import { realClockVisitor } from "./real-clock.ts";
 import { propertyName, staticText, type Origin } from "./references.ts";
 import { retiredImportsVisitor } from "./retired-imports.ts";
 import { retiredImportGuidance } from "./retired-packages.ts";
@@ -393,6 +394,12 @@ const projectPlugin = definePlugin({
       create: reactLegacyVisitor,
       meta: metadata(
         "React 19 で外した書き方は使えません。forwardRef と createFactory は ref を通常の props にした関数へ、Context.Provider は <Context value={...}> へ、文字列の ref は要素を指す ref へ、defaultProps は引数の既定値へ、propTypes は TypeScript へ置き換えてください。react-dom の render・hydrate・findDOMNode・unmountComponentAtNode と react-dom/server の renderToNodeStream・renderToStaticNodeStream は createRoot と hydrateRoot に置き換え、react-test-renderer は Testing Library に置き換えてください。",
+      ),
+    },
+    "real-clock": {
+      create: realClockVisitor,
+      meta: metadata(
+        "テストと fixture では実時計を読めません。DateTime.nowUnsafe()・Date.now()・引数なしの new Date()・performance.now() をやめ、固定の時刻をテストの中に書くか、TestClock を provide して TestClock.setTime で時刻を決めてください。実時計に頼るテストは、実行した時刻とホストの速さで結果が変わります。",
       ),
     },
     "retired-imports": {
