@@ -1,0 +1,23 @@
+name: manual
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: load profile
+        type: choice
+        options: [smoke, peak]
+        default: smoke
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  load:
+    uses: ./.github/workflows/load.yml
+    with:
+      profile: ${{ inputs.profile }}

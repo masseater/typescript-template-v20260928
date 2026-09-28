@@ -1,4 +1,4 @@
-name: mutation
+name: weekly
 
 on:
   schedule:

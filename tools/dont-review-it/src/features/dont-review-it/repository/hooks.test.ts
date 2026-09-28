@@ -277,10 +277,10 @@ describe("lifecycle entry points", () => {
   it("gives a pull request the pr gate and leaves merge and release to their own gates", () => {
     expect.hasAssertions();
     expect(lifecycleByJob("../../../../../../.github/workflows/check.yml")).toStrictEqual({
-      cache: ["vp run -r prepr"],
       check: [],
       "check-shard": [],
       e2e: [],
+      "main-push": ["vp run -r prepr"],
       "merge-queue": [],
       "merge-queue-packages": ["vp run -r premerge"],
       "merge-queue-unit": [],
@@ -290,6 +290,21 @@ describe("lifecycle entry points", () => {
       prerelease: ["vp run -r prerelease"],
     });
     expect(lifecycleOutsideGates()).toStrictEqual([]);
+  });
+
+  it("keeps the load test steps in the one reusable workflow its callers start", () => {
+    expect.hasAssertions();
+    expect(
+      Object.entries(workflows)
+        .filter(([, source]) => source.includes("@repo/load"))
+        .map(([file]) => file.replace(/^.*\//u, "")),
+    ).toStrictEqual(["load.yml"]);
+    expect(
+      Object.entries(workflows)
+        .filter(([, source]) => source.includes("uses: ./.github/workflows/load.yml"))
+        .map(([file]) => file.replace(/^.*\//u, ""))
+        .toSorted(),
+    ).toStrictEqual(["manual.yml", "prerelease.yml"]);
   });
 
   it("runs the repository check once inside prepr and the unit suite on the merge queue", () => {

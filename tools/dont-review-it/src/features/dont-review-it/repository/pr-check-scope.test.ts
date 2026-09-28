@@ -68,7 +68,7 @@ describe("pull request check scope", () => {
         );
         expect(check).toMatch(/cache\/save@.+\n {8}if: .*steps\.affected\.outputs\./u);
         expect(check).toMatch(
-          /^ {2}cache:\n {4}if: .+\n {4}runs-on: .+\n {4}timeout-minutes: 30$/mu,
+          /^ {2}main-push:\n {4}if: github\.event_name == 'push'\n {4}runs-on: .+\n {4}timeout-minutes: 30$/mu,
         );
         expect(check).toMatch(
           /cache\/save@.+\n {8}if: \$\{\{ always\(\) && steps\.vite-task-cache\.outputs\.cache-hit != 'true' \}\}\n/u,

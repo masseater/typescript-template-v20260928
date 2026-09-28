@@ -148,7 +148,7 @@ jobs:
       - *vite-task-cache
       - run: vp run --filter @repo/e2e test:e2e
 
-  cache:
+  main-push:
     if: github.event_name == 'push'
     runs-on: *runner
     timeout-minutes: 30

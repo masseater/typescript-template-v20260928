@@ -1,4 +1,4 @@
-name: can-not-now
+name: daily
 
 on:
   schedule:

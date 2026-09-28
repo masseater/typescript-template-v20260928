@@ -1,20 +1,14 @@
 name: load
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       profile:
-        description: load profile
-        type: choice
-        options: [smoke, peak]
-        default: smoke
+        type: string
+        required: true
 
 permissions:
   contents: read
-
-concurrency:
-  group: ${{ github.workflow }}
-  cancel-in-progress: true
 
 jobs:
   load:
