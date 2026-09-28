@@ -54,3 +54,4 @@ function wikiSearchOptions(query: string) {
 }
 
 export { wikiSearchOptions };
+export type { WikiSearch };

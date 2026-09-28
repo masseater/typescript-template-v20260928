@@ -1,4 +1,4 @@
-import { FailureStatus, localState } from "@repo/ui";
+import { localState } from "@repo/ui";
 import { useQuery } from "@tanstack/react-query";
 import {
   SearchDialog,
@@ -14,12 +14,14 @@ import {
 import { useDeferredValue } from "react";
 
 import { wikiSearchOptions } from "#shared/api/index.ts";
+import { WikiSearchNotices } from "./wiki-search-notices.tsx";
 
+import type { WikiSearch } from "#shared/api/index.ts";
 import type { SharedProps } from "fumadocs-ui/components/dialog/search";
 import type { ReactElement } from "react";
 
-const keywordOnlyNotice = "意味検索が使えないため、キーワード検索のみです。";
-const searchFailedNotice = "検索できませんでした。時間をおいてもう一度お試しください。";
+const foundItems = (found: WikiSearch | undefined): WikiSearch["results"] | null =>
+  found?.results ?? null;
 const useSearchText = localState("");
 
 function WikiSearchDialog({ onOpenChange, open }: SharedProps): ReactElement {
@@ -41,11 +43,10 @@ function WikiSearchDialog({ onOpenChange, open }: SharedProps): ReactElement {
           <SearchDialogInput />
           <SearchDialogClose />
         </SearchDialogHeader>
-        <SearchDialogList items={deferred === "" ? null : (result.data?.results ?? null)} />
+        <SearchDialogList items={foundItems(result.data)} />
       </SearchDialogContent>
       <SearchDialogFooter>
-        <FailureStatus error={result.isError ? searchFailedNotice : undefined} />
-        {result.data?.mode === "keyword_only" ? <span>{keywordOnlyNotice}</span> : null}
+        <WikiSearchNotices failed={result.isError} found={result.data} />
       </SearchDialogFooter>
     </SearchDialog>
   );

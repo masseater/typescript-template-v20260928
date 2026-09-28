@@ -1,7 +1,7 @@
+import { clientNameOptions } from "@repo/auth-ui";
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 
-import { clientNameOptions } from "#pages/consent/api/consent.ts";
 import { ConsentView } from "./consent-view.tsx";
 
 import type { ReactElement } from "react";
