@@ -110,8 +110,6 @@ peerDependencyRules:
     - vitest
   allowedVersions:
     "@effect/atom-react>scheduler": ^0.28.0
-    vite: "*"
-    vitest: "*"
 patchedDependencies:
   "@better-auth/oauth-provider@1.7.5": patches/@better-auth__oauth-provider@1.7.5.patch
   "@cloudflare/vitest-plugin@1.1.12": patches/@cloudflare__vitest-plugin@1.1.12.patch

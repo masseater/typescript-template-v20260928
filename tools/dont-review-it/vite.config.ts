@@ -10,6 +10,7 @@ import {
   workspaceCheckImports,
 } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
+import { defaultExclude } from "vite-plus/test/config";
 
 import {
   isolatedNodeTestSuffix,
@@ -78,7 +79,7 @@ export default defineConfig({
       exclude: ["specs/**", "src/features/dont-review-it/repository/**"],
       thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
     },
-    exclude: ["**/node_modules/**", "**/dist/**", "src/features/dont-review-it/repository/**"],
+    exclude: [...defaultExclude, "**/dist/**", "src/features/dont-review-it/repository/**"],
     unstubEnvs: true,
     unstubGlobals: true,
   },

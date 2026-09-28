@@ -70,6 +70,8 @@ import { createNoNonBoundaryDouble } from "./lint/oxlint/rules/testing/no-non-bo
 import { noNormalizeSutOutput } from "./lint/oxlint/rules/testing/no-normalize-sut-output--assert-natural-shape.ts";
 import { noRedundantMockReset } from "./lint/oxlint/rules/testing/no-redundant-mock-reset--lift-mocks-into-fixture.ts";
 import { noReplacedDoubleBehaviour } from "./lint/oxlint/rules/testing/no-replaced-double-behaviour--let-the-replaced-module-answer.ts";
+import { noReplacedVitestExclude } from "./lint/oxlint/rules/testing/no-replaced-vitest-exclude--spread-default-exclude.ts";
+import { noRestatedVitestDefault } from "./lint/oxlint/rules/testing/no-restated-vitest-default--delete-the-restated-option.ts";
 import { noSharedDoubleState } from "./lint/oxlint/rules/testing/no-shared-double-state--reset-doubles-between-tests.ts";
 import { noSpecFileHelperFunction } from "./lint/oxlint/rules/testing/no-spec-file-helper-function--inline-or-use-fixture.ts";
 import { noSpecSpecificSharedSetup } from "./lint/oxlint/rules/testing/no-spec-specific-shared-setup--keep-setup-uniform.ts";
@@ -235,6 +237,8 @@ const plugin: Plugin = {
     [noReceiverMutation.name]: noReceiverMutation,
     [noRedundantMockReset.name]: noRedundantMockReset,
     [noReplacedDoubleBehaviour.name]: noReplacedDoubleBehaviour,
+    [noReplacedVitestExclude.name]: noReplacedVitestExclude,
+    [noRestatedVitestDefault.name]: noRestatedVitestDefault,
     [noRuleSuppression.name]: noRuleSuppression,
     [noSharedDoubleState.name]: noSharedDoubleState,
     [noSilentCatch.name]: noSilentCatch,
