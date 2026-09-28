@@ -33,6 +33,7 @@ export default defineConfig({
       ...lifecycle({
         precommit: ["check:code"],
         prepush: ["check:effect", "check:imports", "check:modular"],
+        premerge: ["test:e2e"],
       }),
     },
   },
