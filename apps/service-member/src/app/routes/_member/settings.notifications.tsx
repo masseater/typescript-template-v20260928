@@ -1,10 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { SettingsNotificationsRoute, loadNotificationPreferences } from "#pages/settings/index.ts";
+import {
+  SettingsNotificationsRoute,
+  notificationPreferencesOptions,
+} from "#pages/settings/index.ts";
+
+import type { QueryClient } from "@tanstack/react-query";
 
 const Route = createFileRoute("/_member/settings/notifications")({
   component: SettingsNotificationsRoute,
-  loader: () => loadNotificationPreferences().then((preferences) => ({ preferences })),
+  loader: ({ context }: Readonly<{ context: Readonly<{ queryClient: QueryClient }> }>) =>
+    context.queryClient.query(notificationPreferencesOptions),
 });
 
 export { Route };

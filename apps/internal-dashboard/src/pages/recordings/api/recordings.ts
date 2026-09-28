@@ -7,6 +7,7 @@ import {
   failureMessage,
 } from "@repo/runtime/client";
 import { CreatedResource } from "@repo/runtime/contracts";
+import { queryOptions } from "@tanstack/react-query";
 import { notFound } from "@tanstack/react-router";
 import { Effect } from "effect";
 import { FetchHttpClient, HttpBody, HttpClient } from "effect/unstable/http";
@@ -15,31 +16,54 @@ import { wikiClient } from "#shared/api/index.ts";
 import { PeopleList, RecordingList, RecordingView } from "#shared/contracts/index.ts";
 
 import type {
-  RecordingDetail,
   RecordingsOverview,
+  RegisteredPeople,
 } from "#pages/recordings/model/recording-state.ts";
 
-function loadRecordings(): Promise<RecordingsOverview> {
+function loadRecordings(): Promise<RecordingsOverview["recordings"]> {
   return Promise.resolve(wikiClient()).then(({ api }) =>
-    Promise.all([api.recordings.get(), api.people.get()]).then(([recordings, people]) => ({
-      people: apiData(PeopleList, people).people,
-      recordings: apiData(RecordingList, recordings).recordings,
-    })),
+    api.recordings.get().then((recordings) => apiData(RecordingList, recordings).recordings),
   );
 }
 
-function loadRecording(id: string): Promise<RecordingDetail> {
+function loadPeople(): Promise<RegisteredPeople> {
   return Promise.resolve(wikiClient()).then(({ api }) =>
-    Promise.all([api.recording.get({ query: { id } }), api.people.get()]).then(
-      ([recording, people]) => {
-        const found = apiDataOrNoneFor(absent.notFound)(RecordingView, recording);
-        if (found === undefined) {
-          throw notFound();
-        }
-        return { ...found, people: apiData(PeopleList, people).people };
-      },
-    ),
+    api.people.get().then((people) => apiData(PeopleList, people).people),
   );
+}
+
+function loadRecording(id: string): Promise<RecordingView> {
+  return Promise.resolve(wikiClient()).then(({ api }) =>
+    api.recording.get({ query: { id } }).then((recording) => {
+      const found = apiDataOrNoneFor(absent.notFound)(RecordingView, recording);
+      if (found === undefined) {
+        throw notFound();
+      }
+      return found;
+    }),
+  );
+}
+
+const recordingsKey = ["recordings"] as const;
+
+const recordingsOptions = queryOptions({
+  queryFn: loadRecordings,
+  queryKey: [...recordingsKey, "list"] as const,
+  retry: false,
+});
+
+const peopleOptions = queryOptions({
+  queryFn: loadPeople,
+  queryKey: [...recordingsKey, "people"] as const,
+  retry: false,
+});
+
+function recordingOptions(id: string) {
+  return queryOptions({
+    queryFn: () => loadRecording(id),
+    queryKey: [...recordingsKey, "detail", id] as const,
+    retry: false,
+  });
 }
 
 function uploadRecording(title: string, audio: Readonly<File>): Promise<string> {
@@ -112,8 +136,10 @@ function removePerson(id: string): Promise<string> {
 export {
   assignSpeaker,
   deleteRecording,
-  loadRecording,
-  loadRecordings,
+  peopleOptions,
+  recordingOptions,
+  recordingsKey,
+  recordingsOptions,
   registerPerson,
   removePerson,
   retryRecording,

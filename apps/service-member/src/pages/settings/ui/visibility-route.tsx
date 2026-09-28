@@ -1,13 +1,13 @@
-import { getRouteApi } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
 
+import { visibilitySettingOptions } from "#pages/settings/api/visibility.ts";
 import { VisibilityPage } from "./visibility-page.tsx";
 
 import type { ReactElement } from "react";
 
-const route = getRouteApi("/_member/settings/visibility");
-
 function VisibilityRoute(): ReactElement {
-  return <VisibilityPage initial={route.useLoaderData()} />;
+  const { data: visibility } = useSuspenseQuery(visibilitySettingOptions);
+  return <VisibilityPage initial={visibility} />;
 }
 
 export { VisibilityRoute };

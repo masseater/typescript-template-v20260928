@@ -1,5 +1,7 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 
+import { offerOptions } from "#pages/upgrade/api/checkout.ts";
 import { CHECKOUT_RETURN } from "#shared/contracts/index.ts";
 import { UpgradePage } from "./upgrade-page.tsx";
 
@@ -9,7 +11,7 @@ const route = getRouteApi("/_member/upgrade");
 
 function UpgradeRoute(): ReactElement {
   const { checkout } = route.useSearch();
-  const { offer } = route.useLoaderData();
+  const { data: offer } = useSuspenseQuery(offerOptions);
   return <UpgradePage canceled={checkout === CHECKOUT_RETURN.cancel} offer={offer} />;
 }
 

@@ -1,10 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { RecordingsRoute, loadRecordings } from "#pages/recordings/index.ts";
+import { RecordingsRoute, peopleOptions, recordingsOptions } from "#pages/recordings/index.ts";
+
+import type { QueryClient } from "@tanstack/react-query";
 
 const Route = createFileRoute("/_dashboard/recordings/")({
   component: RecordingsRoute,
-  loader: () => loadRecordings(),
+  loader: ({ context }: Readonly<{ context: Readonly<{ queryClient: QueryClient }> }>) =>
+    Promise.all([
+      context.queryClient.query(recordingsOptions),
+      context.queryClient.query(peopleOptions),
+    ]),
 });
 
 export { Route };

@@ -9,17 +9,19 @@ import {
   StatusMessage,
   useToast,
 } from "@repo/ui";
-import { useNavigate, useRouter } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 
+import { messagesKey } from "#pages/messages/api/messages.ts";
 import { useCreateGroupForm } from "#pages/messages/model/create-group-form.ts";
 
 import type { ReactElement } from "react";
 function CreateGroupForm(): ReactElement {
   const navigate = useNavigate();
-  const router = useRouter();
+  const queries = useQueryClient();
   const notify = useToast();
   function showCreated(groupId: string): Promise<void> {
-    return router.invalidate().then(() =>
+    return queries.invalidateQueries({ queryKey: messagesKey }).then(() =>
       navigate({
         params: {
           id: groupId,

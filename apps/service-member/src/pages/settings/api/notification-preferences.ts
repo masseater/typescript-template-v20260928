@@ -1,4 +1,5 @@
 import { apiData } from "@repo/runtime/client";
+import { queryOptions } from "@tanstack/react-query";
 
 import { userClient } from "#shared/api/index.ts";
 import { NotificationPreferences } from "#shared/contracts/index.ts";
@@ -21,4 +22,11 @@ function saveNotificationPreferences(preferences: Preferences): Promise<Preferen
   );
 }
 
-export { loadNotificationPreferences, saveNotificationPreferences };
+const notificationPreferencesOptions = queryOptions({
+  queryFn: loadNotificationPreferences,
+  queryKey: ["notification-preferences"],
+  retry: false,
+});
+
+export { notificationPreferencesOptions, saveNotificationPreferences };
+export type { Preferences };

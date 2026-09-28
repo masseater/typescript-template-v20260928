@@ -14,6 +14,7 @@ import {
 import { failed, type JourneyFailure } from "./journey-failure.ts";
 import {
   appearanceTimeout,
+  field,
   fill,
   pageStep,
   press,
@@ -170,11 +171,28 @@ const postOnBoard = (
     return { listsTheThreadAfterwards, showsTheReply };
   });
 
+const reopenProfileEditor = (
+  stage: JourneyStage,
+  biography: string,
+): Effect.Effect<boolean, JourneyFailure> =>
+  Effect.gen(function* reopenEditorInApp() {
+    yield* pageStep(() =>
+      stage.page.getByRole("link", { exact: true, name: "プロフィールを編集" }).first().click(),
+    );
+    yield* seeHeading(stage.page, "プロフィールの編集");
+    const shown = yield* pageStep(() => field(stage.page, "自己紹介").inputValue());
+    return shown === biography;
+  });
+
 const writeBiography = (
   stage: JourneyStage,
   origin: string,
 ): Effect.Effect<
-  { readonly biography: string; readonly profilePath: string },
+  {
+    readonly biography: string;
+    readonly profilePath: string;
+    readonly reopensWithTheSavedBiography: boolean;
+  },
   JourneyFailure,
   Crypto.Crypto
 > =>
@@ -189,7 +207,12 @@ const writeBiography = (
       stage.page.waitForURL(`${origin}/users/*`, { timeout: appearanceTimeout }),
     );
     yield* seeText(stage.page, biography);
-    return { biography, profilePath: new URL(stage.page.url()).pathname };
+    const profilePath = new URL(stage.page.url()).pathname;
+    return {
+      biography,
+      profilePath,
+      reopensWithTheSavedBiography: yield* reopenProfileEditor(stage, biography),
+    };
   });
 
 type ListedSetting = { readonly heading: string; readonly name: string };
@@ -281,6 +304,7 @@ const runMemberJourney = (
     readonly opensEveryListedSettingsItem: boolean;
     readonly reachesLeaveInOneClick: boolean;
     readonly reachesPlanInOneClick: boolean;
+    readonly reopensTheEditorWithTheSavedBiography: boolean;
     readonly showsTheBiographyWrittenEarlier: boolean;
     readonly showsTheReplyOnTheThread: boolean;
   },
@@ -292,7 +316,10 @@ const runMemberJourney = (
     yield* browseMainScreens(stage, account);
     const board = yield* postOnBoard(stage, origin);
     const settings = yield* browseSettings(stage, origin);
-    const { biography, profilePath } = yield* writeBiography(stage, origin);
+    const { biography, profilePath, reopensWithTheSavedBiography } = yield* writeBiography(
+      stage,
+      origin,
+    );
     const enrollment = yield* enrollTotp({ account, origin, page: stage.page });
     yield* signInAgainWithTotp(stage, { account, origin, uri: enrollment.uri });
     const landsOnTheMemberHome = stage.page.url().startsWith(`${origin}/home`);
@@ -307,6 +334,7 @@ const runMemberJourney = (
       opensEveryListedSettingsItem: settings.opensEveryListedItem,
       reachesLeaveInOneClick: settings.reachesLeaveInOneClick,
       reachesPlanInOneClick: settings.reachesPlanInOneClick,
+      reopensTheEditorWithTheSavedBiography: reopensWithTheSavedBiography,
       showsTheBiographyWrittenEarlier,
       showsTheReplyOnTheThread: board.showsTheReply,
     };

@@ -9,8 +9,9 @@ import {
   StatusMessage,
   useToast,
 } from "@repo/ui";
-import { useRouter } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 
+import { visibilitySettingOptions } from "#pages/settings/api/visibility.ts";
 import { useVisibilityForm } from "#pages/settings/model/visibility-form.ts";
 
 import type { Visibility } from "#pages/settings/api/visibility.ts";
@@ -34,10 +35,12 @@ function VisibilityPage({
 }: Readonly<{
   initial: Visibility;
 }>): ReactElement {
-  const router = useRouter();
+  const queries = useQueryClient();
   const notify = useToast();
   function showSaved(): Promise<void> {
-    return router.invalidate().then(() => notify("success", "公開範囲を保存しました。"));
+    return queries
+      .invalidateQueries({ queryKey: visibilitySettingOptions.queryKey })
+      .then(() => notify("success", "公開範囲を保存しました。"));
   }
   const form = useVisibilityForm(initial, showSaved);
   return (

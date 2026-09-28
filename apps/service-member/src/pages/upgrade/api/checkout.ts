@@ -1,23 +1,22 @@
 import { apiData } from "@repo/runtime/client";
+import { queryOptions } from "@tanstack/react-query";
 
 import { userClient } from "#shared/api/index.ts";
-import { HostedPage, OfferView, PlanView } from "#shared/contracts/index.ts";
+import { HostedPage, OfferView } from "#shared/contracts/index.ts";
 
 type Offer = typeof OfferView.Type;
 
-interface Upgrade {
-  readonly offer: Offer;
-  readonly plan: typeof PlanView.Type;
-}
-
-function loadUpgrade(): Promise<Upgrade> {
+function loadOffer(): Promise<Offer> {
   return Promise.resolve(userClient()).then(({ api }) =>
-    Promise.all([
-      api.billing.plan.get().then((reply) => apiData(PlanView, reply)),
-      api.billing.offer.get().then((reply) => apiData(OfferView, reply)),
-    ]).then(([plan, offer]) => ({ offer, plan })),
+    api.billing.offer.get().then((reply) => apiData(OfferView, reply)),
   );
 }
+
+const offerOptions = queryOptions({
+  queryFn: loadOffer,
+  queryKey: ["offer"],
+  retry: false,
+});
 
 function startCheckout(): Promise<void> {
   return Promise.resolve(userClient()).then(({ api }) =>
@@ -27,5 +26,5 @@ function startCheckout(): Promise<void> {
   );
 }
 
-export { loadUpgrade, startCheckout };
-export type { Offer, Upgrade };
+export { offerOptions, startCheckout };
+export type { Offer };

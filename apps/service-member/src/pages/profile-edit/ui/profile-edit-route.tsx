@@ -1,13 +1,13 @@
-import { getRouteApi } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
 
+import { profileOptions } from "#entities/profile/index.ts";
 import { ProfileEditPage } from "./profile-edit-page.tsx";
 
 import type { ReactElement } from "react";
 
-const route = getRouteApi("/_member/settings/profile");
-
 function ProfileEditRoute(): ReactElement {
-  return <ProfileEditPage initial={route.useLoaderData()} />;
+  const { data } = useSuspenseQuery(profileOptions);
+  return <ProfileEditPage initial={data} />;
 }
 
 export { ProfileEditRoute };

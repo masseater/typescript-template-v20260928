@@ -60,6 +60,7 @@ describe("アプリ全体の導線", () => {
       opensEveryListedSettingsItem: true,
       reachesLeaveInOneClick: true,
       reachesPlanInOneClick: true,
+      reopensTheEditorWithTheSavedBiography: true,
       showsTheBiographyWrittenEarlier: true,
       showsTheReplyOnTheThread: true,
     });

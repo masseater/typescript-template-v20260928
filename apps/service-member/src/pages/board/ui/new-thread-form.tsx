@@ -8,9 +8,11 @@ import {
   StatusMessage,
   useToast,
 } from "@repo/ui";
-import { useNavigate, useRouter } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { Effect } from "effect";
 
+import { boardKey } from "#pages/board/api/board.ts";
 import { useNewThreadForm } from "#pages/board/model/new-thread-form.ts";
 import { maximumBoardBodyLength, maximumBoardTitleLength } from "#shared/contracts/index.ts";
 
@@ -33,12 +35,12 @@ function showCreated(
 
 function NewThreadForm(): ReactElement {
   const navigate = useNavigate();
-  const router = useRouter();
+  const queries = useQueryClient();
   const notify = useToast();
   const form = useNewThreadForm((threadId) =>
     showCreated(
       threadId,
-      () => router.invalidate(),
+      () => queries.invalidateQueries({ queryKey: boardKey }),
       (id) => navigate({ params: { id }, to: "/board/$id" }),
       notify,
     ),

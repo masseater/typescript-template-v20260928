@@ -1,5 +1,5 @@
 export { ComposeRoute } from "./ui/compose-route.tsx";
-export { loadConversation, loadConversations, lookupConversation } from "./api/messages.ts";
+export { conversationOptions, conversationsOptions, lookupConversation } from "./api/messages.ts";
 export {
   InvalidMessagesSearch,
   normalizeConversationSearch,

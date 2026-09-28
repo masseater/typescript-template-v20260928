@@ -6,11 +6,12 @@ import {
   MessagesFailed,
   MessagesPending,
   MessagesRoute,
-  loadConversations,
+  conversationsOptions,
   normalizeMessagesSearch,
 } from "#pages/messages/index.ts";
 
 import type { MessagesSearch } from "#pages/messages/index.ts";
+import type { QueryClient } from "@tanstack/react-query";
 
 function requireMessagesSearch(raw: unknown): MessagesSearch {
   try {
@@ -37,8 +38,13 @@ const Route = createFileRoute("/_member/messages/")({
       throw redirect({ replace: true, search, to: "/messages" });
     }
   },
-  loader: ({ deps }: Readonly<{ deps: Readonly<{ page: number }> }>) =>
-    loadConversations(deps.page),
+  loader: ({
+    context,
+    deps,
+  }: Readonly<{
+    context: Readonly<{ queryClient: QueryClient }>;
+    deps: Readonly<{ page: number }>;
+  }>) => context.queryClient.query(conversationsOptions(deps.page)),
   component: MessagesRoute,
   errorComponent: MessagesFailed,
   pendingComponent: MessagesPending,

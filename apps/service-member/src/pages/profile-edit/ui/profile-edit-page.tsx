@@ -1,6 +1,8 @@
 import { Field, FormColumn, Page, STATUS_VARIANT, StatusMessage, useToast } from "@repo/ui";
-import { useNavigate, useRouter } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 
+import { profileOptions } from "#entities/profile/index.ts";
 import { useProfileForm } from "#pages/profile-edit/model/profile-form.ts";
 import { PhotoEditor } from "./photo-editor.tsx";
 import { ProfileEditor } from "./profile-editor.tsx";
@@ -10,11 +12,11 @@ import type { ReactElement } from "react";
 
 function ProfileEditPage({ initial }: Readonly<{ initial: Profile }>): ReactElement {
   const navigate = useNavigate();
-  const router = useRouter();
+  const queryClient = useQueryClient();
   const notify = useToast();
   const showSaved = (): Promise<void> =>
-    router
-      .invalidate()
+    queryClient
+      .invalidateQueries({ queryKey: profileOptions.queryKey })
       .then(() => navigate({ params: { id: initial.id }, to: "/users/$id" }))
       .then(() => {
         notify("success", "プロフィールを保存しました。");

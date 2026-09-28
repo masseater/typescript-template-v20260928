@@ -1,8 +1,10 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Option, Schema } from "effect";
 
+import { memberOptions } from "#entities/member/index.ts";
 import { ComposeRoute, lookupConversation } from "#pages/messages/index.ts";
-import { loadMember } from "#pages/profile/index.ts";
+
+import type { QueryClient } from "@tanstack/react-query";
 
 const ComposeSearchParams = Schema.Struct({
   peer: Schema.String.check(Schema.isLengthBetween(1, 256)),
@@ -27,8 +29,10 @@ const Route = createFileRoute("/_member/messages/new")({
     search: ComposeSearch;
   }>) => search,
   loader: ({
+    context,
     deps,
   }: Readonly<{
+    context: Readonly<{ queryClient: QueryClient }>;
     deps: ComposeSearch;
   }>) =>
     lookupConversation(deps.peer).then((existing) =>
@@ -43,7 +47,7 @@ const Route = createFileRoute("/_member/messages/new")({
             to: "/messages/$id",
           });
         }
-        return loadMember(deps.peer);
+        return context.queryClient.query(memberOptions(deps.peer));
       }),
     ),
 });

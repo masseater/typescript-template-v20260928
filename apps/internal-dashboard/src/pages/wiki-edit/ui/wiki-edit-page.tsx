@@ -1,8 +1,9 @@
 import { ConfirmDialog, Field, Page, localState, useAction, useOptionalString } from "@repo/ui";
-import { useRouter } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { Effect, Option } from "effect";
 import { Plate, PlateContent, usePlateEditor } from "platejs/react";
 
+import { wikiEditorOptions } from "#pages/wiki-edit/api/load-wiki-editor.ts";
 import { discardDraft, publishDraft, saveDraft } from "#pages/wiki-edit/api/wiki-draft.ts";
 import { draftProgress } from "#pages/wiki-edit/model/draft-progress.ts";
 import { wikiPageHref, writeWikiDocument } from "#shared/wiki-document/index.ts";
@@ -23,7 +24,9 @@ function WikiEditPage({ data }: Readonly<{ data: WikiEditorData }>): ReactElemen
     plugins: wikiEditorPlugins,
     value: [...document.value],
   });
-  const router = useRouter();
+  const queries = useQueryClient();
+  const refresh = (): Promise<void> =>
+    queries.invalidateQueries({ queryKey: wikiEditorOptions(source.path).queryKey });
   const saving = useAction();
   const discarding = useAction();
   const publishing = useAction();
@@ -39,13 +42,11 @@ function WikiEditPage({ data }: Readonly<{ data: WikiEditorData }>): ReactElemen
       .then((markdown) =>
         saveDraft({ baseRevision: source.baseRevision, markdown, path: source.path, version }),
       )
-      .then(() => router.invalidate());
+      .then(refresh);
 
-  const publish = (): Promise<void> =>
-    publishDraft(source.path, version).then(() => router.invalidate());
+  const publish = (): Promise<void> => publishDraft(source.path, version).then(refresh);
 
-  const discard = (): Promise<void> =>
-    discardDraft(source.path, version).then(() => router.invalidate());
+  const discard = (): Promise<void> => discardDraft(source.path, version).then(refresh);
 
   return (
     <Page title={`${document.title} を編集`}>

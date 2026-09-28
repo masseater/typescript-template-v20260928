@@ -6,11 +6,12 @@ import {
   BoardPending,
   BoardRoute,
   InvalidBoardSearch,
-  loadThreads,
   normalizeBoardSearch,
+  threadsOptions,
 } from "#pages/board/index.ts";
 
 import type { BoardSearch } from "#pages/board/index.ts";
+import type { QueryClient } from "@tanstack/react-query";
 
 function requireBoardSearch(raw: unknown): BoardSearch {
   try {
@@ -37,7 +38,13 @@ const Route = createFileRoute("/_member/board/")({
       throw redirect({ replace: true, search, to: "/board" });
     }
   },
-  loader: ({ deps }: Readonly<{ deps: Readonly<{ page: number }> }>) => loadThreads(deps.page),
+  loader: ({
+    context,
+    deps,
+  }: Readonly<{
+    context: Readonly<{ queryClient: QueryClient }>;
+    deps: Readonly<{ page: number }>;
+  }>) => context.queryClient.query(threadsOptions(deps.page)),
   component: BoardRoute,
   errorComponent: BoardFailed,
   pendingComponent: BoardPending,

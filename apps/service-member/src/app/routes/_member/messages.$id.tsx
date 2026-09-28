@@ -6,12 +6,13 @@ import {
   ConversationMissing,
   ConversationPending,
   ConversationRoute,
+  conversationOptions,
   InvalidMessagesSearch,
-  loadConversation,
   normalizeConversationSearch,
 } from "#pages/messages/index.ts";
 
 import type { ConversationSearch } from "#pages/messages/index.ts";
+import type { QueryClient } from "@tanstack/react-query";
 
 function requireConversationSearch(raw: unknown): ConversationSearch {
   try {
@@ -43,10 +44,14 @@ const Route = createFileRoute("/_member/messages/$id")({
     }
   },
   loader: ({
+    context,
     deps,
     params,
-  }: Readonly<{ deps: Readonly<{ page: number }>; params: Readonly<{ id: string }> }>) =>
-    loadConversation(params.id, deps.page),
+  }: Readonly<{
+    context: Readonly<{ queryClient: QueryClient }>;
+    deps: Readonly<{ page: number }>;
+    params: Readonly<{ id: string }>;
+  }>) => context.queryClient.query(conversationOptions(params.id, deps.page)),
   component: ConversationRoute,
   errorComponent: ConversationFailed,
   notFoundComponent: ConversationMissing,
