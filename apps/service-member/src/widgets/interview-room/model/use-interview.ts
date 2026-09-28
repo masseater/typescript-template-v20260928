@@ -50,6 +50,9 @@ function useInterview(onSaved?: () => Promise<void>): InterviewSession {
   const actions = [turnAction, saveAction, restartAction, consentAction];
   const refresh = (): Promise<void> =>
     queries.invalidateQueries({ queryKey: interviewOptions.queryKey });
+  function reload(): void {
+    void queries.invalidateQueries({ queryKey: interviewOptions.queryKey });
+  }
   const published = (): Promise<void> => {
     setFailedTurn(undefined);
     return refresh();
@@ -69,9 +72,7 @@ function useInterview(onSaved?: () => Promise<void>): InterviewSession {
     heard: heardTurn(failedTurn),
     loadError: loaded.error?.message,
     pending: loaded.isFetching,
-    reload: () => {
-      void refresh();
-    },
+    reload,
     restart: () => {
       restartAction.run(() => restartInterviewSession().then(published));
     },
