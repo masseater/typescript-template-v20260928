@@ -48,6 +48,7 @@ export const stripeTrialPeriodDays = 14;
 
 export const aiMeterEventName = "ai_interview_turn";
 export const aiUsageUnitAmount = 3;
+export const billingCurrency = "jpy";
 
 export const priceIntervals = ["day", "week", "month", "year"] as const;
 export type PriceInterval = (typeof priceIntervals)[number];

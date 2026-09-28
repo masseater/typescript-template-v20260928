@@ -7,6 +7,7 @@ import {
   aiUsageUnitAmount,
   appEnvKey,
   applications,
+  billingCurrency,
   grants,
   jobsQueueBinding,
   jobsWorkflowBinding,
@@ -194,7 +195,7 @@ function billingResources(app: Application): Readonly<Record<string, ResourceInv
       adopt: false,
       bindings: [],
       declared: {
-        currency: "jpy",
+        currency: billingCurrency,
         product: "<unresolved PropExpr>",
         recurring: { interval: "month", meter: "<unresolved PropExpr>", usageType: "metered" },
         unitAmount: aiUsageUnitAmount,
@@ -217,7 +218,7 @@ function billingResources(app: Application): Readonly<Record<string, ResourceInv
       adopt: false,
       bindings: [],
       declared: {
-        currency: "jpy",
+        currency: billingCurrency,
         product: "<unresolved PropExpr>",
         recurring: { interval: "month" },
         unitAmount: 500,
