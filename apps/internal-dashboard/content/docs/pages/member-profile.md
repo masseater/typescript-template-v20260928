@@ -75,7 +75,8 @@ flowchart TD
   edit -- 保存に成功 --> me
   edit -- やめる --> me
   search["/search"] -- カードを選ぶ --> other["/users/他の利用者の id"]
-  other -- メッセージを送る --> conversation["/messages/{id}"]
-  other -- 無料の利用者が最初のメッセージを送る --> upgrade["/upgrade"]
+  other -- メッセージを送る --> compose["/messages/new"]
+  compose -- 会話がある・送信に成功 --> conversation["/messages/{id}"]
+  compose -- 無料の利用者が最初のメッセージを送る --> upgrade["/upgrade"]
   other -- 見つからない --> home["/home"]
 ```
