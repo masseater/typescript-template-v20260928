@@ -10,6 +10,7 @@ import { DateTime, Effect } from "effect";
 
 import { auditWhenTargeted, type AuditEntry } from "./audit.ts";
 import { query } from "./database.ts";
+import { freshId } from "./fresh-id.ts";
 import { issueInvite } from "./invite.ts";
 import { LastEditorRequired } from "./last-editor-required.ts";
 import { liveStaff, requireStaff } from "./privileged-session.ts";
@@ -86,6 +87,7 @@ export const setStaffPermission = Effect.fn("setStaffPermission")(
     const { permission, sessionId, staffId } = change;
     const actor = yield* requireStaff(sessionId, "manageStaff");
     const updatedAt = DateTime.toDate(yield* DateTime.now);
+    const auditId = yield* freshId;
     const [, changedStaff] = yield* query((database) => {
       const live = liveStaff(database, {
         checkedAt: updatedAt,
@@ -96,6 +98,7 @@ export const setStaffPermission = Effect.fn("setStaffPermission")(
         auditWhenTargeted(database, {
           actorIsLive: live,
           entry: { ...staffActor(actor, AUDIT_ACTION.staffPermissionChanged), targetId: staffId },
+          id: auditId,
         }),
       );
       const transition = database
@@ -122,12 +125,14 @@ export const removeStaff = Effect.fn("removeStaff")(function* removeStaff(
     return yield* new TargetUnavailable();
   }
   const checkedAt = DateTime.toDate(yield* DateTime.now);
+  const auditId = yield* freshId;
   const [, removedStaff] = yield* query((database) => {
     const live = liveStaff(database, { checkedAt, operation: "manageStaff", sessionId });
     const audit = database.run(
       auditWhenTargeted(database, {
         actorIsLive: live,
         entry: { ...staffActor(actor, AUDIT_ACTION.staffRemoved), targetId: staffId },
+        id: auditId,
       }),
     );
     const removal = database

@@ -12,9 +12,11 @@ import { and, desc, eq, or, type SQL } from "drizzle-orm";
 import { DateTime, Effect, Schema } from "effect";
 
 import { auditWhenTargeted, type AuditEntry } from "./audit.ts";
+import { clockDate } from "./clock-date.ts";
 import { containsKeyword } from "./contains-keyword.ts";
 import { countRows } from "./count-rows.ts";
 import { query, type DrizzleDatabase } from "./database.ts";
+import { freshId } from "./fresh-id.ts";
 import { issueInvite } from "./invite.ts";
 import { LastAdminRequired } from "./last-admin-required.ts";
 import { liveAdmin, requireAdmin } from "./privileged-session.ts";
@@ -113,11 +115,13 @@ const ownerAudited = (
   database: DrizzleDatabase,
   {
     actor,
+    auditId,
     sessionId,
     targeting,
     updatedAt,
   }: Readonly<{
     actor: Readonly<{ user: Readonly<{ id: string }> }>;
+    auditId: string;
     sessionId: string;
     targeting: Readonly<{ action: AuditEntry["action"]; channel: AuditChannel; targetId: string }>;
     updatedAt: Date;
@@ -129,7 +133,11 @@ const ownerAudited = (
     sessionId,
   });
   const audit = database.run(
-    auditWhenTargeted(database, { actorIsLive: live, entry: adminEntry(actor, targeting) }),
+    auditWhenTargeted(database, {
+      actorIsLive: live,
+      entry: adminEntry(actor, targeting),
+      id: auditId,
+    }),
   );
   return { audit, live };
 };
@@ -172,6 +180,7 @@ export const setMemberState = Effect.fn("setMemberState")(function* setMemberSta
       ? AUDIT_ACTION.memberSuspended
       : AUDIT_ACTION.memberUnsuspended;
   const updatedAt = DateTime.toDate(yield* DateTime.now);
+  const auditId = yield* freshId;
   const [, changedMembers] = yield* query((database) => {
     const live = liveAdmin(database, {
       checkedAt: updatedAt,
@@ -182,6 +191,7 @@ export const setMemberState = Effect.fn("setMemberState")(function* setMemberSta
       auditWhenTargeted(database, {
         actorIsLive: live,
         entry: adminEntry(actor, { action, channel, targetId: memberId }),
+        id: auditId,
       }),
     );
     const transition = database
@@ -206,12 +216,14 @@ export const deleteUser = Effect.fn("deleteUser")(function* deleteUser(removal: 
   const { channel = AUDIT_CHANNEL.ui, sessionId, targetId } = removal;
   const actor = yield* requireAdmin(sessionId, "manageMembers");
   const checkedAt = DateTime.toDate(yield* DateTime.now);
+  const auditId = yield* freshId;
   const [, removedUsers] = yield* query((database) => {
     const live = liveAdmin(database, { checkedAt, operation: "manageMembers", sessionId });
     const audit = database.run(
       auditWhenTargeted(database, {
         actorIsLive: live,
         entry: adminEntry(actor, { action: AUDIT_ACTION.userDeleted, channel, targetId }),
+        id: auditId,
       }),
     );
     const removal = database
@@ -284,9 +296,11 @@ export const setAdminPermission = Effect.fn("setAdminPermission")(
     const { adminId, channel = AUDIT_CHANNEL.ui, permission, sessionId } = change;
     const actor = yield* requireAdmin(sessionId, "manageAdmins");
     const updatedAt = DateTime.toDate(yield* DateTime.now);
+    const auditId = yield* freshId;
     const [, changedAdmins] = yield* query((database) => {
       const { audit, live } = ownerAudited(database, {
         actor,
+        auditId,
         sessionId,
         targeting: { action: AUDIT_ACTION.adminPermissionChanged, channel, targetId: adminId },
         updatedAt,
@@ -317,10 +331,11 @@ export const setAdminState = Effect.fn("setAdminState")(function* setAdminState(
   if (actor.user.id === adminId) {
     return yield* new TargetUnavailable();
   }
-  const updatedAt = DateTime.toDate(yield* DateTime.now);
+  const [updatedAt, auditId] = yield* Effect.all([clockDate, freshId]);
   const [, changedAdmins] = yield* query((database) => {
     const { audit, live } = ownerAudited(database, {
       actor,
+      auditId,
       sessionId,
       targeting: {
         action:
