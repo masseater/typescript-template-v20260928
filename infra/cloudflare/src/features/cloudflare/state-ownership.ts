@@ -25,20 +25,25 @@ const recordedRows = Effect.fn("recordedRows")(function* recordedRows<Failure, R
   stacks: readonly StackName[],
 ) {
   const state = yield* store;
-  const results = yield* Effect.forEach(stacks, (stack) =>
-    readState({ path: `${stackName(stack)}/${prefix}`, recursive: true }).pipe(
-      Effect.provideService(State, Effect.succeed(state)),
-      Effect.map((entries) => ({
-        missing: undefined,
-        rows: entries.map((entry) => entry.value),
-      })),
-      Effect.catchTag("InvalidStatePath", (error) =>
-        error.reason === "path does not exist"
-          ? Effect.succeed({ missing: error, rows: [] })
-          : Effect.fail(error),
+  const settled = yield* Effect.forEach(
+    stacks,
+    (stack) =>
+      readState({ path: `${stackName(stack)}/${prefix}`, recursive: true }).pipe(
+        Effect.provideService(State, Effect.succeed(state)),
+        Effect.map((entries) => ({
+          missing: undefined,
+          rows: entries.map((entry) => entry.value),
+        })),
+        Effect.catchTag("InvalidStatePath", (error) =>
+          error.reason === "path does not exist"
+            ? Effect.succeed({ missing: error, rows: [] })
+            : Effect.fail(error),
+        ),
+        Effect.result,
       ),
-    ),
+    { concurrency: "unbounded" },
   );
+  const results = yield* Effect.forEach(settled, Effect.fromResult);
   if (results.every((result) => result.rows.length === 0)) {
     const missing = results.find((result) => result.missing !== undefined)?.missing;
     return missing === undefined ? [] : yield* missing;

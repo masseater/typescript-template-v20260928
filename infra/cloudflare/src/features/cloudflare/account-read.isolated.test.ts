@@ -3,7 +3,7 @@ import { Effect, Schema } from "effect";
 import { HttpResponse, delay, http } from "msw";
 import { setupServer } from "msw/node";
 
-import { endpoint, readList, requestReason } from "./account-read.ts";
+import { endpoint, readList, readPages, requestReason } from "./account-read.ts";
 
 import type { Scope } from "effect";
 import type { SetupServer } from "msw/node";
@@ -12,6 +12,8 @@ const HEX_ID_LENGTH = 32;
 const PAGE_SIZE = 20;
 const RESPONSE_DELAY_MS = 200;
 const ABORT_DEADLINE_MS = 1;
+const SERVER_ERROR_STATUS = 500;
+const PAGED_TOTAL = 41;
 
 const access = {
   accountId: "c".repeat(HEX_ID_LENGTH),
@@ -174,5 +176,34 @@ it.effect("reads an abort raised by a request deadline as a timeout", () =>
     });
     assert.strictEqual(requestReason(aborted), "timeout");
     assert.strictEqual(requestReason(new TypeError("fetch failed")), "request_failed");
+  }).pipe(Effect.scoped),
+);
+
+it.effect("reports the earliest page's failure when a later page fails sooner", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(
+      http.get(url, async ({ request }) => {
+        const page = new URL(request.url).searchParams.get("page");
+        if (page === "1") {
+          return HttpResponse.json({
+            result: Array.from({ length: PAGE_SIZE }, (_value, index) => ({
+              name: `record-${index}.example.com`,
+            })),
+            result_info: { total_count: PAGED_TOTAL },
+          });
+        }
+        if (page === "2") {
+          await delay(RESPONSE_DELAY_MS);
+          return new HttpResponse(null, { status: SERVER_ERROR_STATUS });
+        }
+        return HttpResponse.error();
+      }),
+    );
+    const failure = yield* readPages(
+      access,
+      { pageSize: PAGE_SIZE, source: endpoint`zones/${access.accountId}/dns_records` },
+      Rows,
+    ).pipe(Effect.flip);
+    assert.deepStrictEqual(failure.keys, ["zones/{}/dns_records", "status_500"]);
   }).pipe(Effect.scoped),
 );

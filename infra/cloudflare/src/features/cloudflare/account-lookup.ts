@@ -76,7 +76,12 @@ const recordsPresent = Effect.fn("recordsPresent")(function* recordsPresent(
   zoneId: string,
   names: readonly string[],
 ) {
-  const found = yield* Effect.forEach(names, (name) => dnsRecordNames(access, zoneId, name));
+  const settled = yield* Effect.forEach(
+    names,
+    (name) => Effect.result(dnsRecordNames(access, zoneId, name)),
+    { concurrency: "unbounded" },
+  );
+  const found = yield* Effect.forEach(settled, Effect.fromResult);
   return found.flat().length > 0;
 });
 
