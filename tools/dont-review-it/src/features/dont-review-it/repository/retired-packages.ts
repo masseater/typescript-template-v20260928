@@ -19,6 +19,7 @@ const atomUiRetiredPackages: Readonly<Record<string, string>> = {
   "@nanostores/": atomState,
   "@preact/signals-react": atomState,
   "@reduxjs/": atomState,
+  "@tanstack/react-pacer": "useDeferredValue",
   "@tanstack/react-store": atomState,
   "@tanstack/store": atomState,
   effector: atomState,
@@ -62,6 +63,7 @@ const retiredPackages: Readonly<Record<string, string>> = {
 const retiredEntries: Readonly<Record<string, string>> = {
   "@effect/atom-react/": "@effect/atom-react の root",
   "better-auth/react": "better-auth/client と Effect Atom",
+  "fumadocs-core/search/client": "TanStack Query の queryOptions",
   "motion/react-client": "motion/react-m",
   "effect/unstable/reactivity/": "effect/unstable/reactivity の root",
 };
