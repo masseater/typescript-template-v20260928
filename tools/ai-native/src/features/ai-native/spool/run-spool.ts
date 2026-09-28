@@ -1,18 +1,8 @@
+import { optionalSetting } from "@repo/ai-native-telemetry/optional-setting";
 import { Effect, Result, Stream, type FileSystem, type PlatformError, type Scope } from "effect";
 
 import { childEndOf, type ChildEnd } from "../child-process.ts";
-import {
-  filesystem,
-  joinPath,
-  makeDirectory,
-  nativeFailure,
-  onDisk,
-  optionalSetting,
-  randomHex,
-  removePath,
-  spawner,
-  wallClockDate,
-} from "../host.ts";
+import { filesystem, joinPath, makeDirectory, nativeFailure, onDisk, randomHex, removePath, spawner, wallClockDate } from "../host.ts";
 import { measureCommand, recordCommandRecord } from "../telemetry/command-telemetry.ts";
 import { exitCodeOf, startFailureSummary } from "./child-outcome.ts";
 import { formatElapsed } from "./format-elapsed.ts";

@@ -1,7 +1,8 @@
+import { eq } from "drizzle-orm";
 import { Auth } from "@repo/auth";
-import { AuthApps, authTest, authTestSecret, runWith } from "@repo/auth/testing";
+import { AuthApps, authTest, authTestSecret, runWith, responseStatus, type FetchMcp } from "@repo/auth/testing";
 import { APPLICATION, MEMBER_MCP_SCOPE, SUBSCRIPTION_STATUS, httpStatus } from "@repo/config";
-import { eq, query, recordSubscription, schema } from "@repo/db";
+import { query, recordSubscription, schema } from "@repo/db";
 import { unavailable } from "@repo/runtime/account";
 import { appLayer } from "@repo/runtime/bindings";
 import { apiRoutes, createApi } from "@repo/runtime/http";
@@ -12,14 +13,7 @@ import { describe, expect } from "vite-plus/test";
 
 import { routes } from "#shared/telemetry/index.ts";
 import { serveMcp } from "./mcp.ts";
-import {
-  callTool,
-  mcpChallenge,
-  memberOrigin,
-  responseStatus,
-  tokenFor,
-  type FetchMcp,
-} from "./member-oauth-test-fixture.ts";
+import { callTool, mcpChallenge, memberOrigin, tokenFor } from "./member-oauth-test-fixture.ts";
 
 const { user } = schema;
 const secretBody = "MCP_SECRET_BODY_NOT_FOR_OTHER_TOOLS";

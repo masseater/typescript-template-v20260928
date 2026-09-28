@@ -1,6 +1,7 @@
 import { Context, Effect, Layer } from "effect";
+import type { OtlpExporter } from "effect/unstable/observability";
 
-import { otlpExport, type OtlpDestination, type TelemetryFlusher } from "./otlp.ts";
+import { otlpExport, type OtlpDestination } from "./otlp.ts";
 import { isRoutes } from "./protocol.ts";
 import { serviceLabel, structuredLogs, type StructuredLogOptions } from "./structured-logs.ts";
 import { TelemetryInvalid } from "./telemetry-invalid.ts";
@@ -20,7 +21,7 @@ class Telemetry extends Context.Service<
       readonly otlp?: OtlpDestination | undefined;
       readonly routes: Readonly<Record<string, string>>;
     },
-  ): Layer.Layer<Telemetry | TelemetryFlusher, TelemetryInvalid> {
+  ): Layer.Layer<Telemetry | OtlpExporter.Flusher, TelemetryInvalid> {
     const { release, routes, serviceName } = settings;
     const attributeLabels = new Set([...Object.values(routes), "unmatched"]);
     const service = serviceLabel(serviceName);

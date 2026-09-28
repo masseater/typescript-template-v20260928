@@ -1,4 +1,5 @@
 import { Crypto, Effect } from "effect";
+import { URI } from "otpauth";
 
 import { failed, type JourneyFailure } from "./journey-failure.ts";
 import {
@@ -11,7 +12,6 @@ import {
   seeHeading,
   seeText,
 } from "./screens.ts";
-import { currentTotpCode } from "./totp.ts";
 
 import type { Page } from "playwright";
 import type { Account } from "./accounts.ts";
@@ -69,7 +69,7 @@ const totpChallengeButton = "確認コードでログイン";
 const answerTotpChallenge = (page: Page, uri: string): Effect.Effect<void, JourneyFailure> =>
   Effect.gen(function* answerTotp() {
     yield* readyButton(page, totpChallengeButton);
-    yield* fill(page, { fieldLabel: totpLabel, typed: currentTotpCode(uri) });
+    yield* fill(page, { fieldLabel: totpLabel, typed: URI.parse(uri).generate() });
     yield* press(page, totpChallengeButton);
   });
 
@@ -112,7 +112,7 @@ const enrollTotp = (visit: Visit): Effect.Effect<Enrollment, JourneyFailure> =>
       .getByRole("checkbox", { name: "バックアップコードを保管しました" })
       .first();
     yield* pageStep(() => stored.click());
-    yield* fill(visit.page, { fieldLabel: totpLabel, typed: currentTotpCode(enrollment.uri) });
+    yield* fill(visit.page, { fieldLabel: totpLabel, typed: URI.parse(enrollment.uri).generate() });
     yield* press(visit.page, activateButton);
     yield* pageStep(() =>
       visit.page.waitForURL(`${visit.origin}${homePattern}`, { timeout: appearanceTimeout }),

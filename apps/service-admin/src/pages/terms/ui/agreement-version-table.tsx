@@ -1,8 +1,9 @@
+import { agreementKindLabels } from "@repo/config";
 import { NavigationLink, Table, TableBody, formatWarekiDate } from "@repo/ui";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { DateTime } from "effect";
 
-import { agreementKindLabels, stateLabel } from "#pages/terms/model/agreement-labels.ts";
+import { stateLabel } from "#pages/terms/model/agreement-labels.ts";
 import { FlexTableHeader, FlexTableRows } from "#shared/ui/flex-table.tsx";
 
 import type { VersionList } from "#pages/terms/model/agreement-versions.ts";

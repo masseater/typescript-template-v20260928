@@ -1,5 +1,5 @@
 import { INQUIRY_STATUS } from "@repo/config";
-import { IdentifierQuery, InquiryMessage } from "@repo/runtime/contracts";
+import { InquiryMessage } from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
 const InquiryStatus = Schema.String;
@@ -33,12 +33,10 @@ const StaffInquiryThread = Schema.Struct({
 
 const StaffInquiryList = Schema.Struct({ inquiries: Schema.Array(StaffInquirySummary) });
 
-const InquiryQuery = IdentifierQuery;
 
-const MemberQuery = IdentifierQuery;
 
 type StaffInquiryCountsView = typeof StaffInquiryCounts.Type;
 type StaffInquiryThreadView = typeof StaffInquiryThread.Type;
 
-export { InquiryQuery, MemberQuery, StaffInquiryCounts, StaffInquiryList, StaffInquiryThread };
+export { StaffInquiryCounts, StaffInquiryList, StaffInquiryThread };
 export type { StaffInquiryCountsView, StaffInquiryThreadView };

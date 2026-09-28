@@ -1,19 +1,5 @@
-import {
-  UserNotFound,
-  and,
-  blockHides,
-  containsKeyword,
-  countRows,
-  desc,
-  eq,
-  findInterview,
-  not,
-  profileListed,
-  profileVisibleTo,
-  query,
-  schema,
-  viewerBlockedTarget,
-} from "@repo/db";
+import { and, desc, eq, not } from "drizzle-orm";
+import { UserNotFound, blockHides, containsKeyword, countRows, findInterview, profileListed, profileVisibleTo, query, schema, viewerBlockedTarget } from "@repo/db";
 import { DateTime, Effect } from "effect";
 
 import { photoVersion } from "#shared/photo/index.ts";

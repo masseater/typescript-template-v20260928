@@ -1,6 +1,5 @@
 import { ACCOUNT_STATE, accountStates } from "@repo/config";
-import { adminPageSize, maximumAdminPageSize } from "@repo/config/paging";
-import { Identifier, IdentifierQuery, UserKeyword, pageNumber } from "@repo/runtime/contracts";
+import { adminPageSize, maximumAdminPageSize, Identifier, UserKeyword, pageNumber } from "@repo/config/paging";
 import { Schema, Struct } from "effect";
 
 const AccountState = Schema.Literals(accountStates);
@@ -32,21 +31,19 @@ const UserSummary = Schema.Struct({
 
 const UserList = Schema.Struct({ total: Schema.Finite, users: Schema.Array(UserSummary) });
 
-const MemberStateChange = Schema.Struct({ accountState: AccountState, id: Identifier });
+const AccountStateChange = Schema.Struct({ accountState: AccountState, id: Identifier });
 
-const MemberStateChanged = Schema.Struct({ accountState: AccountState, id: Schema.String });
+const AccountStateChanged = Schema.Struct({ accountState: AccountState, id: Schema.String });
 
-const UserDeletion = IdentifierQuery;
 
 const UserDeleted = Schema.Struct(Struct.pick(UserSummary.fields, ["id"]));
 
 export {
   AccountState,
   BooleanText,
-  MemberStateChange,
-  MemberStateChanged,
+  AccountStateChange,
+  AccountStateChanged,
   UserDeleted,
-  UserDeletion,
   UserList,
   UserListQuery,
   nextAccountStates,

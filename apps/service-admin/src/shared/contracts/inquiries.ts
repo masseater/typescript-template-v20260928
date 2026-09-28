@@ -1,11 +1,6 @@
+import { Identifier, pageNumber } from "@repo/config/paging";
 import { inquiryStatuses } from "@repo/config";
-import {
-  Identifier,
-  IdentifierQuery,
-  InquiryMessage,
-  Tally,
-  pageNumber,
-} from "@repo/runtime/contracts";
+import { InquiryMessage } from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
 const maximumReplyLength = 4000;
@@ -40,9 +35,7 @@ const AdminInquiryList = Schema.Struct({
   total: Schema.Finite,
 });
 
-const InquiryQuery = IdentifierQuery;
 
-const MemberQuery = IdentifierQuery;
 
 const InquiryMemberSummary = Schema.Struct({
   email: Schema.String,
@@ -55,19 +48,13 @@ const InquiryReply = Schema.Struct({
   id: Identifier,
 });
 
-const InquiryClose = IdentifierQuery;
 
-const PendingCount = Tally;
 
 export {
   AdminInquiryList,
   AdminInquiryThread,
-  InquiryClose,
   InquiryListQuery,
   InquiryMemberSummary,
-  InquiryQuery,
   InquiryReply,
-  MemberQuery,
-  PendingCount,
   maximumReplyLength,
 };

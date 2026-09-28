@@ -1,11 +1,12 @@
-import { Telemetry, type TelemetryFlusher, type TelemetryInvalid } from "@repo/observability";
+import { Telemetry, type TelemetryInvalid } from "@repo/observability";
+import type { OtlpExporter } from "effect/unstable/observability";
 import { Layer } from "effect";
 
 import { Assets } from "./assets.ts";
 
 import type { SiteConfig } from "@repo/config";
 
-type SiteServices = Assets | Telemetry | TelemetryFlusher;
+type SiteServices = Assets | Telemetry | OtlpExporter.Flusher;
 
 const configuredSiteLayer = (
   asked: Readonly<{

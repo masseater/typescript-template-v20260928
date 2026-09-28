@@ -11,9 +11,10 @@ import {
 import { isInsideDirectory, publicEntryFilesOf } from "./package-entries.ts";
 import { resolveCoupling } from "./specifier-resolution.ts";
 
-import type { AstFields } from "../ast-node.ts";
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
 
-export const parsedProgramAt = (path: string): AstFields | null => {
+
+export const parsedProgramAt = (path: string): UnknownFields | null => {
   const source = readTextFile(path);
   if (source === null) return null;
   return astFieldsOf(parseSync(path, source).program);

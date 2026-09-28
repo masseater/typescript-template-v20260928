@@ -1,3 +1,4 @@
+import { repositoryRoot } from "@repo/config/repository-root";
 import { APPLICATION } from "@repo/config";
 import { Effect } from "effect";
 import { URI } from "otpauth";
@@ -5,15 +6,16 @@ import { URI } from "otpauth";
 import { BROWSER_AGENT_COMMAND } from "./browser-agent-command.ts";
 import { configuredOrigin, sessionArguments, sessionName } from "./browser-session.ts";
 import { failure } from "./failure.ts";
-import { readCredentials, refreshBrowserConfig, root, run } from "./local-environment.ts";
+import { readCredentials, refreshBrowserConfig, run } from "./local-environment.ts";
 import { ensureOperators, operatorFile } from "./operator-account.ts";
 import { urlPath } from "./platform.ts";
 
-import type { App, Credentials } from "./local-environment.ts";
+import type { Application } from "@repo/config";
+import type { Credentials } from "./local-environment.ts";
 import type { Operator } from "./operator-account.ts";
 
 interface AuthenticateReport {
-  readonly app: App;
+  readonly app: Application;
   readonly email: string;
   readonly event: "local.browser_authenticated";
   readonly ok: true;
@@ -30,27 +32,27 @@ const submitLoginForm = [
   "(() => { const form = document.querySelector('form'); if (form === null) { throw new Error('login_form_missing'); } form.requestSubmit(); return true; })()",
 ] as const;
 
-const postLoginPaths: Readonly<Record<App, string>> = {
+const postLoginPaths: Readonly<Record<Application, string>> = {
   [APPLICATION.admin]: "/members",
   [APPLICATION.user]: "/home",
   [APPLICATION.wiki]: "/",
 };
 
 const agent = Effect.fn("agent")(function* agent(
-  app: App,
+  app: Application,
   credentials: Credentials,
   socketDirectory: string,
   args: readonly string[],
 ) {
   const env = { AGENT_BROWSER_SOCKET_DIR: socketDirectory };
   yield* run("agent-browser", [...(yield* sessionArguments(app, credentials)), ...args], {
-    cwd: root,
+    cwd: repositoryRoot,
     env,
   });
 });
 
 const signInThroughBrowser = Effect.fn("signInThroughBrowser")(function* signInThroughBrowser(
-  app: App,
+  app: Application,
   credentials: Credentials,
   operator: Operator,
 ) {
@@ -100,7 +102,7 @@ const signInThroughBrowser = Effect.fn("signInThroughBrowser")(function* signInT
 });
 
 const authenticate = Effect.fn("authenticate")(function* authenticate(
-  app: App,
+  app: Application,
   _args: readonly string[] = [],
 ) {
   const credentials = yield* readCredentials();

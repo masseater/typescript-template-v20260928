@@ -1,7 +1,7 @@
+import { memberRetentionDays } from "@repo/config";
 import { Button, CheckboxField, ConfirmDialog, FormColumn, Page, StatusMessage } from "@repo/ui";
 
 import { useLeaveForm } from "#pages/settings/model/leave-form.ts";
-import { memberRetentionDays } from "#shared/contracts/index.ts";
 
 import type { ReactElement } from "react";
 

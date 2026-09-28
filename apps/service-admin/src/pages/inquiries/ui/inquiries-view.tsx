@@ -1,3 +1,4 @@
+import { INQUIRY_STATUS, type InquiryStatus } from "@repo/config";
 import {
   NavigationLink,
   Page,
@@ -6,11 +7,7 @@ import {
   formatWarekiDateTime,
 } from "@repo/ui";
 
-import {
-  INQUIRY_STATUS,
-  inquiryStatusLabel,
-  type InquiryStatus,
-} from "#pages/inquiries/model/status-label.ts";
+import { inquiryStatusLabel } from "#pages/inquiries/model/status-label.ts";
 
 import type { AdminInquirySummary } from "#pages/inquiries/model/inquiry.ts";
 import type { ReactElement } from "react";

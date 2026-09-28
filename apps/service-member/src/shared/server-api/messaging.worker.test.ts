@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { assert, describe, it } from "@effect/vitest";
 import {
   ADMIN_PERMISSION,
@@ -7,7 +8,7 @@ import {
   type AccountPermission,
   type Role,
 } from "@repo/config";
-import { eq, query, recordSubscription, schema } from "@repo/db";
+import { query, recordSubscription, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
 import { Effect, DateTime, Schema } from "effect";
 import { TestClock } from "effect/testing";

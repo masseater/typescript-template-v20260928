@@ -1,17 +1,10 @@
+import { ResourceId } from "@repo/runtime/contracts";
 import { httpStatus } from "@repo/config";
 import { absent, apiData, apiDataOrNoneFor } from "@repo/runtime/client";
 import { notFound } from "@tanstack/react-router";
 
 import { userClient } from "#shared/api/index.ts";
-import {
-  ConversationList,
-  ConversationLookupResult,
-  ConversationOpened,
-  ConversationView,
-  GroupCreate,
-  GroupCreated,
-  MessageSent,
-} from "#shared/contracts/index.ts";
+import { ConversationList, ConversationLookupResult, ConversationOpened, ConversationView, GroupCreate, GroupCreated } from "#shared/contracts/index.ts";
 
 type ConversationListView = typeof ConversationList.Type;
 type ConversationThread = typeof ConversationView.Type;
@@ -41,7 +34,7 @@ function sendMessage(conversationId: string, body: string): Promise<string> {
   return Promise.resolve(userClient()).then(({ api }) =>
     api.messages.messages
       .post({ body, conversationId })
-      .then((response) => apiData(MessageSent, response).id),
+      .then((response) => apiData(ResourceId, response).id),
   );
 }
 

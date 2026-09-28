@@ -1,7 +1,7 @@
 import { uniq } from "es-toolkit";
 
 import type { DependencyUsage } from "../dependency-usage.ts";
-import type { DependencyCatalogProblem } from "../problem.ts";
+import type { RepositoryProblem } from "../../repository-checks/index.ts";
 import type { CatalogEntry, OverrideCatalogReference } from "../workspace-definition.ts";
 
 const manifestsUsingEntry = ({
@@ -22,7 +22,7 @@ const manifestsUsingEntry = ({
 
 export type SingleUseCatalogEntryFinding = {
   readonly entry: CatalogEntry;
-  readonly problem: DependencyCatalogProblem;
+  readonly problem: RepositoryProblem;
 };
 
 export const singleUseCatalogEntryFindings = ({

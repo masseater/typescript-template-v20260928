@@ -1,4 +1,6 @@
-import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
+import { isAstFields, NODE_TYPE_FIELD } from "../ast-node.ts";
+
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
 
 const BOUND_FIELDS_BY_KIND: Readonly<Record<string, readonly string[]>> = {
   ArrowFunctionExpression: ["params"],
@@ -28,7 +30,7 @@ const patternNamesIn = (pattern: unknown): readonly string[] => {
     .flatMap(([, nested]) => patternNamesIn(nested));
 };
 
-const namesBoundAt = (node: AstFields): readonly string[] =>
+const namesBoundAt = (node: UnknownFields): readonly string[] =>
   (BOUND_FIELDS_BY_KIND[String(node[NODE_TYPE_FIELD])] ?? []).flatMap((field) =>
     patternNamesIn(node[field]),
   );

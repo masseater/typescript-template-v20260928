@@ -1,4 +1,5 @@
-import { ADMIN_PERMISSION, AUDIT_ACTION, maximumAdminPageSize } from "@repo/config";
+import type { InquiryStatus } from "@repo/config";
+import { ADMIN_PERMISSION, AUDIT_ACTION, maximumAdminPageSize, INQUIRY_STATUS, inquiryStatuses } from "@repo/config";
 import { and, desc, eq, sql, type SQL } from "drizzle-orm";
 import { DateTime, Effect, Schema } from "effect";
 
@@ -10,17 +11,7 @@ import { InquiryForbidden } from "./inquiry-forbidden.ts";
 import { InquiryNotFound } from "./inquiry-not-found.ts";
 import { adminInquiryColumns, inquiryColumns, inquiryThread } from "./inquiry-thread.ts";
 import { liveAdmin, requireAdmin } from "./privileged-session.ts";
-import {
-  auditEvent,
-  INQUIRY_AUTHOR_KIND,
-  INQUIRY_STATUS,
-  inquiry,
-  inquiryMessage,
-  inquiryStatuses,
-  type AuditAction,
-  type InquiryStatus,
-  user,
-} from "./schema.ts";
+import { auditEvent, INQUIRY_AUTHOR_KIND, inquiry, inquiryMessage, type AuditAction, user } from "./schema.ts";
 
 export const InquiryPage = Schema.Struct({
   limit: Schema.Int.check(Schema.isBetween({ maximum: maximumAdminPageSize, minimum: 1 })),

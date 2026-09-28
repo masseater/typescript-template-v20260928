@@ -1,12 +1,11 @@
 import { NodeServices } from "@effect/platform-node";
-import { isNotFound, isSystemError } from "@repo/cli";
+import { isSystemError } from "@repo/cli";
 import { Effect, FileSystem, Path, PlatformError } from "effect";
 
 import { failure } from "./failure.ts";
 
 import type { LocalCommandFailure } from "./failure.ts";
 
-type DevServices = NodeServices.NodeServices;
 
 const layer = NodeServices.layer;
 
@@ -37,4 +36,4 @@ function urlPath(url: URL): Effect.Effect<string, LocalCommandFailure, Path.Path
   );
 }
 
-export { type DevServices, isAlreadyExists, isNotFound, layer, urlPath, withFileSystem, withPath };
+export { isAlreadyExists, layer, urlPath, withFileSystem, withPath };

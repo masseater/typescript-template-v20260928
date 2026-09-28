@@ -1,11 +1,4 @@
-import {
-  plans,
-  priceIntervals,
-  stripeCollectionMethods,
-  subscriptionStatuses,
-  webhookOutcomes,
-} from "@repo/config";
-import { Redirect } from "@repo/runtime/contracts";
+import { plans, priceIntervals, stripeCollectionMethods, subscriptionStatuses, webhookOutcomes } from "@repo/config";
 import { Option, Schema } from "effect";
 
 const PlanView = Schema.Struct({
@@ -22,7 +15,6 @@ const OfferView = Schema.Struct({
   unitAmount: Schema.Finite,
 });
 
-const HostedPage = Redirect;
 
 const InvoiceView = Schema.Struct({
   amountCredited: Schema.Finite,
@@ -79,7 +71,6 @@ function readCheckoutReturn(raw: unknown): typeof CheckoutReturnSearch.Type {
 
 export {
   CHECKOUT_RETURN,
-  HostedPage,
   InvoiceList,
   OfferView,
   PlanView,

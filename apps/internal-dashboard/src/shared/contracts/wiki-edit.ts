@@ -1,5 +1,4 @@
 import { photoContentTypes } from "@repo/config";
-import { Redirect } from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
 const maximumPathLength = 200;
@@ -35,11 +34,9 @@ const WikiDraftSave = Schema.Struct({
   version: DraftVersion,
 });
 
-const WikiDraftDiscard = Schema.Struct({ path: WikiPagePath, version: DraftVersion });
+const WikiDraftReference = Schema.Struct({ path: WikiPagePath, version: DraftVersion });
 
-const WikiDraftPublish = WikiDraftDiscard;
 
-const WikiDraftPublished = Redirect;
 
 const WikiDraftSaved = Schema.Struct({ version: DraftVersion });
 
@@ -50,16 +47,12 @@ const WikiImageUpload = Schema.Struct({
   contentType: Schema.Literals(wikiImageTypes),
 });
 
-const WikiImageUploaded = Redirect;
 
 export {
-  WikiDraftDiscard,
-  WikiDraftPublish,
-  WikiDraftPublished,
+  WikiDraftReference,
   WikiDraftSave,
   WikiDraftSaved,
   WikiImageUpload,
-  WikiImageUploaded,
   WikiSource,
   WikiSourceQuery,
   wikiImageTypes,

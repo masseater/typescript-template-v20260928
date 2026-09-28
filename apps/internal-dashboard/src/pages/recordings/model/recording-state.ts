@@ -1,4 +1,5 @@
-import type { PeopleList, RecordingList, RecordingView } from "#shared/contracts/index.ts";
+import type { RecordingView } from "@repo/config";
+import type { PeopleList, RecordingList } from "#shared/contracts/index.ts";
 import type { SubmitEventHandler } from "react";
 
 type RegisteredPeople = (typeof PeopleList.Type)["people"];

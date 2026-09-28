@@ -1,4 +1,6 @@
-import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
+import { isAstFields, NODE_TYPE_FIELD } from "../ast-node.ts";
+
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
 
 export const IMPORT_META_REFERENCE = "import.meta";
 
@@ -41,15 +43,15 @@ const BINDING_FIELDS_BY_KIND: Readonly<Record<string, readonly string[]>> = {
   VariableDeclarator: ["id"],
 };
 
-const kindOf = (node: AstFields): string => String(node[NODE_TYPE_FIELD]);
+const kindOf = (node: UnknownFields): string => String(node[NODE_TYPE_FIELD]);
 
-const namingFieldsOf = (node: AstFields): readonly string[] => {
+const namingFieldsOf = (node: UnknownFields): readonly string[] => {
   if (node.computed === true) return [];
   if (KEYED_NODE_KINDS.has(kindOf(node))) return ["key"];
   return NAMING_FIELDS_BY_KIND[kindOf(node)] ?? [];
 };
 
-const nestedOf = (syntaxField: unknown): readonly AstFields[] => {
+const nestedOf = (syntaxField: unknown): readonly UnknownFields[] => {
   if (Array.isArray(syntaxField)) return syntaxField.flatMap(nestedOf);
   return isAstFields(syntaxField) ? [syntaxField] : [];
 };
@@ -63,14 +65,14 @@ const PATTERN_FIELDS_BY_KIND: Readonly<Record<string, readonly string[]>> = {
   TSParameterProperty: ["parameter"],
 };
 
-const boundNamesIn = (pattern: AstFields): readonly string[] => {
+const boundNamesIn = (pattern: UnknownFields): readonly string[] => {
   if (kindOf(pattern) === "Identifier") return [String(pattern.name)];
   return (PATTERN_FIELDS_BY_KIND[kindOf(pattern)] ?? [])
     .flatMap((field) => nestedOf(pattern[field]))
     .flatMap(boundNamesIn);
 };
 
-const declaredNamesIn = (node: AstFields): readonly string[] => [
+const declaredNamesIn = (node: UnknownFields): readonly string[] => [
   ...(BINDING_FIELDS_BY_KIND[kindOf(node)] ?? [])
     .flatMap((field) => nestedOf(node[field]))
     .flatMap(boundNamesIn),
@@ -108,11 +110,11 @@ const isImportMeta = (syntaxField: unknown): boolean =>
   isAstFields(syntaxField.meta) &&
   syntaxField.meta.name === "import";
 
-const readsFileRelativeMeta = (member: AstFields): boolean =>
+const readsFileRelativeMeta = (member: UnknownFields): boolean =>
   member.computed === true ||
   (isAstFields(member.property) && FILE_RELATIVE_META_PROPERTIES.has(String(member.property.name)));
 
-const ownReferenceOf = (node: AstFields): readonly string[] => {
+const ownReferenceOf = (node: UnknownFields): readonly string[] => {
   const kind = kindOf(node);
   if (kind === "MetaProperty") return isImportMeta(node) ? [IMPORT_META_REFERENCE] : [];
   if (kind === "Identifier") return [String(node.name)];
@@ -122,7 +124,7 @@ const ownReferenceOf = (node: AstFields): readonly string[] => {
   return [];
 };
 
-const referencedNamesIn = (node: AstFields): readonly string[] => {
+const referencedNamesIn = (node: UnknownFields): readonly string[] => {
   const kind = kindOf(node);
   if (TYPE_DECLARATION_KINDS.has(kind)) return [];
   if (kind === "MetaProperty") return ownReferenceOf(node);

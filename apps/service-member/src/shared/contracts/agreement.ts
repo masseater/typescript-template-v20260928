@@ -1,5 +1,5 @@
+import { maximumIdentifierLength } from "@repo/config/paging";
 import { agreementKinds } from "@repo/config";
-import { maximumIdentifierLength } from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
 const AgreementKind = Schema.Literals(agreementKinds);
@@ -32,9 +32,7 @@ const AgreementAcceptance = Schema.Struct({
 
 const AgreementKindQuery = Schema.Struct({ kind: AgreementKind });
 
-const AgreementWithdrawal = AgreementKindQuery;
 
-const PublishedAgreementQuery = AgreementKindQuery;
 
 const PublishedAgreementView = Schema.Struct({
   body: Schema.String,
@@ -46,9 +44,7 @@ const PublishedAgreementView = Schema.Struct({
 
 export {
   AgreementAcceptance,
-  AgreementWithdrawal,
   AgreementsView,
   PendingAgreement,
-  PublishedAgreementQuery,
   PublishedAgreementView,
 };

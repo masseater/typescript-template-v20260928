@@ -1,42 +1,19 @@
+import { ResourceUrl } from "@repo/runtime/contracts";
 import { verifySession } from "@repo/auth";
 import { STAFF_PERMISSION, grantsStaffLevel, httpStatus } from "@repo/config";
-import {
-  WikiDraftConflict,
-  discardWikiDraft,
-  findWikiDraft,
-  markWikiDraftPublished,
-  saveWikiDraft,
-} from "@repo/db";
+import { WikiDraftConflict, discardWikiDraft, findWikiDraft, markWikiDraftPublished, saveWikiDraft } from "@repo/db";
 import { annotateSpan } from "@repo/observability";
 import { FileStore } from "@repo/runtime";
 import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams, type ApiRoutes } from "@repo/runtime/http";
 import { Effect, Encoding } from "effect";
 
-import {
-  WikiDraftDiscard,
-  WikiDraftPublish,
-  WikiDraftPublished,
-  WikiDraftSave,
-  WikiDraftSaved,
-  WikiImageUpload,
-  WikiImageUploaded,
-  WikiSource,
-  WikiSourceQuery,
-} from "#shared/contracts/index.ts";
+import { WikiDraftReference, WikiDraftSave, WikiDraftSaved, WikiImageUpload, WikiSource, WikiSourceQuery } from "#shared/contracts/index.ts";
 import { readWikiFrontmatter } from "#shared/wiki-document/wiki-frontmatter.ts";
-import {
-  editorImagePrefix,
-  toEditorImages,
-  toRepositoryImages,
-} from "#shared/wiki-document/wiki-image-paths.ts";
+import { editorImagePrefix, toEditorImages, toRepositoryImages } from "#shared/wiki-document/wiki-image-paths.ts";
 import { WikiImageTooLarge } from "#shared/wiki-document/wiki-image-too-large.ts";
 import { WikiPageMissing } from "#shared/wiki-document/wiki-page-missing.ts";
-import {
-  WikiPublishForbidden,
-  WikiPublishUnchanged,
-  WikiPublisher,
-} from "#shared/wiki-publish/index.ts";
+import { WikiPublisher, WikiPublishForbidden, WikiPublishUnchanged } from "#shared/wiki-publish/index.ts";
 
 import type { WikiServices } from "#shared/wiki/index.ts";
 
@@ -136,7 +113,7 @@ const putDraft = Effect.fn("saveWikiDraft")(function* putDraft(request: Request)
 
 const deleteDraft = Effect.fn("discardWikiDraft")(function* deleteDraft(request: Request) {
   const { user } = yield* verifySession(request.headers);
-  const { path, version } = yield* readJsonBody(WikiDraftDiscard, request);
+  const { path, version } = yield* readJsonBody(WikiDraftReference, request);
   yield* discardWikiDraft(path, version);
   return yield* openSource(path, user);
 });
@@ -188,7 +165,7 @@ const postPublish = Effect.fn("publishWikiDraft")(function* postPublish(request:
   if (!canPublish(user)) {
     return yield* new WikiPublishForbidden();
   }
-  const { path, version } = yield* readJsonBody(WikiDraftPublish, request);
+  const { path, version } = yield* readJsonBody(WikiDraftReference, request);
   const draft = yield* findWikiDraft(path);
   if (draft?.version !== version) {
     return yield* new WikiDraftConflict();
@@ -253,7 +230,7 @@ function wikiEditApi<Requirements>(api: ApiRoutes<WikiServices | Requirements>) 
     )
     .post(
       "/publish",
-      ...api.route({ response: WikiDraftPublished }, postPublish, {
+      ...api.route({ response: ResourceUrl }, postPublish, {
         ...sessionFailures,
         DatabaseFailure: "unexpected",
         StorageFailed: "unexpected",
@@ -293,7 +270,7 @@ function wikiEditApi<Requirements>(api: ApiRoutes<WikiServices | Requirements>) 
     )
     .post(
       "/images",
-      ...api.route({ response: WikiImageUploaded }, postImage, {
+      ...api.route({ response: ResourceUrl }, postImage, {
         ...sessionFailures,
         DatabaseFailure: "unexpected",
         StorageFailed: "unexpected",

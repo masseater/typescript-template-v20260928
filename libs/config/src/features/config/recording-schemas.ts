@@ -32,6 +32,8 @@ const RecordingView = Schema.Struct({
   speakers: Schema.Array(RecordingSpeaker),
 });
 
+type RecordingView = typeof RecordingView.Type;
+
 const RegisteredPerson = Schema.Struct({
   consentedAt: Schema.Finite,
   id: Schema.String,
@@ -46,3 +48,4 @@ export {
   RegisteredPerson,
   SpeakerLabel,
 };
+export type { RecordingView };

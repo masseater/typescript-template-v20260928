@@ -1,14 +1,6 @@
-import { Email, memberRetentionDays, photoSlots, profileVisibilities } from "@repo/config";
-import {
-  Acknowledged,
-  Identifier,
-  IdentifierQuery,
-  UserKeyword,
-  maximumNameLength,
-  maximumPasswordLength,
-  minimumPasswordLength,
-  pageNumber,
-} from "@repo/runtime/contracts";
+import { Identifier, UserKeyword, pageNumber } from "@repo/config/paging";
+import { Email, photoSlots, profileVisibilities } from "@repo/config";
+import { maximumNameLength, maximumPasswordLength, minimumPasswordLength } from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
 import { Sheet } from "#shared/interview/sheet.ts";
@@ -70,7 +62,6 @@ const PhotoQuery = Schema.Struct({ slot: PhotoSlot });
 
 const PhotoView = Schema.Struct({ slot: PhotoSlot, version: PhotoVersion });
 
-const MemberQuery = IdentifierQuery;
 
 const MemberPhotoQuery = Schema.Struct({
   id: Identifier,
@@ -108,11 +99,9 @@ const ContactSubmission = Schema.Struct({
   name: Schema.Trim.check(Schema.isLengthBetween(1, maximumContactNameLength)),
 });
 
-const ContactAccepted = Acknowledged;
 
 const LeaveRequest = Schema.Struct({ immediate: Schema.Boolean });
 
-const LeaveAccepted = Acknowledged;
 
 const RecoveryOfferAvailable = Schema.Struct({
   available: Schema.Literal(true),
@@ -125,27 +114,21 @@ const RecoveryOfferUnavailable = Schema.Struct({
 
 const RecoveryOfferView = Schema.Union([RecoveryOfferAvailable, RecoveryOfferUnavailable]);
 
-const RecoveryAccepted = Acknowledged;
 
 const MemberReference = Schema.Struct({ id: Schema.String, name: Schema.String });
 
 export {
-  ContactAccepted,
   ContactSubmission,
-  Identifier,
-  LeaveAccepted,
   LeaveRequest,
   MemberList,
   MemberListQuery,
   MemberPhotoQuery,
-  MemberQuery,
   MemberReference,
   MemberView,
   PhotoQuery,
   PhotoView,
   ProfileUpdate,
   ProfileView,
-  RecoveryAccepted,
   RecoveryOfferView,
   SignUpSubmission,
   VisibilityView,
@@ -155,6 +138,4 @@ export {
   maximumProfileLength,
   maximumSocialLinks,
   memberPageSize,
-  memberRetentionDays,
-  pageNumber,
 };

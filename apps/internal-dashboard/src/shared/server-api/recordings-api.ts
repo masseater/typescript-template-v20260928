@@ -1,33 +1,15 @@
 import { verifySession } from "@repo/auth";
-import { RECORDING_FAILURE, httpStatus, jobsQueueBinding, readJobs } from "@repo/config";
+import { RECORDING_FAILURE, httpStatus, jobsQueueBinding, readJobs, RecordingView } from "@repo/config";
 import { RequestRejected } from "@repo/observability";
 import { FileStore } from "@repo/runtime";
 import { sessionFailures } from "@repo/runtime/account";
-import { CreatedResource, IdentifierQuery } from "@repo/runtime/contracts";
-import {
-  AppOrigin,
-  createApi,
-  readJsonBody,
-  readSearchParams,
-  type ApiRoutes,
-} from "@repo/runtime/http";
+import { IdentifierQuery, ResourceId } from "@repo/runtime/contracts";
+import { AppOrigin, createApi, readJsonBody, readSearchParams, type ApiRoutes } from "@repo/runtime/http";
 import { env } from "cloudflare:workers";
 import { Effect, Layer } from "effect";
 
-import {
-  PeopleList,
-  PersonRegistration,
-  RecordingList,
-  RecordingUpload,
-  RecordingView,
-  SpeakerAssignment,
-  maximumRecordingBytes,
-} from "#shared/contracts/index.ts";
-import {
-  CoreRecords,
-  RecordingAudioUnsupported,
-  RecordingQueueFailed,
-} from "#shared/transcription/index.ts";
+import { PeopleList, PersonRegistration, RecordingList, RecordingUpload, SpeakerAssignment, maximumRecordingBytes } from "#shared/contracts/index.ts";
+import { CoreRecords, RecordingAudioUnsupported, RecordingQueueFailed } from "#shared/transcription/index.ts";
 
 import type { AppServices } from "@repo/runtime";
 
@@ -187,7 +169,7 @@ function recordingsApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/recordings",
-      ...api.route({ response: CreatedResource }, withRecordings(uploadRecording), failures),
+      ...api.route({ response: ResourceId }, withRecordings(uploadRecording), failures),
     )
     .get(
       "/recording",
@@ -205,15 +187,15 @@ function recordingsApi(api: ApiRoutes<AppServices>) {
     )
     .delete(
       "/recording",
-      ...api.route({ response: CreatedResource }, withRecordings(remove), failures),
+      ...api.route({ response: ResourceId }, withRecordings(remove), failures),
     )
     .post(
       "/recording/retry",
-      ...api.route({ response: CreatedResource }, withRecordings(retry), failures),
+      ...api.route({ response: ResourceId }, withRecordings(retry), failures),
     )
     .patch(
       "/recording/speaker",
-      ...api.route({ response: CreatedResource }, withRecordings(assign), failures),
+      ...api.route({ response: ResourceId }, withRecordings(assign), failures),
     )
     .get(
       "/people",
@@ -230,11 +212,11 @@ function recordingsApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/people",
-      ...api.route({ response: CreatedResource }, withRecordings(register), failures),
+      ...api.route({ response: ResourceId }, withRecordings(register), failures),
     )
     .delete(
       "/people",
-      ...api.route({ response: CreatedResource }, withRecordings(forget), failures),
+      ...api.route({ response: ResourceId }, withRecordings(forget), failures),
     );
 }
 

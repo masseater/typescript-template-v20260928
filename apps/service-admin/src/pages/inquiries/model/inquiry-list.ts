@@ -1,3 +1,4 @@
+import type { InquiryStatus } from "@repo/config";
 import { useAtomValue } from "@effect/atom-react";
 import { localState, requestAtom, type RequestResult } from "@repo/ui";
 import { Option } from "effect";
@@ -6,7 +7,6 @@ import { Atom } from "effect/unstable/reactivity";
 import { loadInquiries } from "#pages/inquiries/api/inquiries.ts";
 
 import type { AdminInquirySummary } from "./inquiry.ts";
-import type { InquiryStatus } from "./status-label.ts";
 
 const listPageSize = 50;
 

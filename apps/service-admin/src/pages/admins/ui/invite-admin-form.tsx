@@ -1,20 +1,21 @@
+import { InvitationIssued } from "@repo/runtime/contracts";
 import { ADMIN_PERMISSION } from "@repo/config";
 import { apiData } from "@repo/runtime/client";
 import { InvitationForm } from "@repo/ui";
 
 import { adminPermissionOptions, isAdminPermission } from "#pages/admins/model/admin-labels.ts";
 import { adminClient } from "#shared/api/index.ts";
-import { AdminInvited, type AdminPermission } from "#shared/contracts/index.ts";
+import { type AdminPermission } from "#shared/contracts/index.ts";
 
 import type { ReactElement } from "react";
 
 function inviteAdmin(
   email: string,
   permission: typeof AdminPermission.Type,
-): Promise<typeof AdminInvited.Type> {
+): Promise<typeof InvitationIssued.Type> {
   return adminClient()
     .admins.invites.post({ email, permission })
-    .then((response) => apiData(AdminInvited, response));
+    .then((response) => apiData(InvitationIssued, response));
 }
 
 function InviteAdminForm({ onInvited }: Readonly<{ onInvited: () => void }>): ReactElement {

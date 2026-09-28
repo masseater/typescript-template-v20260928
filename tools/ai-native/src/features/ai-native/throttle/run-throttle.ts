@@ -1,6 +1,7 @@
+import { optionalSetting } from "@repo/ai-native-telemetry/optional-setting";
 import { Effect } from "effect";
 
-import { joinPath, optionalSetting, temporaryDirectory } from "../host.ts";
+import { joinPath, temporaryDirectory } from "../host.ts";
 import { runWithSlot } from "./run-command.ts";
 import { ensureSlots, tryAcquireAny, type SlotHold } from "./slots.ts";
 import { parseInvocation } from "./usage.ts";

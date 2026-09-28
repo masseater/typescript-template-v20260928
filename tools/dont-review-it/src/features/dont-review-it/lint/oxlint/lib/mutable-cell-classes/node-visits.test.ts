@@ -4,9 +4,10 @@ import { describe, expect, test } from "vite-plus/test";
 import { nodeTypeOf } from "../setup-modules/coupling-edges.ts";
 import { chainFrom, fieldOf, innermostOf, kindAt, nodeVisitsIn, visitAt } from "./node-visits.ts";
 
-import type { AstFields } from "../ast-node.ts";
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
 
-const ELSEWHERE: AstFields = { type: "Program" };
+
+const ELSEWHERE: UnknownFields = { type: "Program" };
 
 describe("nodeVisitsIn", () => {
   describe("a source holding a name written in a type", () => {

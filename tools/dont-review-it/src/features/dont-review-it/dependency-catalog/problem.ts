@@ -1,10 +1,8 @@
 import type { RepositoryProblem } from "../repository-checks/index.ts";
 
-export type DependencyCatalogProblem = RepositoryProblem;
-
 export type DependencyCatalogFindings = {
-  readonly problems: readonly DependencyCatalogProblem[];
-  readonly warnings: readonly DependencyCatalogProblem[];
+  readonly problems: readonly RepositoryProblem[];
+  readonly warnings: readonly RepositoryProblem[];
 };
 
 export type DependencyCatalogReport = DependencyCatalogFindings & {
@@ -21,4 +19,4 @@ export const NO_DEPENDENCY_CATALOG_FINDINGS: DependencyCatalogFindings = {
 export const formatDependencyCatalogProblem = ({
   file,
   message,
-}: DependencyCatalogProblem): string => `${file} ${message}`;
+}: RepositoryProblem): string => `${file} ${message}`;

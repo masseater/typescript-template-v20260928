@@ -81,7 +81,6 @@ const loadedBinding = Effect.gen(function* loadedBinding() {
     OTLP_AUTHORIZATION: authorization,
   };
 });
-type WorkerModel = WorkersAi.WorkersAiBinding;
 const revealedOrUndefined = (secret: Redacted.Redacted | undefined): string | undefined =>
   secret === undefined ? undefined : Redacted.value(secret);
 type EnvironmentScalars = Effect.Success<ReturnType<typeof readEnvironment>>;
@@ -185,4 +184,3 @@ const appLayer = (asked: {
   );
 };
 export { appLayer, readAppStorage, readWorkerConfig };
-export type { WorkerModel };

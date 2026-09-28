@@ -1,3 +1,4 @@
+import { ResourceUrl } from "@repo/runtime/contracts";
 import { Auth } from "@repo/auth";
 import { AuthApps, MockNetwork, authTest, runWith, wikiStaff } from "@repo/auth/testing";
 import { APPLICATION, ROLE, STAFF_PERMISSION, httpStatus } from "@repo/config";
@@ -10,12 +11,7 @@ import { workerRuntime } from "@repo/runtime/worker";
 import { Effect, Encoding, Layer, Result, Schema } from "effect";
 import { describe, expect } from "vite-plus/test";
 
-import {
-  WikiDraftPublished,
-  WikiDraftSaved,
-  WikiImageUploaded,
-  WikiSource,
-} from "#shared/contracts/index.ts";
+import { WikiDraftSaved, WikiSource } from "#shared/contracts/index.ts";
 import { gitBlobRevision, readWikiSource } from "#shared/wiki-document/wiki-sources.ts";
 import {
   baseCommit,
@@ -40,8 +36,8 @@ const onePixelPng = Result.getOrThrow(
 );
 const decodeSource = Schema.decodeUnknownEffect(WikiSource);
 const decodeSaved = Schema.decodeUnknownEffect(WikiDraftSaved);
-const decodeUploaded = Schema.decodeUnknownEffect(WikiImageUploaded);
-const decodePublished = Schema.decodeUnknownEffect(WikiDraftPublished);
+const decodeUploaded = Schema.decodeUnknownEffect(ResourceUrl);
+const decodePublished = Schema.decodeUnknownEffect(ResourceUrl);
 const encodeJson = Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown));
 
 type Method = "DELETE" | "GET" | "POST" | "PUT";

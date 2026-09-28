@@ -1,15 +1,17 @@
 import { uniq } from "es-toolkit";
 
-import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
+import { isAstFields, NODE_TYPE_FIELD } from "../ast-node.ts";
+
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
 
 const SPAN_FIELDS: ReadonlySet<string> = new Set(["end", "loc", "range", "start"]);
 
-const comparedFieldsOf = (node: AstFields): readonly (readonly [string, unknown])[] =>
+const comparedFieldsOf = (node: UnknownFields): readonly (readonly [string, unknown])[] =>
   Object.entries(node).filter(([field]) => !SPAN_FIELDS.has(field));
 
 const namesIn = (
   node: unknown,
-  pickedNamesOf: (node: AstFields) => readonly string[],
+  pickedNamesOf: (node: UnknownFields) => readonly string[],
 ): string[] => {
   if (Array.isArray(node)) return node.flatMap((member) => namesIn(member, pickedNamesOf));
   if (!isAstFields(node)) return [];
@@ -19,11 +21,11 @@ const namesIn = (
   ];
 };
 
-const declaredParameterNameOf = (node: AstFields): string => String((node.name as AstFields).name);
+const declaredParameterNameOf = (node: UnknownFields): string => String((node.name as UnknownFields).name);
 
 const TYPE_PARAMETER_KIND = "TSTypeParameter";
 
-const declaredParameterNamesOf = (node: AstFields): readonly string[] =>
+const declaredParameterNamesOf = (node: UnknownFields): readonly string[] =>
   node[NODE_TYPE_FIELD] === TYPE_PARAMETER_KIND ? [declaredParameterNameOf(node)] : [];
 
 const PLACEHOLDER_PREFIX = "#";
@@ -40,12 +42,12 @@ export const placeholdersIn = (node: unknown): TypeParameterPlaceholders =>
 
 const TYPE_REFERENCE_KIND = "TSTypeReference";
 
-const referencedNameOf = (node: AstFields): string | null => {
-  const typeName = node.typeName as AstFields;
+const referencedNameOf = (node: UnknownFields): string | null => {
+  const typeName = node.typeName as UnknownFields;
   return typeName[NODE_TYPE_FIELD] === "Identifier" ? String(typeName.name) : null;
 };
 
-const referencedNamesOf = (node: AstFields): readonly string[] => {
+const referencedNamesOf = (node: UnknownFields): readonly string[] => {
   if (node[NODE_TYPE_FIELD] !== TYPE_REFERENCE_KIND) return [];
   const referenced = referencedNameOf(node);
   return referenced === null ? [] : [referenced];
@@ -88,7 +90,7 @@ export const canonicalTextOf = (node: unknown, placeholders: TypeParameterPlaceh
 
 const REFERENCE_TAG = "ref";
 
-const typeReferenceTextOf = (node: AstFields, placeholders: TypeParameterPlaceholders): string => {
+const typeReferenceTextOf = (node: UnknownFields, placeholders: TypeParameterPlaceholders): string => {
   const referenced = referencedNameOf(node);
   const head =
     referenced === null
@@ -99,7 +101,7 @@ const typeReferenceTextOf = (node: AstFields, placeholders: TypeParameterPlaceho
 
 const PARAMETER_TAG = "param";
 
-const typeParameterTextOf = (node: AstFields, placeholders: TypeParameterPlaceholders): string =>
+const typeParameterTextOf = (node: UnknownFields, placeholders: TypeParameterPlaceholders): string =>
   [
     PARAMETER_TAG,
     boundNameOf(placeholders, declaredParameterNameOf(node)),

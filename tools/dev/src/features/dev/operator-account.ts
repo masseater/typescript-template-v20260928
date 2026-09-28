@@ -1,3 +1,4 @@
+import { isNotFound } from "@repo/cli";
 import { NodeHttpServer } from "@effect/platform-node";
 import { Auth } from "@repo/auth";
 import {
@@ -28,7 +29,7 @@ import { URI } from "otpauth";
 
 import { LocalCommandFailure, failure } from "./failure.ts";
 import { local, readCredentials } from "./local-environment.ts";
-import { isNotFound, urlPath, withFileSystem } from "./platform.ts";
+import { urlPath, withFileSystem } from "./platform.ts";
 import { assertOwnerOnly, replacePrivateFile } from "./private-files.ts";
 
 const PASSWORD_BYTES = 24;

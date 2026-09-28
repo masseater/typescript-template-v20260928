@@ -5,10 +5,10 @@ import {
   type CurrentRequest,
   type Reporting,
   type Telemetry,
-  type TelemetryFlusher,
 } from "@repo/observability";
 import { cspNonceHeader } from "@repo/runtime/security";
 import { Effect, Result, type Cause } from "effect";
+import type { OtlpExporter } from "effect/unstable/observability";
 
 import { Assets } from "./assets.ts";
 import { runtimeUnavailable } from "./failures.ts";
@@ -44,7 +44,7 @@ type FetchWorker = {
   ) => Promise<Response>;
 };
 const serveWorker = <Requirements>(asked: {
-  readonly runtime: WorkerRuntime<Requirements | Telemetry | TelemetryFlusher, unknown>;
+  readonly runtime: WorkerRuntime<Requirements | Telemetry | OtlpExporter.Flusher, unknown>;
   readonly route: (
     httpRequest: Request,
   ) => Effect.Effect<Response, never, Requirements | Telemetry | CurrentRequest>;
@@ -99,7 +99,7 @@ const assetRequest = (httpRequest: Request, assetBase: string): Request => {
   );
 };
 const serveApp = <Requirements>(asked: {
-  readonly runtime: WorkerRuntime<Assets | Requirements | Telemetry | TelemetryFlusher, unknown>;
+  readonly runtime: WorkerRuntime<Assets | Requirements | Telemetry | OtlpExporter.Flusher, unknown>;
   readonly route: AppRoute<Requirements>;
   readonly reporting: Reporting;
   readonly assetBase?: string | undefined;
@@ -145,7 +145,7 @@ const startRoute = (
     });
 };
 const appServerEntry = <Requirements>(asked: {
-  readonly runtime: WorkerRuntime<Assets | Requirements | Telemetry | TelemetryFlusher, unknown>;
+  readonly runtime: WorkerRuntime<Assets | Requirements | Telemetry | OtlpExporter.Flusher, unknown>;
   readonly routeHandler: StartHandler;
   readonly reporting: Reporting;
   readonly googleAnalytics?: boolean;

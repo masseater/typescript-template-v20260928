@@ -1,6 +1,6 @@
+import { localDatabase } from "@repo/config/local-database-path";
 import { workerCompatibility } from "@repo/config/worker";
 import { Database, DatabaseFailure } from "@repo/db";
-import { localDatabase } from "@repo/db/local";
 import { migrateD1, type RemoteFailure } from "@repo/db/migrations";
 import { Context, Effect, Layer, Schema } from "effect";
 import { convertV4MiniflareOptions, Miniflare } from "miniflare";

@@ -2,9 +2,10 @@ import { parseSync } from "oxc-parser";
 
 import { astFieldsOf, listedFieldsOf, nodeTypeOf } from "../setup-modules/coupling-edges.ts";
 
-import type { AstFields } from "../ast-node.ts";
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
 
-const nestedNodesOf = (node: AstFields): readonly AstFields[] =>
+
+const nestedNodesOf = (node: UnknownFields): readonly UnknownFields[] =>
   Object.values(node).flatMap((held) => listedFieldsOf(held));
 
 const OWN_SCOPE_NODES: ReadonlySet<string> = new Set([
@@ -13,7 +14,7 @@ const OWN_SCOPE_NODES: ReadonlySet<string> = new Set([
   "FunctionExpression",
 ]);
 
-const reachedNodesIn = (node: AstFields): readonly AstFields[] =>
+const reachedNodesIn = (node: UnknownFields): readonly UnknownFields[] =>
   nestedNodesOf(node).flatMap((nested) =>
     OWN_SCOPE_NODES.has(nodeTypeOf(nested)) ? [] : [nested, ...reachedNodesIn(nested)],
   );
@@ -27,13 +28,13 @@ const CARRIED_INSIDE_FIELD_BY_TYPE: ReadonlyMap<string, string> = new Map([
   ["TSTypeAssertion", "expression"],
 ]);
 
-const unwrappedNodeOf = (node: AstFields): AstFields => {
+const unwrappedNodeOf = (node: UnknownFields): UnknownFields => {
   const field = CARRIED_INSIDE_FIELD_BY_TYPE.get(nodeTypeOf(node));
   const inside = field === undefined ? null : astFieldsOf(node[field]);
   return inside === null ? node : unwrappedNodeOf(inside);
 };
 
-const rootsAtThis = (node: AstFields): boolean => {
+const rootsAtThis = (node: UnknownFields): boolean => {
   const written = unwrappedNodeOf(node);
   const nodeType = nodeTypeOf(written);
   if (nodeType === "ThisExpression") return true;
@@ -51,7 +52,7 @@ const writesThroughThis = (held: unknown): boolean =>
 
 const DELETE_OPERATOR = "delete";
 
-const writesThisIn = (nodes: readonly AstFields[]): boolean =>
+const writesThisIn = (nodes: readonly UnknownFields[]): boolean =>
   nodes.some((node) => {
     const nodeType = nodeTypeOf(node);
     if (nodeType === "AssignmentExpression") return writesThroughThis(node.left);
@@ -62,7 +63,7 @@ const writesThisIn = (nodes: readonly AstFields[]): boolean =>
 
 const PRIVATE_NAME_PREFIX = "#";
 
-const spelledNamesOf = (keyNode: AstFields, computed: unknown): readonly string[] => {
+const spelledNamesOf = (keyNode: UnknownFields, computed: unknown): readonly string[] => {
   const nodeType = nodeTypeOf(keyNode);
   if (nodeType === "PrivateIdentifier") return [`${PRIVATE_NAME_PREFIX}${String(keyNode.name)}`];
   if (nodeType === "Identifier") return computed === true ? [] : [String(keyNode.name)];
@@ -82,7 +83,7 @@ const spelledKeyOf = (held: unknown, computed: unknown): string | null =>
     .flatMap((keyNode) => spelledNamesOf(keyNode, computed))
     .at(0) ?? null;
 
-const calledOwnMethodOf = (node: AstFields): string | null => {
+const calledOwnMethodOf = (node: UnknownFields): string | null => {
   if (nodeTypeOf(node) !== "CallExpression") return null;
 
   const callee = astFieldsOf(node.callee);
@@ -95,7 +96,7 @@ const calledOwnMethodOf = (node: AstFields): string | null => {
 
 const WRITTEN_METHOD_KIND = "method";
 
-const memberBodyOf = (member: AstFields): AstFields | null => {
+const memberBodyOf = (member: UnknownFields): UnknownFields | null => {
   const written = astFieldsOf(member.value);
   if (written === null) return null;
 
@@ -113,7 +114,7 @@ type ClassMember = {
   readonly calledOwnMethods: readonly string[];
 };
 
-const classMemberOf = (member: AstFields): readonly ClassMember[] => {
+const classMemberOf = (member: UnknownFields): readonly ClassMember[] => {
   const memberName = spelledKeyOf(member.key, member.computed);
   const memberBody = memberBodyOf(member);
   if (memberName === null || memberBody === null) return [];
@@ -144,17 +145,17 @@ const closedOverWrites = (members: readonly ClassMember[]): ReadonlySet<string> 
   return grownFrom(new Set(members.filter((member) => member.writesThis).map((one) => one.name)));
 };
 
-const declaredNameOf = (node: AstFields): readonly string[] =>
+const declaredNameOf = (node: UnknownFields): readonly string[] =>
   listedFieldsOf(node.id).flatMap((named) => (typeof named.name === "string" ? [named.name] : []));
 
-type NamedClassBody = readonly [string, AstFields];
+type NamedClassBody = readonly [string, UnknownFields];
 
-const namedBodiesOf = (named: AstFields, holder: AstFields): readonly NamedClassBody[] =>
+const namedBodiesOf = (named: UnknownFields, holder: UnknownFields): readonly NamedClassBody[] =>
   declaredNameOf(named).flatMap((className) =>
     listedFieldsOf(holder.body).map((classBody): NamedClassBody => [className, classBody]),
   );
 
-const classBodiesOf = (node: AstFields): readonly NamedClassBody[] => {
+const classBodiesOf = (node: UnknownFields): readonly NamedClassBody[] => {
   const nodeType = nodeTypeOf(node);
   if (nodeType === "ClassDeclaration") return namedBodiesOf(node, node);
   if (nodeType !== "VariableDeclaration") return [];
@@ -166,7 +167,7 @@ const classBodiesOf = (node: AstFields): readonly NamedClassBody[] => {
   );
 };
 
-const declaredNodesOf = (statement: AstFields): readonly AstFields[] => {
+const declaredNodesOf = (statement: UnknownFields): readonly UnknownFields[] => {
   const nodeType = nodeTypeOf(statement);
   if (nodeType !== "ExportNamedDeclaration" && nodeType !== "ExportDefaultDeclaration")
     return [statement];

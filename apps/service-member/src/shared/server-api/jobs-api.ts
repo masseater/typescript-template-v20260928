@@ -1,7 +1,7 @@
 import { verifySession } from "@repo/auth";
-import { JobPayload, readJobs, httpStatus } from "@repo/config";
+import { JobPayload, httpStatus, readJobs } from "@repo/config";
 import { sessionFailures } from "@repo/runtime/account";
-import { CreatedResource } from "@repo/runtime/contracts";
+import { ResourceId } from "@repo/runtime/contracts";
 import { createApi, readJsonBody } from "@repo/runtime/http";
 import { enqueueJob, jobStatus } from "@repo/runtime/jobs";
 import { env } from "cloudflare:workers";
@@ -11,8 +11,6 @@ import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
 
 const JobCreate = Schema.Struct({});
-
-const JobAccepted = CreatedResource;
 
 const JobStatusView = Schema.Struct({
   id: Schema.String,
@@ -34,7 +32,7 @@ function jobsApi(api: ApiRoutes<AppServices>) {
     .post(
       "/jobs",
       ...api.route(
-        { response: JobAccepted },
+        { response: ResourceId },
         (request) =>
           Effect.gen(function* handleRequest() {
             const { user } = yield* verifySession(request.headers);

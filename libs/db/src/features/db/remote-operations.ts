@@ -1,3 +1,4 @@
+import type { Email } from "@repo/config";
 import { repositoryFile } from "@repo/config/repository-root";
 import { withSpan } from "@repo/observability";
 import { sql } from "drizzle-orm";
@@ -6,12 +7,7 @@ import { migrate as applyD1MigrationFiles } from "drizzle-orm/d1/migrator";
 import { readMigrationFiles, type MigrationConfig } from "drizzle-orm/migrator";
 import { Clock, Effect, Schema } from "effect";
 
-import {
-  BOOTSTRAP_KIND,
-  BootstrappedAdmin,
-  bootstrapStatement,
-  type Email,
-} from "./bootstrap-statement.ts";
+import { BOOTSTRAP_KIND, BootstrappedAdmin, bootstrapStatement } from "./bootstrap-statement.ts";
 
 import type { D1Database } from "@cloudflare/workers-types";
 import type { SQLiteAsyncDatabase } from "drizzle-orm/sqlite-core";

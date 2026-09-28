@@ -783,6 +783,18 @@ const lintOptions = {
       LINT_SEVERITY.ERROR,
       { configOwners: sharedTestConfig },
     ],
+    "dont-review-it/forbid-package-symbol-relay--import-from-the-owner": [
+      LINT_SEVERITY.ERROR,
+      {
+        relayEntryFiles: [
+          "apps/service-member/src/app/server.ts",
+          "libs/monitor/src/features/monitor/monitor-test-fixture.ts",
+          "tools/ai-native-telemetry/src/features/ai-native-telemetry/telemetry/optional-setting.ts",
+          "tools/ai-native-telemetry/src/features/ai-native-telemetry/telemetry/telemetry.ts",
+          "tools/ai-native-telemetry/src/features/ai-native-telemetry/telemetry/vitest-sdk-path.ts",
+        ],
+      },
+    ],
     "dont-review-it/no-default-export--use-named-export": [
       LINT_SEVERITY.ERROR,
       {

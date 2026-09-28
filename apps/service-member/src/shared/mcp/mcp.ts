@@ -1,6 +1,7 @@
+import { and, eq } from "drizzle-orm";
 import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
 import { ACCOUNT_STATE, APPLICATION, MEMBER_MCP_SCOPE, ROLE } from "@repo/config";
-import { and, eq, query, requirePaid, schema } from "@repo/db";
+import { query, requirePaid, schema } from "@repo/db";
 import { mcpEndpoint, toolFailure, toolRunner } from "@repo/runtime";
 import { Clock, Effect, Schema } from "effect";
 

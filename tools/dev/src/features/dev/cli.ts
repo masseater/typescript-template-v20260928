@@ -1,3 +1,4 @@
+import { repositoryRoot } from "@repo/config/repository-root";
 #!/usr/bin/env node
 import { causeRecord, firstUserArgumentIndex, runCli } from "@repo/cli";
 import { ADMIN_PERMISSION } from "@repo/config/identity";
@@ -8,21 +9,21 @@ import { authenticate } from "./authenticate.ts";
 import { browser, browserCommand } from "./browser.ts";
 import { ciRunner } from "./ci-runner.ts";
 import { failure } from "./failure.ts";
-import { application, root, run } from "./local-environment.ts";
+import { application, run } from "./local-environment.ts";
 import { ensureOperators, operatorExists } from "./operator-account.ts";
 import { layer } from "./platform.ts";
 import { setup } from "./setup.ts";
 import { storybook } from "./storybook.ts";
 
+import type { Application } from "@repo/config";
+import type { NodeServices } from "@effect/platform-node";
 import type { LocalCommandFailure } from "./failure.ts";
-import type { App } from "./local-environment.ts";
-import type { DevServices } from "./platform.ts";
 
-type Command = Effect.Effect<unknown, LocalCommandFailure, DevServices>;
+type Command = Effect.Effect<unknown, LocalCommandFailure, NodeServices.NodeServices>;
 
 const operator = Effect.fn(ADMIN_PERMISSION.operator)(function* operator(_args: readonly string[]) {
   if (!(yield* operatorExists())) {
-    yield* run("vp", ["run", "--filter", "@repo/db-local", "db:migrate:local"], { cwd: root });
+    yield* run("vp", ["run", "--filter", "@repo/db-local", "db:migrate:local"], { cwd: repositoryRoot });
   }
   yield* ensureOperators();
   return { event: "local.operator_ready", ok: true as const, secretsPrinted: false as const };
@@ -37,13 +38,13 @@ const globalCommands = new Map<string, (args: readonly string[]) => Command>([
   ["storybook", (_args) => storybook()],
 ]);
 
-const appCommands = new Map<string, (app: App, args: readonly string[]) => Command>([
-  ["authenticate", authenticate as (app: App, args: readonly string[]) => Command],
+const appCommands = new Map<string, (app: Application, args: readonly string[]) => Command>([
+  ["authenticate", authenticate as (app: Application, args: readonly string[]) => Command],
   ["browser", browser],
   ["browser-command", browserCommand],
   ["logs", logs],
-  ["start", start as (app: App, args: readonly string[]) => Command],
-  ["stop", stop as (app: App, args: readonly string[]) => Command],
+  ["start", start as (app: Application, args: readonly string[]) => Command],
+  ["stop", stop as (app: Application, args: readonly string[]) => Command],
 ]);
 
 function writeReport(report: unknown): Effect.Effect<void> {

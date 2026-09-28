@@ -1,5 +1,5 @@
 import { path } from "../../../../platform/path.ts";
-import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
+import { isAstFields, NODE_TYPE_FIELD } from "../ast-node.ts";
 import { toPosixPath } from "../posix-path.ts";
 
 export type ImportRoutes = ReadonlyMap<string, string>;
@@ -24,23 +24,23 @@ const DEFAULT_IMPORT = "default";
 
 const WHOLE_MODULE_IMPORT = "*";
 
-const takenNameOf = (specifier: AstFields): string => {
+const takenNameOf = (specifier: UnknownFields): string => {
   const nodeKind = specifier[NODE_TYPE_FIELD];
   if (nodeKind === "ImportDefaultSpecifier") return DEFAULT_IMPORT;
   if (nodeKind === "ImportNamespaceSpecifier") return WHOLE_MODULE_IMPORT;
 
-  const taken = specifier.imported as AstFields;
+  const taken = specifier.imported as UnknownFields;
   return String(taken.name ?? taken.value);
 };
 
 const routesThrough = (input: {
-  readonly declaration: AstFields;
+  readonly declaration: UnknownFields;
   readonly module: string;
 }): readonly (readonly [string, string])[] =>
   (input.declaration.specifiers as readonly unknown[])
     .filter(isAstFields)
     .map((specifier) => [
-      String((specifier.local as AstFields).name),
+      String((specifier.local as UnknownFields).name),
       `${input.module}#${takenNameOf(specifier)}`,
     ]);
 
@@ -54,7 +54,7 @@ export const importRoutesIn = (input: {
         ? routesThrough({
             declaration: statement,
             module: importedModuleOf({
-              specifier: String((statement.source as AstFields).value),
+              specifier: String((statement.source as UnknownFields).value),
               fromRelativePath: input.relativePath,
             }),
           })

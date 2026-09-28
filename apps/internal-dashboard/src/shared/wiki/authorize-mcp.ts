@@ -1,4 +1,5 @@
-import { findWikiReader, insufficientScopeError, mcpAuthorizer, mcpJsonRpcError } from "@repo/auth";
+import { findWikiReader } from "@repo/db";
+import { insufficientScopeError, mcpAuthorizer, mcpJsonRpcError } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import { Effect } from "effect";
 

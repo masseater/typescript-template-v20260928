@@ -1,9 +1,10 @@
+import { isNotFound } from "@repo/cli";
 import { homedir, userInfo } from "node:os";
 
 import { Effect, FileSystem, Path, PlatformError } from "effect";
 
 import { failure } from "./failure.ts";
-import { isNotFound, withFileSystem } from "./platform.ts";
+import { withFileSystem } from "./platform.ts";
 
 import type { LocalCommandFailure } from "./failure.ts";
 

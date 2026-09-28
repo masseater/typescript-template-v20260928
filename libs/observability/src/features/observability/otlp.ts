@@ -19,7 +19,6 @@ type OtlpDestination = {
   readonly endpoint: string;
   readonly authorization?: Redacted.Redacted | undefined;
 };
-type TelemetryFlusher = OtlpExporter.Flusher;
 const trailingSlashes = /\/+$/u;
 const flushTelemetry = Effect.flatMap(OtlpExporter.Flusher, (flusher) => flusher.flush);
 const otlpSignalUrl = (endpoint: string, signal: "logs" | "traces"): string =>
@@ -48,7 +47,7 @@ const otlpExport = (exported: {
   readonly otlp?: OtlpDestination | undefined;
   readonly release: string;
   readonly service: string;
-}): Layer.Layer<TelemetryFlusher> => {
+}): Layer.Layer<OtlpExporter.Flusher> => {
   const { otlp } = exported;
   if (otlp === undefined) {
     return OtlpExporter.layerFlusher;
@@ -73,4 +72,4 @@ const otlpExport = (exported: {
   ).pipe(Layer.provide(transport));
 };
 export { flushTelemetry, otlpExport, otlpSignalUrl };
-export type { OtlpDestination, TelemetryFlusher };
+export type { OtlpDestination };

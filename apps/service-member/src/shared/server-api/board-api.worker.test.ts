@@ -1,3 +1,4 @@
+import { ResourceId } from "@repo/runtime/contracts";
 import { assert, describe, it } from "@effect/vitest";
 import { APPLICATION, httpStatus } from "@repo/config";
 import { TestDatabase, runStatement } from "@repo/db/testing";
@@ -10,7 +11,7 @@ import { workerRuntime } from "@repo/runtime/worker";
 import { env } from "cloudflare:workers";
 import { Effect, Layer, Schema } from "effect";
 
-import { BoardThreadCreated, BoardThreadList, BoardThreadView } from "#shared/contracts/index.ts";
+import { BoardThreadList, BoardThreadView } from "#shared/contracts/index.ts";
 import { boardApi } from "./board-api.ts";
 
 declare global {
@@ -35,7 +36,7 @@ const reporting = { log: recordingSink().sink, service: APPLICATION.user } as co
 const migrated = Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase));
 const password = "test-password-safe-123";
 const draft = { body: "はじめまして。", title: "自己紹介" };
-const decodeCreated = Schema.decodeUnknownEffect(BoardThreadCreated);
+const decodeCreated = Schema.decodeUnknownEffect(ResourceId);
 const decodeList = Schema.decodeUnknownEffect(BoardThreadList);
 const decodeThread = Schema.decodeUnknownEffect(BoardThreadView);
 

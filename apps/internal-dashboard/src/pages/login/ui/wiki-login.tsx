@@ -1,7 +1,7 @@
-import { browserHttp, LoginPage } from "@repo/auth-ui";
+import { LoginPage, browserHttp } from "@repo/auth-ui";
 import { httpStatus } from "@repo/config";
 import { decodeJson } from "@repo/runtime/client";
-import { Redirect } from "@repo/runtime/contracts";
+import { ResourceUrl } from "@repo/runtime/contracts";
 import { Effect } from "effect";
 import { HttpBody, HttpClient } from "effect/unstable/http";
 
@@ -27,7 +27,7 @@ function continuationTarget(oauthQuery: string): Effect.Effect<string> {
     if (response.status < 200 || response.status >= 300) {
       return yield* Effect.die("連携の許可を続けられませんでした。");
     }
-    return decodeJson(Redirect, yield* response.json).url;
+    return decodeJson(ResourceUrl, yield* response.json).url;
   }).pipe(Effect.orDie);
 }
 

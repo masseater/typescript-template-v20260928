@@ -1,6 +1,7 @@
+import { agreementKindLabels } from "@repo/config";
 import { TextLink } from "@repo/ui";
 
-import { agreementKindLabels, agreementKindPaths } from "#entities/agreement/model/agreements.ts";
+import { agreementKindPaths } from "#entities/agreement/model/agreements.ts";
 
 import type { Pending } from "#entities/agreement/model/agreements.ts";
 import type { ReactElement } from "react";

@@ -1,3 +1,5 @@
+import { repositoryRoot } from "@repo/config/repository-root";
+import type { Application } from "@repo/config";
 import { exitWith, markFailed } from "@repo/cli/exit-code";
 import { applicationReadyPaths } from "@repo/config";
 import { Effect } from "effect";
@@ -6,9 +8,8 @@ import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import { BROWSER_AGENT_COMMAND } from "./browser-agent-command.ts";
 import { configuredOrigin, sessionArguments, sessionName } from "./browser-session.ts";
 import { failure } from "./failure.ts";
-import { readCredentials, refreshBrowserConfig, root, run } from "./local-environment.ts";
+import { readCredentials, refreshBrowserConfig, run } from "./local-environment.ts";
 
-import type { App } from "./local-environment.ts";
 
 interface BrowserReport {
   readonly event: "local.browser_opened";
@@ -22,7 +23,7 @@ type ChildExit =
   | { readonly started: false }
   | { readonly started: true; readonly code: number | null };
 
-const browser = Effect.fn("browser")(function* browser(app: App) {
+const browser = Effect.fn("browser")(function* browser(app: Application) {
   const credentials = yield* readCredentials();
   const socketDirectory = yield* refreshBrowserConfig();
   const args = yield* sessionArguments(app, credentials);
@@ -32,7 +33,7 @@ const browser = Effect.fn("browser")(function* browser(app: App) {
     "agent-browser",
     [...args, BROWSER_AGENT_COMMAND.open, `${origin}${applicationReadyPaths[app]}`],
     {
-      cwd: root,
+      cwd: repositoryRoot,
       env,
     },
   );
@@ -56,7 +57,7 @@ function runBrowser(
     const handle = yield* spawner
       .spawn(
         ChildProcess.make("agent-browser", [...args], {
-          cwd: root,
+          cwd: repositoryRoot,
           env: { AGENT_BROWSER_SOCKET_DIR: socketDirectory },
           extendEnv: true,
           stderr: "inherit",
@@ -74,7 +75,7 @@ function runBrowser(
 }
 
 const browserCommand = Effect.fn("browserCommand")(function* browserCommand(
-  app: App,
+  app: Application,
   args: readonly string[],
 ) {
   if (args.length === 0) {

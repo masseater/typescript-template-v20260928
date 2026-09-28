@@ -1,30 +1,10 @@
 #!/usr/bin/env node
 
 import { markFailed, reportFailed, runCli } from "@repo/cli";
-import {
-  APPLICATION,
-  aiMeterEventName,
-  aiUsageUnitAmount,
-  appEnvKey,
-  applications,
-  grants,
-  jobsQueueBinding,
-  jobsWorkflowBinding,
-  jobsWorkflowClass,
-  stripeApiVersion,
-  stripeWebhookEvents,
-  userInboxBinding,
-  userInboxClassName,
-  wikiApiBinding,
-  wikiApiEntrypoint,
-  wikiPagesBinding,
-  wikiPublishKey,
-  wikiWorker,
-} from "@repo/config";
+import { APPLICATION, aiMeterEventName, aiUsageUnitAmount, appEnvKey, applications, grants, jobsQueueBinding, jobsWorkflowBinding, jobsWorkflowClass, stripeApiVersion, stripeWebhookEvents, userInboxBinding, userInboxClassName, wikiApiBinding, wikiApiEntrypoint, wikiPagesBinding, wikiPublishKey, wikiWorker, coreEntrypoints } from "@repo/config";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { cacheNamespaceBinding, fileBucketBinding } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
-import { coreEntrypoints } from "@repo/core-api/entrypoints";
 import {
   budgetMonitorEnv,
   budgetMonitorWorker,

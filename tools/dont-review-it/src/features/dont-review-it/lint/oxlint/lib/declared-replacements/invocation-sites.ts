@@ -9,9 +9,10 @@ import {
 import { importRoutesIn, type ImportRoutes } from "../value-declarations/import-routes.ts";
 import { spawnFormMatching, SPAWN_TARGET_LINE, type SpawnForm } from "./spawn-forms.ts";
 
-import type { AstFields } from "../ast-node.ts";
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
 
-const requiredSpecifierOf = (bound: AstFields): string | null => {
+
+const requiredSpecifierOf = (bound: UnknownFields): string | null => {
   const requested = requestedSpecifierOf(bound);
   return requested === null ? null : staticSpecifierOf(requested, new Map());
 };
@@ -24,7 +25,7 @@ const takenRoutesOf = ({
   named,
   specifier,
 }: {
-  readonly named: AstFields;
+  readonly named: UnknownFields;
   readonly specifier: string;
 }): readonly (readonly [string, string])[] => {
   const nodeType = nodeTypeOf(named);
@@ -46,7 +47,7 @@ const wrappedRouteOf = ({
   bound,
   routes,
 }: {
-  readonly bound: AstFields;
+  readonly bound: UnknownFields;
   readonly routes: ImportRoutes;
 }): string | null => {
   if (nodeTypeOf(bound) !== "CallExpression") return null;
@@ -61,7 +62,7 @@ const wrappedRouteOf = ({
 };
 
 const boundRoutesIn = (
-  statement: AstFields,
+  statement: UnknownFields,
   routes: ImportRoutes,
 ): readonly (readonly [string, string])[] => {
   return constBindingsIn(statement).flatMap(({ named, bound }) => {
@@ -92,7 +93,7 @@ export const handedTextsOf = ({
   handed,
   constants,
 }: {
-  readonly handed: readonly AstFields[];
+  readonly handed: readonly UnknownFields[];
   readonly constants: ReadonlyMap<string, string>;
 }): readonly string[] | null => {
   const [listed] = handed;
@@ -116,7 +117,7 @@ const memberRouteOf = ({
   callee,
   routes,
 }: {
-  readonly callee: AstFields;
+  readonly callee: UnknownFields;
   readonly routes: ImportRoutes;
 }): string | null => {
   const carrier = astFieldsOf(callee.object);
@@ -137,7 +138,7 @@ const calleeRouteOf = ({
   callee,
   routes,
 }: {
-  readonly callee: AstFields;
+  readonly callee: UnknownFields;
   readonly routes: ImportRoutes;
 }): string | null => {
   const nodeType = nodeTypeOf(callee);
@@ -146,7 +147,7 @@ const calleeRouteOf = ({
   return memberRouteOf({ callee, routes });
 };
 
-const calledFieldOf = (node: AstFields): AstFields | null => {
+const calledFieldOf = (node: UnknownFields): UnknownFields | null => {
   const nodeType = nodeTypeOf(node);
   if (nodeType === "TaggedTemplateExpression") return astFieldsOf(node.tag);
   return nodeType === "CallExpression" ? astFieldsOf(node.callee) : null;
@@ -157,7 +158,7 @@ const spawnFormAt = ({
   routes,
   forms,
 }: {
-  readonly written: AstFields;
+  readonly written: UnknownFields;
   readonly routes: ImportRoutes;
   readonly forms: readonly SpawnForm[];
 }): SpawnForm | null => {
@@ -170,11 +171,11 @@ const spawnFormAt = ({
 
 export type SpawnSite = {
   readonly form: SpawnForm;
-  readonly target: AstFields | null;
-  readonly handed: readonly AstFields[];
+  readonly target: UnknownFields | null;
+  readonly handed: readonly UnknownFields[];
 };
 
-const siteUnder = (written: AstFields, form: SpawnForm): SpawnSite => {
+const siteUnder = (written: UnknownFields, form: SpawnForm): SpawnSite => {
   if (nodeTypeOf(written) === "TaggedTemplateExpression") {
     return {
       form: { ...form, carries: SPAWN_TARGET_LINE },

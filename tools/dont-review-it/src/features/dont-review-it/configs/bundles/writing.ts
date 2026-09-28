@@ -18,6 +18,7 @@ import { noMultiBindingDeclaration } from "../../lint/oxlint/rules/writing/no-mu
 import { noPlainSecretEnvironmentKey } from "../../lint/oxlint/rules/writing/no-plain-secret-environment-key--wrap-it-in-redacted.ts";
 import { noSingleUseLocalType } from "../../lint/oxlint/rules/writing/no-single-use-local-type--inline-at-the-use-site.ts";
 import { noTestOnlyEnvironmentKey } from "../../lint/oxlint/rules/writing/no-test-only-environment-key--use-real-dependencies-and-http-doubles.ts";
+import { noTopLevelAlias } from "../../lint/oxlint/rules/writing/no-top-level-alias--use-the-referenced-declaration.ts";
 import { noUncheckedCast } from "../../lint/oxlint/rules/writing/no-unchecked-cast--parse-at-boundary.ts";
 import { noUnorderedImport } from "../../lint/oxlint/rules/writing/no-unordered-import--group-by-origin-then-sort-by-specifier.ts";
 import { requireReExportOnlyFiles } from "../../lint/oxlint/rules/writing/require-re-export-only-files--move-declaration-to-owning-module.ts";
@@ -46,6 +47,7 @@ export const writingBundle: readonly WorkspaceLintRule[] = [
   noInterfaceDeclaration,
   noMultiBindingDeclaration,
   noSingleUseLocalType,
+  noTopLevelAlias,
   noUncheckedCast,
   noUnorderedImport,
   noUnusedStyleClass,

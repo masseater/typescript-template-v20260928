@@ -1,13 +1,9 @@
+import { ResourceUrl } from "@repo/runtime/contracts";
 import { apiData } from "@repo/runtime/client";
 import { Encoding } from "effect";
 
 import { wikiClient } from "#shared/api/index.ts";
-import {
-  WikiDraftPublished,
-  WikiDraftSaved,
-  WikiImageUploaded,
-  WikiSource,
-} from "#shared/contracts/index.ts";
+import { WikiDraftSaved, WikiSource } from "#shared/contracts/index.ts";
 
 import type { wikiImageTypes } from "#shared/contracts/index.ts";
 
@@ -36,7 +32,7 @@ function publishDraft(path: string, version: number): Promise<string> {
   return Promise.resolve(wikiClient()).then(({ api }) =>
     api["wiki-edit"].publish
       .post({ path, version })
-      .then((response) => apiData(WikiDraftPublished, response).url),
+      .then((response) => apiData(ResourceUrl, response).url),
   );
 }
 
@@ -50,7 +46,7 @@ function uploadImage(
       Promise.resolve(wikiClient()).then(({ api }) =>
         api["wiki-edit"].images
           .post({ bytes: Encoding.encodeBase64(new Uint8Array(buffer)), contentType })
-          .then((response) => apiData(WikiImageUploaded, response).url),
+          .then((response) => apiData(ResourceUrl, response).url),
       ),
     );
 }

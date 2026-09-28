@@ -1,8 +1,9 @@
+import { effectTsgoNoEmit } from "@repo/config";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { awaitingEffectDiagnostics, effectDiagnostics, effectTsgoNoEmit } from "./effect-tsgo.ts";
+import { awaitingEffectDiagnostics, effectDiagnostics } from "./effect-tsgo.ts";
 import { baselinePath } from "./effect-typecheck.ts";
 import { filesystem, paths } from "./host.ts";
 import { telemetryEnv } from "./run-config.ts";

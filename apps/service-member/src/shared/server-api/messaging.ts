@@ -1,21 +1,5 @@
-import {
-  CONVERSATION_KIND,
-  and,
-  blockBetween,
-  clockDate,
-  count,
-  desc,
-  eq,
-  gt,
-  isNull,
-  ne,
-  not,
-  or,
-  pairBlocked,
-  query,
-  requirePaid,
-  schema,
-} from "@repo/db";
+import { and, count, desc, eq, gt, isNull, ne, not, or } from "drizzle-orm";
+import { CONVERSATION_KIND, blockBetween, clockDate, pairBlocked, query, requirePaid, schema } from "@repo/db";
 import { DateTime, Effect } from "effect";
 
 import { maySendGroupMessage } from "#shared/messaging/index.ts";

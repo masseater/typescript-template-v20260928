@@ -1,5 +1,4 @@
 import { moderationKinds, reportReasons, reportStatuses } from "@repo/config";
-import { Acknowledged, IdentifierQuery } from "@repo/runtime/contracts";
 import { Effect, Schema } from "effect";
 
 const maximumReportPage = 1_000_000;
@@ -33,7 +32,6 @@ const ReportList = Schema.Struct({
   total: Schema.Finite,
 });
 
-const ReportQuery = IdentifierQuery;
 
 const ModerationRecord = Schema.Struct({
   createdAt: Schema.Finite,
@@ -56,16 +54,11 @@ const ReportDetail = Schema.Struct({
   targetSuspended: Schema.Boolean,
 });
 
-const ReportAction = IdentifierQuery;
 
-const ReportActionResult = Acknowledged;
 
 export {
-  ReportAction,
-  ReportActionResult,
   ReportDetail,
   ReportList,
   ReportListQuery,
-  ReportQuery,
   reportPageSize,
 };

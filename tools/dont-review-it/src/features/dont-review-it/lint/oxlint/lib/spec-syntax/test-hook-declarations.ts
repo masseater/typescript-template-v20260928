@@ -1,9 +1,11 @@
-import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
+import { isAstFields, NODE_TYPE_FIELD } from "../ast-node.ts";
 import {
   importedDeclarationOf,
   type ImportedName,
   type ModuleDeclarations,
 } from "./module-declarations.ts";
+
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
 
 export const INJECTED_TEST_HOOK_SPELLINGS: readonly string[] = [
   "afterAll",
@@ -18,7 +20,7 @@ const PROPERTY_KIND = "Property";
 
 const MEMBER_KIND = "MemberExpression";
 
-const readPositionsOf = (node: AstFields): readonly unknown[] => {
+const readPositionsOf = (node: UnknownFields): readonly unknown[] => {
   if (node.computed === true) return Object.values(node);
   const nodeKind = node[NODE_TYPE_FIELD];
   if (nodeKind === PROPERTY_KIND) return [node.value];

@@ -1,8 +1,9 @@
+import { budgetMonitorWorker } from "@repo/monitor/workers";
 import { monitorWorker, type MonitorBindings } from "@repo/monitor";
 import { withSpan } from "@repo/observability";
 import { Effect, Schema } from "effect";
 
-import { budgetMonitorWorker, parseBudgetConfig, type BudgetMonitorEnv } from "./config.ts";
+import { parseBudgetConfig, type BudgetMonitorEnv } from "./config.ts";
 import { shouldNotify } from "./decision.ts";
 import { measureBudget } from "./measure.ts";
 

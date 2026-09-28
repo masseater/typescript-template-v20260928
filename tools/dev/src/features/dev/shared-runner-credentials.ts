@@ -5,7 +5,8 @@ import { Crypto, Effect } from "effect";
 
 import { OriginMode, lanOrigin } from "./local-environment.ts";
 
-import type { App, Credentials } from "./local-environment.ts";
+import type { Application } from "@repo/config";
+import type { Credentials } from "./local-environment.ts";
 
 const sharedRunnerSeed = "continuous-integration";
 
@@ -30,11 +31,11 @@ const sharedRunnerCredentials = Effect.fn("sharedRunnerCredentials")(
   },
 );
 
-function appOrigin(app: App, mode: typeof OriginMode.Type): string {
+function appOrigin(app: Application, mode: typeof OriginMode.Type): string {
   return mode === "lan" ? lanOrigin(app) : applicationOrigins[app];
 }
 
-function billingVariables(app: App, credentials: Credentials): Readonly<Record<string, string>> {
+function billingVariables(app: Application, credentials: Credentials): Readonly<Record<string, string>> {
   if (!grants(app, "billing")) {
     return {};
   }
@@ -48,7 +49,7 @@ function billingVariables(app: App, credentials: Credentials): Readonly<Record<s
 }
 
 function appVariables(
-  app: App,
+  app: Application,
   credentials: Credentials,
   mode: typeof OriginMode.Type,
 ): Readonly<Record<string, string>> {

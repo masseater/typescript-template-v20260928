@@ -1,5 +1,5 @@
-import { webCrypto } from "@repo/config";
-import { AUDIT_ACTION, auditEvent, query } from "@repo/db";
+import { webCrypto, AUDIT_ACTION } from "@repo/config";
+import { auditEvent, query } from "@repo/db";
 import { DateTime, Effect } from "effect";
 
 import { auditTargetForToggle, type FlagKey } from "./definitions.ts";

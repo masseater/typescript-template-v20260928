@@ -95,7 +95,6 @@ export {
   BootstrapKind,
   BootstrappedAdmin,
   BootstrapUnavailable,
-  Email,
   bootstrapAdmin,
   bootstrapStatement,
   ensureAdminRole,

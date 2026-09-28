@@ -1,5 +1,5 @@
+import { Identifier } from "@repo/config/paging";
 import { agreementKinds } from "@repo/config";
-import { Identifier, IdentifierQuery } from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
 const maximumVersionLength = 64;
@@ -52,7 +52,6 @@ const AgreementDraftRevision = Schema.Struct({
 
 const AgreementVersionSaved = Schema.Struct({ id: Schema.String, version: Schema.String });
 
-const AgreementPublication = IdentifierQuery;
 
 const AgreementPublished = Schema.Struct({
   id: Schema.String,
@@ -63,7 +62,6 @@ const AgreementPublished = Schema.Struct({
 export {
   AgreementDraft,
   AgreementDraftRevision,
-  AgreementPublication,
   AgreementPublished,
   AgreementVersionDetail,
   AgreementVersionList,

@@ -16,12 +16,12 @@ import {
 import { urlPath, withFileSystem, withPath } from "./platform.ts";
 import { privateFileMode } from "./private-files.ts";
 
+import type { Application } from "@repo/config";
 import type { ChildProcessSpawner } from "effect/unstable/process";
 import type { LocalCommandFailure } from "./failure.ts";
-import type { App } from "./local-environment.ts";
 
 interface AppStatus {
-  readonly app: App;
+  readonly app: Application;
   readonly httpStatus: number | null;
   readonly logFile: string;
   readonly origin: string;
@@ -36,7 +36,7 @@ interface StatusReport {
 
 const statusTimeoutMilliseconds = 3000;
 
-function httpStatus(app: App, origin: string): Effect.Effect<number | null> {
+function httpStatus(app: Application, origin: string): Effect.Effect<number | null> {
   return HttpClient.get(`${origin}${applicationReadyPaths[app]}`).pipe(
     Effect.timeout(statusTimeoutMilliseconds),
     Effect.provide(FetchHttpClient.layer),
@@ -47,12 +47,12 @@ function httpStatus(app: App, origin: string): Effect.Effect<number | null> {
   );
 }
 
-function appOrigin(app: App, origins: "lan" | "loopback" | undefined): string {
+function appOrigin(app: Application, origins: "lan" | "loopback" | undefined): string {
   return origins === "loopback" ? applicationOrigins[app] : lanOrigin(app);
 }
 
 function appStatus(
-  app: App,
+  app: Application,
   origins: "lan" | "loopback" | undefined,
 ): Effect.Effect<
   AppStatus,
@@ -101,7 +101,7 @@ const connection = Effect.fn("connection")(function* connection() {
   };
 });
 
-const launch = Effect.fn("launch")(function* launch(app: App) {
+const launch = Effect.fn("launch")(function* launch(app: Application) {
   const log = yield* urlPath(logFileUrl(app));
   yield* Effect.scoped(
     Effect.gen(function* touchLog() {
@@ -127,7 +127,7 @@ const launch = Effect.fn("launch")(function* launch(app: App) {
   );
 });
 
-const start = Effect.fn("start")(function* start(app: App) {
+const start = Effect.fn("start")(function* start(app: Application) {
   const credentials = yield* readCredentials();
   if (credentials.origins !== "loopback") {
     yield* ensureGateway();
@@ -138,7 +138,7 @@ const start = Effect.fn("start")(function* start(app: App) {
   return yield* status();
 });
 
-const stop = Effect.fn("stop")(function* stop(app: App) {
+const stop = Effect.fn("stop")(function* stop(app: Application) {
   if (yield* running(app)) {
     yield* run("tmux", ["-L", socket, "kill-session", "-t", app], { cwd: root });
   }
@@ -146,9 +146,9 @@ const stop = Effect.fn("stop")(function* stop(app: App) {
 });
 
 function logs(
-  app: App,
+  app: Application,
 ): Effect.Effect<
-  { app: App; log: string },
+  { app: Application; log: string },
   LocalCommandFailure,
   FileSystem.FileSystem | Path.Path
 > {

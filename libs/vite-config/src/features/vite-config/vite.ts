@@ -25,7 +25,6 @@ import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 import {
-  defineConfig,
   lazyPlugins,
   type ConfigEnv,
   type PluginOption,
@@ -38,7 +37,6 @@ import { coreDevWorker, coreDevWorkerName, devWorkerName } from "./dev-workers.t
 import {
   awaitingEffectDiagnostics,
   effectDiagnostics,
-  effectTsgoNoEmit,
   type EffectDiagnosticsTask,
 } from "./effect-tsgo.ts";
 import { elysiaAot, elysiaWorkerdJit } from "./elysia-aot.ts";
@@ -417,10 +415,8 @@ export {
   awaitingEffectRun,
   checkCode,
   clientReachableModules,
-  defineConfig,
   effectDiagnostics,
   effectRun,
-  effectTsgoNoEmit,
   intentValidation,
   lifecycle,
   lifecycleInherits,

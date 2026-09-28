@@ -1,9 +1,7 @@
 export { MetricTrend, StaffAuditPage, StaffOverview } from "./dashboard.ts";
 export type { StaffAuditPageView, StaffOverviewView } from "./dashboard.ts";
-export { FlagEntry, FlagList, FlagToggle, FlagToggled } from "./flags.ts";
+export { FlagEntry, FlagList, FlagToggle, FlagEntry } from "./flags.ts";
 export {
-  InquiryQuery,
-  MemberQuery,
   StaffInquiryCounts,
   StaffInquiryList,
   StaffInquiryThread,
@@ -14,31 +12,24 @@ export {
   PersonRegistration,
   RecordingList,
   RecordingUpload,
-  RecordingView,
   SpeakerAssignment,
   maximumPersonNameLength,
   maximumRecordingBytes,
   maximumRecordingTitleLength,
 } from "./recordings.ts";
 export {
-  WikiDraftDiscard,
-  WikiDraftPublish,
-  WikiDraftPublished,
+  WikiDraftReference,
   WikiDraftSave,
   WikiDraftSaved,
   WikiImageUpload,
-  WikiImageUploaded,
   WikiSource,
   WikiSourceQuery,
   wikiImageTypes,
 } from "./wiki-edit.ts";
 export {
   StaffInvitation,
-  StaffInvited,
   StaffList,
   StaffPermission,
   StaffPermissionChange,
   StaffPermissionChanged,
-  StaffRemoval,
-  StaffRemoved,
 } from "./staff.ts";

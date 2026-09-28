@@ -1,33 +1,12 @@
+import { IdentifierQuery, InvitationIssued } from "@repo/runtime/contracts";
 import { mailInvite, verifiedSessionId } from "@repo/auth";
 import { httpStatus } from "@repo/config";
-import {
-  deleteUser,
-  inviteAdmin,
-  listAdmins,
-  listUsers,
-  setAdminPermission,
-  setAdminState,
-  setMemberState,
-} from "@repo/db/admin";
+import { deleteUser, inviteAdmin, listAdmins, listUsers, setAdminPermission, setAdminState, setMemberState } from "@repo/db/admin";
 import { inviteApi, privileged } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
-import {
-  AdminInvitation,
-  AdminInvited,
-  AdminList,
-  AdminPermissionChange,
-  AdminPermissionChanged,
-  AdminStateChange,
-  AdminStateChanged,
-  MemberStateChange,
-  MemberStateChanged,
-  UserDeleted,
-  UserDeletion,
-  UserList,
-  UserListQuery,
-} from "#shared/contracts/index.ts";
+import { AccountStateChange, AccountStateChanged, AdminInvitation, AdminList, AdminPermissionChange, AdminPermissionChanged, UserDeleted, UserList, UserListQuery } from "#shared/contracts/index.ts";
 
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
@@ -50,7 +29,7 @@ const changeMemberState = Effect.fn("changeMemberState")(function* changeMemberS
   request: Request,
 ) {
   const sessionId = yield* verifiedSessionId(request);
-  const change = yield* readJsonBody(MemberStateChange, request);
+  const change = yield* readJsonBody(AccountStateChange, request);
   return yield* setMemberState({
     accountState: change.accountState,
     memberId: change.id,
@@ -60,7 +39,7 @@ const changeMemberState = Effect.fn("changeMemberState")(function* changeMemberS
 
 const removeMember = Effect.fn("removeMember")(function* removeMember(request: Request) {
   const sessionId = yield* verifiedSessionId(request);
-  const deletion = yield* readJsonBody(UserDeletion, request);
+  const deletion = yield* readJsonBody(IdentifierQuery, request);
   return yield* deleteUser({ sessionId, targetId: deletion.id });
 });
 
@@ -96,7 +75,7 @@ const changeAdminState = Effect.fn("changeAdminState")(function* changeAdminStat
   request: Request,
 ) {
   const sessionId = yield* verifiedSessionId(request);
-  const change = yield* readJsonBody(AdminStateChange, request);
+  const change = yield* readJsonBody(AccountStateChange, request);
   return yield* setAdminState({
     accountState: change.accountState,
     adminId: change.id,
@@ -108,12 +87,12 @@ function adminRoutes<Requirements = never>(api: ApiRoutes<AppServices | Requirem
   return createApi("")
     .use(inviteApi(api))
     .get("/users", ...api.route({ response: UserList }, listMembers, failures))
-    .patch("/users", ...api.route({ response: MemberStateChanged }, changeMemberState, failures))
+    .patch("/users", ...api.route({ response: AccountStateChanged }, changeMemberState, failures))
     .delete("/users", ...api.route({ response: UserDeleted }, removeMember, failures))
     .get("/admins", ...api.route({ response: AdminList }, listAdministrators, failures))
     .post(
       "/admins/invites",
-      ...api.route({ response: AdminInvited }, inviteAdministrator, failures),
+      ...api.route({ response: InvitationIssued }, inviteAdministrator, failures),
     )
     .patch(
       "/admins",
@@ -121,7 +100,7 @@ function adminRoutes<Requirements = never>(api: ApiRoutes<AppServices | Requirem
     )
     .patch(
       "/admins/state",
-      ...api.route({ response: AdminStateChanged }, changeAdminState, failures),
+      ...api.route({ response: AccountStateChanged }, changeAdminState, failures),
     );
 }
 

@@ -1,4 +1,4 @@
-import { agreementKindLabels, agreementPolicies, type AgreementKind } from "@repo/config";
+import { agreementPolicies, type AgreementKind } from "@repo/config";
 
 import type { AgreementsView, PendingAgreement } from "#shared/contracts/index.ts";
 
@@ -17,5 +17,5 @@ const signupAgreementKinds = (pending: readonly Pending[]): readonly Pending[] =
 const blocksMember = (pending: readonly Pending[]): boolean =>
   pending.some((agreement) => agreementPolicies[agreement.kind].blocksUntilReaccepted);
 
-export { agreementKindLabels, agreementKindPaths, blocksMember, signupAgreementKinds };
+export { agreementKindPaths, blocksMember, signupAgreementKinds };
 export type { Agreements, Pending };

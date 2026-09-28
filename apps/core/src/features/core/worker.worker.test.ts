@@ -1,5 +1,4 @@
-import { applications } from "@repo/config";
-import { coreEntrypoints } from "@repo/core-api/entrypoints";
+import { applications, coreEntrypoints } from "@repo/config";
 import { describe, expect, test } from "vite-plus/test";
 
 import * as worker from "./worker.ts";

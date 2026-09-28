@@ -29,4 +29,4 @@ const writeLocalDatabaseConfig: Effect.Effect<
   return file;
 });
 
-export { localDatabase, localDatabasePersistence, localDatabaseStore, writeLocalDatabaseConfig };
+export { localDatabasePersistence, localDatabaseStore, writeLocalDatabaseConfig };

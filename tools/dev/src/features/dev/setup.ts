@@ -1,3 +1,4 @@
+import { isNotFound } from "@repo/cli";
 import { applications } from "@repo/config";
 import { Crypto, Effect, FileSystem, Path, PlatformError, Schema } from "effect";
 
@@ -9,7 +10,7 @@ import {
   readCredentials,
   refreshBrowserConfig,
 } from "./local-environment.ts";
-import { isNotFound, urlPath, withFileSystem } from "./platform.ts";
+import { urlPath, withFileSystem } from "./platform.ts";
 import { privateDirectoryMode, replacePrivateFile, writePrivateFile } from "./private-files.ts";
 import {
   appVariables,
@@ -17,8 +18,9 @@ import {
   sharedRunnerCredentials,
 } from "./shared-runner-credentials.ts";
 
+import type { Application } from "@repo/config";
 import type { LocalCommandFailure } from "./failure.ts";
-import type { App, Credentials } from "./local-environment.ts";
+import type { Credentials } from "./local-environment.ts";
 
 interface SetupReport {
   readonly credentialsFile: string;
@@ -68,7 +70,7 @@ const loadOrCreateCredentials = Effect.fn("loadOrCreateCredentials")(
 );
 
 function writeAppVariables(
-  app: App,
+  app: Application,
   credentials: Credentials,
   mode: typeof OriginMode.Type,
 ): Effect.Effect<void, LocalCommandFailure, FileSystem.FileSystem | Path.Path> {

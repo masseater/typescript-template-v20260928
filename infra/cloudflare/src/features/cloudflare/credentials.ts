@@ -1,9 +1,9 @@
-import { modeAllowsGroupOrOther } from "@repo/cli";
+import { modeAllowsGroupOrOther, isNotFound } from "@repo/cli";
 import { deploymentKeys } from "@repo/observability/deployment-keys";
 import { ConfigProvider, Effect, FileSystem, Option, Path, Schema } from "effect";
 
 import { secretsFile } from "./deployment.ts";
-import { isNotFound, layer } from "./platform.ts";
+import { layer } from "./platform.ts";
 import { projectName } from "./project.ts";
 
 class SecretsFileFailure extends Schema.TaggedError<SecretsFileFailure>()("SecretsFileFailure", {

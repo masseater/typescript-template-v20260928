@@ -44,4 +44,4 @@ function membersOptions(search: UsersSearch) {
   });
 }
 
-export { PaidPlanRequired, membersOptions };
+export { membersOptions };

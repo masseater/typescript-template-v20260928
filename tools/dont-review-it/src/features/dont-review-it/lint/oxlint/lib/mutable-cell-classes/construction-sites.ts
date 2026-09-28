@@ -4,7 +4,8 @@ import { stateFieldsWrittenAfterConstruction } from "./class-state-writes.ts";
 import { constructedValueEscapes, heldNamesOf, identifierNameOf } from "./instance-escape.ts";
 import { innermostOf, nodeVisitsIn, visitAt, type NodeVisit } from "./node-visits.ts";
 
-import type { AstFields } from "../ast-node.ts";
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
+
 
 export type ConstructionSite = {
   readonly name: string;
@@ -93,7 +94,7 @@ const OWN_NAME_FIELD: ReadonlyMap<string, string> = new Map([
   ["NewExpression", "callee"],
 ]);
 
-const isDivertedUnder = (parent: AstFields, node: AstFields): boolean => {
+const isDivertedUnder = (parent: UnknownFields, node: UnknownFields): boolean => {
   const parentNodeType = nodeTypeOf(parent);
   if (IMPORT_BINDING_NODE_TYPES.has(parentNodeType)) return false;
 

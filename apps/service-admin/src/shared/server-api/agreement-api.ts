@@ -1,3 +1,4 @@
+import { IdentifierQuery } from "@repo/runtime/contracts";
 import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import {
@@ -11,16 +12,7 @@ import { privileged } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
-import {
-  AgreementDraft,
-  AgreementDraftRevision,
-  AgreementPublication,
-  AgreementPublished,
-  AgreementVersionDetail,
-  AgreementVersionList,
-  AgreementVersionQuery,
-  AgreementVersionSaved,
-} from "#shared/contracts/index.ts";
+import { AgreementDraft, AgreementDraftRevision, AgreementPublished, AgreementVersionDetail, AgreementVersionList, AgreementVersionQuery, AgreementVersionSaved } from "#shared/contracts/index.ts";
 
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
@@ -81,7 +73,7 @@ const reviseDraft = Effect.fn("agreements.revise")(function* reviseDraft(request
 
 const publishVersion = Effect.fn("agreements.publish")(function* publishVersion(request: Request) {
   const { session } = yield* verifySession(request.headers);
-  const { id } = yield* readJsonBody(AgreementPublication, request);
+  const { id } = yield* readJsonBody(IdentifierQuery, request);
   return yield* publishAgreementVersion({ id, sessionId: session.id });
 });
 

@@ -1,4 +1,4 @@
-import { AGREEMENT_KIND } from "@repo/config";
+import { AGREEMENT_KIND, agreementKindLabels } from "@repo/config";
 import {
   Button,
   Heading,
@@ -11,11 +11,7 @@ import {
 import { useRouter } from "@tanstack/react-router";
 import { DateTime } from "effect";
 
-import {
-  PendingAgreementList,
-  agreementKindLabels,
-  withdrawAgreement,
-} from "#entities/agreement/index.ts";
+import { PendingAgreementList, withdrawAgreement } from "#entities/agreement/index.ts";
 
 import type { Agreements } from "#entities/agreement/index.ts";
 import type { ReactElement } from "react";

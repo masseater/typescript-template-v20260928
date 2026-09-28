@@ -1,23 +1,11 @@
+import { IdentifierQuery, ResourceId } from "@repo/runtime/contracts";
 import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
-import {
-  GroupCreate,
-  GroupCreated,
-  GroupInviteRefresh,
-  GroupInviteRefreshed,
-  GroupJoin,
-  GroupJoined,
-  GroupLeave,
-  GroupLeft,
-  GroupQuery,
-  GroupRename,
-  GroupRenamed,
-  GroupView,
-} from "#shared/contracts/index.ts";
+import { GroupCreate, GroupCreated, GroupInviteRefreshed, GroupJoin, GroupJoined, GroupQuery, GroupRename, GroupView } from "#shared/contracts/index.ts";
 import {
   createGroup,
   findGroup,
@@ -96,11 +84,11 @@ function groupsApi(api: ApiRoutes<AppServices>) {
     .post(
       "/leave",
       ...api.route(
-        { response: GroupLeft },
+        { response: ResourceId },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
-            const { id } = yield* readJsonBody(GroupLeave, request);
+            const { id } = yield* readJsonBody(IdentifierQuery, request);
             yield* leaveGroup(user.id, id);
             return { id };
           }),
@@ -110,7 +98,7 @@ function groupsApi(api: ApiRoutes<AppServices>) {
     .post(
       "/rename",
       ...api.route(
-        { response: GroupRenamed },
+        { response: ResourceId },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -128,7 +116,7 @@ function groupsApi(api: ApiRoutes<AppServices>) {
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
-            const { id } = yield* readJsonBody(GroupInviteRefresh, request);
+            const { id } = yield* readJsonBody(IdentifierQuery, request);
             return { inviteToken: yield* refreshGroupInvite(user.id, id) };
           }),
         failures,

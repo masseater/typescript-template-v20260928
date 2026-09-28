@@ -3,11 +3,7 @@ import { confirmedChange, type ConfirmedChange } from "@repo/ui";
 import { Effect } from "effect";
 
 import { adminClient } from "#shared/api/index.ts";
-import {
-  AdminPermission,
-  AdminPermissionChanged,
-  AdminStateChanged,
-} from "#shared/contracts/index.ts";
+import { AccountStateChanged, AdminPermission, AdminPermissionChanged } from "#shared/contracts/index.ts";
 import { adminPermissionLabels, adminStateLabels, isAdminPermission } from "./admin-labels.ts";
 
 import type { ListedAdmin } from "./admin-list.ts";
@@ -36,7 +32,7 @@ function perform(admin: ListedAdmin, operation: RowOperation): Effect.Effect<str
       return `${admin.email} の権限を「${label}」にしました。`;
     }
     const changed = apiData(
-      AdminStateChanged,
+      AccountStateChanged,
       yield* Effect.promise(() =>
         admins.state.patch({ accountState: operation.accountState, id: admin.id }),
       ),

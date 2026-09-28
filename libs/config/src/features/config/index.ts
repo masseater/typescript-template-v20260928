@@ -26,7 +26,7 @@ export {
   storybookOrigin,
   storybookPort,
 } from "./applications.ts";
-export type { Application, Capability, CapabilityOf, ServiceName } from "./applications.ts";
+export type { Application, Capability, CapabilityOf } from "./applications.ts";
 export {
   architectureKindOf,
   architectureKinds,

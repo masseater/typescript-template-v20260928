@@ -1,21 +1,23 @@
 import { parseSync } from "oxc-parser";
 
-import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
+import { isAstFields, NODE_TYPE_FIELD } from "../ast-node.ts";
 import { importRoutesIn, type ImportRoutes } from "./import-routes.ts";
 import { normalizedBodyOf } from "./normalized-body.ts";
 
-const declaredNameOf = (node: AstFields): string | null => {
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
+
+const declaredNameOf = (node: UnknownFields): string | null => {
   const named = node.id;
   if (!isAstFields(named) || named[NODE_TYPE_FIELD] !== "Identifier") return null;
   return String(named.name);
 };
 
-const boundNodesOf = (statement: AstFields): readonly AstFields[] =>
+const boundNodesOf = (statement: UnknownFields): readonly UnknownFields[] =>
   statement[NODE_TYPE_FIELD] === "VariableDeclaration"
     ? (statement.declarations as readonly unknown[]).filter(isAstFields)
     : [statement];
 
-const namesSentAwayIn = (statements: readonly AstFields[]): ReadonlySet<string> =>
+const namesSentAwayIn = (statements: readonly UnknownFields[]): ReadonlySet<string> =>
   new Set(
     statements
       .filter(
@@ -23,10 +25,10 @@ const namesSentAwayIn = (statements: readonly AstFields[]): ReadonlySet<string> 
           statement[NODE_TYPE_FIELD] === "ExportNamedDeclaration" && statement.source === null,
       )
       .flatMap((statement) => (statement.specifiers as readonly unknown[]).filter(isAstFields))
-      .map((specifier) => String((specifier.local as AstFields).name)),
+      .map((specifier) => String((specifier.local as UnknownFields).name)),
   );
 
-const exportedNodesIn = (statements: readonly AstFields[]): ReadonlySet<AstFields> => {
+const exportedNodesIn = (statements: readonly UnknownFields[]): ReadonlySet<UnknownFields> => {
   const sentAway = namesSentAwayIn(statements);
 
   return new Set(
@@ -54,10 +56,10 @@ export type ValueDeclaration = {
 type Reading = {
   readonly source: string;
   readonly routes: ImportRoutes;
-  readonly exportedNodes: ReadonlySet<AstFields>;
+  readonly exportedNodes: ReadonlySet<UnknownFields>;
 };
 
-const BODY_BY_KIND: Readonly<Record<string, (node: AstFields) => unknown>> = {
+const BODY_BY_KIND: Readonly<Record<string, (node: UnknownFields) => unknown>> = {
   ClassDeclaration: (node) => ({
     body: node.body,
     decorators: node.decorators,
@@ -75,12 +77,12 @@ const BODY_BY_KIND: Readonly<Record<string, (node: AstFields) => unknown>> = {
     typeParameters: node.typeParameters,
   }),
   VariableDeclarator: (node) => ({
-    annotation: (node.id as AstFields).typeAnnotation,
+    annotation: (node.id as UnknownFields).typeAnnotation,
     init: node.init,
   }),
 };
 
-const valueDeclarationAt = (node: AstFields, reading: Reading): ValueDeclaration | null => {
+const valueDeclarationAt = (node: UnknownFields, reading: Reading): ValueDeclaration | null => {
   const bodyOf = BODY_BY_KIND[String(node[NODE_TYPE_FIELD])];
   if (bodyOf === undefined) return null;
 

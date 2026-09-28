@@ -1,4 +1,6 @@
-import { isAstFields, type AstFields } from "../ast-node.ts";
+import { isAstFields } from "../ast-node.ts";
+
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
 
 const NOTATION_KEYS: ReadonlySet<string> = new Set([
   "end",
@@ -24,7 +26,7 @@ const FORWARDED_BY_TYPE: ReadonlyMap<string, string> = new Map([
 
 const UNORDERED_MEMBERS_TYPE = "ObjectExpression";
 
-const spelledTemplate = (node: AstFields): string | null => {
+const spelledTemplate = (node: UnknownFields): string | null => {
   const substitutions = [node.expressions].flat();
   const [piece] = [node.quasis].flat();
   const spelling = isAstFields(piece) && isAstFields(piece.value) ? piece.value.cooked : null;
@@ -33,7 +35,7 @@ const spelledTemplate = (node: AstFields): string | null => {
 
 const spelledOut = (held: unknown): string => JSON.stringify(held ?? null);
 
-const literalShape = (node: AstFields): string => {
+const literalShape = (node: UnknownFields): string => {
   const pattern = node.regex;
   if (isAstFields(pattern)) {
     return `regex ${spelledOut(pattern.pattern)}${spelledOut(pattern.flags)}`;
@@ -44,7 +46,7 @@ const literalShape = (node: AstFields): string => {
   return `value ${spelledOut(node.value)}`;
 };
 
-const atomShapeOf = (node: AstFields, nodeType: string): string | null => {
+const atomShapeOf = (node: UnknownFields, nodeType: string): string | null => {
   if (nodeType === "Literal") return literalShape(node);
   if (nodeType !== "TemplateLiteral") return null;
 

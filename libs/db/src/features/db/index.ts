@@ -4,24 +4,16 @@ export { Database, query } from "./database.ts";
 export { DatabaseFailure } from "./database-failure.ts";
 export { erDiagram } from "./er-diagram.ts";
 export type { DrizzleDatabase } from "./database.ts";
-export { and, count, desc, eq, gt, inArray, isNull, ne, not, or, sql } from "drizzle-orm";
-export { AUDIT_ACTION, auditActions } from "@repo/config";
 export {
   AUDIT_CHANNEL,
   CONVERSATION_KIND,
-  GROUP_JOIN_POLICY,
   GROUP_MEMBERSHIP_ROLE,
   INQUIRY_AUTHOR_KIND,
-  INQUIRY_STATUS,
-  NOTIFICATION_KIND,
   auditEvent,
   inquiryAuthorKinds,
-  inquiryStatuses,
-  notificationKinds,
   onboardingSteps,
   schema,
 } from "./schema.ts";
-export type { NotificationKind } from "./schema.ts";
 export { UserNotFound } from "./user-not-found.ts";
 export type { UserRecord } from "./identity-schema.ts";
 export { RateLimitExceeded, consumeRateLimit } from "./rate-limit.ts";
@@ -116,7 +108,6 @@ export type {
   ReadOnlyDashboardStaff,
   TrendQuery,
 } from "./dashboard-staff.ts";
-export { PaidPlanRequired } from "./paid-plan-required.ts";
 export {
   attachCheckout,
   findSubscription,

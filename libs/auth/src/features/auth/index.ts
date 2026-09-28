@@ -1,6 +1,4 @@
 export { adminScopes } from "./admin-scopes.ts";
-export { memberScopes } from "./member-scopes.ts";
-export { findWikiReader } from "@repo/db";
 export { AdminMfaRequired } from "./admin-mfa-required.ts";
 export { AdminRequired } from "./admin-required.ts";
 export { Auth } from "./auth.ts";
@@ -26,7 +24,6 @@ export {
   sendVerificationEmail,
 } from "./email.ts";
 export { acceptInvitation, mailInvite, previewInvitation } from "./invite.ts";
-export { InviteRejected } from "@repo/db";
 export type { MailSettings } from "./email.ts";
 export { ApiKeyWriteForbidden } from "./api-key-write-forbidden.ts";
 export {

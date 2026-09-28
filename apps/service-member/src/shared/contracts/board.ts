@@ -1,4 +1,4 @@
-import { CreatedResource, Identifier, pageNumber } from "@repo/runtime/contracts";
+import { Identifier, pageNumber } from "@repo/config/paging";
 import { Schema } from "effect";
 
 const maximumBoardTitleLength = 100;
@@ -64,17 +64,13 @@ const BoardThreadCreate = Schema.Struct({
   title: Schema.Trim.check(Schema.isLengthBetween(1, maximumBoardTitleLength)),
 });
 
-const BoardThreadCreated = CreatedResource;
 
 const BoardPostCreate = Schema.Struct({ body: BoardBody, threadId: Identifier });
 
-const BoardPostCreated = CreatedResource;
 
 export {
   BoardPostCreate,
-  BoardPostCreated,
   BoardThreadCreate,
-  BoardThreadCreated,
   BoardThreadList,
   BoardThreadListQuery,
   BoardThreadQuery,

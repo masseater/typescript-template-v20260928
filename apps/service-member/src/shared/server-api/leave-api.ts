@@ -1,3 +1,4 @@
+import { Acknowledged } from "@repo/runtime/contracts";
 import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import { acceptRecovery, declineRecovery, findRecoveryOffer } from "@repo/db";
@@ -5,12 +6,7 @@ import { sessionFailures } from "@repo/runtime/account";
 import { createApi } from "@repo/runtime/http";
 import { Effect } from "effect";
 
-import {
-  LeaveAccepted,
-  LeaveRequest,
-  RecoveryAccepted,
-  RecoveryOfferView,
-} from "#shared/contracts/index.ts";
+import { LeaveRequest, RecoveryOfferView } from "#shared/contracts/index.ts";
 import { withdrawWithPhotos, type PhotoStore } from "#shared/photo/index.ts";
 
 import type { AppServices } from "@repo/runtime";
@@ -70,7 +66,7 @@ function leaveApi(api: ApiRoutes<AppServices | PhotoStore>) {
   return createApi("")
     .post(
       "/leave",
-      ...api.route({ body: LeaveRequest, response: LeaveAccepted }, submitLeave, failures),
+      ...api.route({ body: LeaveRequest, response: Acknowledged }, submitLeave, failures),
     )
     .get(
       "/recovery-offer",
@@ -78,11 +74,11 @@ function leaveApi(api: ApiRoutes<AppServices | PhotoStore>) {
     )
     .post(
       "/recovery/accept",
-      ...api.route({ response: RecoveryAccepted }, submitRecoveryAccept, failures),
+      ...api.route({ response: Acknowledged }, submitRecoveryAccept, failures),
     )
     .post(
       "/recovery/decline",
-      ...api.route({ response: RecoveryAccepted }, submitRecoveryDecline, failures),
+      ...api.route({ response: Acknowledged }, submitRecoveryDecline, failures),
     );
 }
 
