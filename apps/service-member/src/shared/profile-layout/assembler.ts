@@ -1,6 +1,5 @@
 import { createWorkersAiChat } from "@cloudflare/tanstack-ai/adapters/workers-ai";
 import { logAt, withSpan } from "@repo/observability";
-import { readWorkerConfig } from "@repo/runtime/bindings";
 import { chat } from "@tanstack/ai";
 import { Context, Effect, Layer, Option, Schema } from "effect";
 
@@ -11,7 +10,6 @@ import { profileBlock, ProfileLayout } from "./schema.ts";
 
 import type { ModelAccess } from "#shared/interview/interviewer.ts";
 import type { SheetData } from "#shared/interview/sheet.ts";
-import type { ConfigurationInvalid } from "@repo/config";
 import type { ProfileLayoutData } from "./schema.ts";
 const model = "@cf/google/gemma-4-26b-a4b-it";
 const patience = "20 seconds";
@@ -104,21 +102,6 @@ class ProfileLayoutAssembler extends Context.Service<ProfileLayoutAssembler, Ass
               )
             : complete(access, sheet),
       }),
-    );
-  }
-  public static fromEnvironment(
-    env: unknown,
-  ): Layer.Layer<ProfileLayoutAssembler, ConfigurationInvalid> {
-    return Layer.unwrap(
-      Effect.map(readWorkerConfig(env), (config) =>
-        ProfileLayoutAssembler.layer(
-          config.AI === undefined
-            ? undefined
-            : {
-                binding: config.AI,
-              },
-        ),
-      ),
     );
   }
 }

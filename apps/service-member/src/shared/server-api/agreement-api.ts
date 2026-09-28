@@ -51,10 +51,10 @@ const failures = {
 };
 
 const agreementsOf = Effect.fn("agreementsOf")(function* agreementsOf(userId: string) {
-  const [pending, accepted] = yield* Effect.all([
-    pendingAgreements(userId),
-    acceptedAgreements(userId),
-  ]);
+  const [pending, accepted] = yield* Effect.all(
+    [pendingAgreements(userId), acceptedAgreements(userId)],
+    { concurrency: "unbounded" },
+  );
   return {
     accepted: accepted.map((agreement) => ({
       ...agreement,

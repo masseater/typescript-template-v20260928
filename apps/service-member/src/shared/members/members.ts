@@ -164,19 +164,23 @@ const getMember = Effect.fn("getMember")(function* getMember(viewerId: string, m
   if (!member) {
     return yield* new UserNotFound();
   }
-  let following: boolean | undefined;
-  if (viewerId !== memberId) {
-    const [row] = yield* query((database) =>
-      database
-        .select({ followeeId: follow.followeeId })
-        .from(follow)
-        .where(and(eq(follow.followerId, viewerId), eq(follow.followeeId, memberId)))
-        .limit(1),
-    );
-    following = row !== undefined;
-  }
-  const base = shown(member, yield* profilePresentation(memberId));
-  if (following === undefined) {
+  const [following, presentation] = yield* Effect.all(
+    [
+      viewerId === memberId
+        ? Effect.void
+        : query((database) =>
+            database
+              .select({ followeeId: follow.followeeId })
+              .from(follow)
+              .where(and(eq(follow.followerId, viewerId), eq(follow.followeeId, memberId)))
+              .limit(1),
+          ).pipe(Effect.map((rows) => rows.length > 0)),
+      profilePresentation(memberId),
+    ],
+    { concurrency: "unbounded" },
+  );
+  const base = shown(member, presentation);
+  if (typeof following !== "boolean") {
     return base;
   }
   return { ...base, following };
@@ -192,18 +196,26 @@ const listMembers = Effect.fn("listMembers")(function* listMembers(
 ) {
   const named = page.keyword === undefined ? undefined : containsKeyword(user.name, page.keyword);
   const listed = and(profileListed, not(blockHides(viewerId)), named);
-  const members = yield* query((database) =>
-    database
-      .select(memberColumns)
-      .from(user)
-      .where(listed)
-      .orderBy(desc(user.createdAt), user.id)
-      .limit(page.limit)
-      .offset(page.offset),
+  const [members, total] = yield* Effect.all(
+    [
+      query((database) =>
+        database
+          .select(memberColumns)
+          .from(user)
+          .where(listed)
+          .orderBy(desc(user.createdAt), user.id)
+          .limit(page.limit)
+          .offset(page.offset),
+      ),
+      countRows(user, () => listed),
+    ],
+    { concurrency: "unbounded" },
   );
-  const total = yield* countRows(user, () => listed);
-  const presented = yield* Effect.forEach(members, (member) =>
-    Effect.map(profilePresentation(member.id), (presentation) => shown(member, presentation)),
+  const presented = yield* Effect.forEach(
+    members,
+    (member) =>
+      Effect.map(profilePresentation(member.id), (presentation) => shown(member, presentation)),
+    { concurrency: "unbounded" },
   );
   return { members: presented, total };
 });

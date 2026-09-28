@@ -1,6 +1,5 @@
 import { createWorkersAiChat } from "@cloudflare/tanstack-ai/adapters/workers-ai";
 import { withSpan } from "@repo/observability";
-import { readWorkerConfig } from "@repo/runtime/bindings";
 import { chat } from "@tanstack/ai";
 import { Context, Effect, Layer, Schema } from "effect";
 
@@ -8,7 +7,6 @@ import { fieldDefinitions, fieldKeys } from "./sheet.ts";
 import { UnderstandingFailed } from "./understanding-failed.ts";
 import { Understanding, understandByRules } from "./understanding.ts";
 
-import type { ConfigurationInvalid } from "@repo/config";
 import type { InterviewState } from "./state.ts";
 import type { UnderstandingData } from "./understanding.ts";
 
@@ -106,14 +104,6 @@ class Interviewer extends Context.Service<Interviewer, InterviewerShape>()(
                 })),
               ),
       }),
-    );
-  }
-
-  public static fromEnvironment(env: unknown): Layer.Layer<Interviewer, ConfigurationInvalid> {
-    return Layer.unwrap(
-      Effect.map(readWorkerConfig(env), (config) =>
-        Interviewer.layer(config.AI === undefined ? undefined : { binding: config.AI }),
-      ),
     );
   }
 }

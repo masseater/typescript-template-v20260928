@@ -234,15 +234,20 @@ const findGroup = Effect.fn("findGroup")(function* findGroup(
   if (!(yield* canViewGroup(viewerId, group, inviteToken))) {
     return yield* new GroupNotFound();
   }
-  const membership = yield* membershipOf(viewerId, groupId);
-  const members = yield* loadMembers(groupId);
-  const [memberCount] = yield* query((database) =>
-    database
-      .select({ count: count() })
-      .from(groupMembership)
-      .where(eq(groupMembership.groupId, groupId)),
+  const [membership, members, [memberCount], invite] = yield* Effect.all(
+    [
+      membershipOf(viewerId, groupId),
+      loadMembers(groupId),
+      query((database) =>
+        database
+          .select({ count: count() })
+          .from(groupMembership)
+          .where(eq(groupMembership.groupId, groupId)),
+      ),
+      inviteFor(groupId),
+    ],
+    { concurrency: "unbounded" },
   );
-  const invite = yield* inviteFor(groupId);
   const now = yield* clockDate;
   const inviteExpired =
     invite !== undefined && invite.expiresAt.getTime() <= now.getTime() ? true : false;
@@ -284,21 +289,28 @@ const joinGroup = Effect.fn("joinGroup")(function* joinGroup(
       return yield* new GroupInviteExpired();
     }
   }
-  const [joined] = yield* query((database) =>
-    database
-      .select({ count: count() })
-      .from(groupMembership)
-      .where(eq(groupMembership.memberId, viewerId)),
+  const [joinedCount, memberCount] = yield* Effect.all(
+    [
+      query((database) =>
+        database
+          .select({ count: count() })
+          .from(groupMembership)
+          .where(eq(groupMembership.memberId, viewerId)),
+      ),
+      query((database) =>
+        database
+          .select({ count: count() })
+          .from(groupMembership)
+          .where(eq(groupMembership.groupId, groupId)),
+      ),
+    ],
+    { concurrency: "unbounded", mode: "result" },
   );
+  const [joined] = yield* Effect.fromResult(joinedCount);
   if ((joined?.count ?? 0) >= maximumGroupsJoined) {
     return yield* new GroupLimitReached();
   }
-  const [members] = yield* query((database) =>
-    database
-      .select({ count: count() })
-      .from(groupMembership)
-      .where(eq(groupMembership.groupId, groupId)),
-  );
+  const [members] = yield* Effect.fromResult(memberCount);
   if ((members?.count ?? 0) >= maximumGroupMembers) {
     return yield* new GroupLimitReached();
   }
