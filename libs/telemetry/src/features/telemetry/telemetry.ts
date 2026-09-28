@@ -21,7 +21,8 @@ import { BatchLogRecordProcessor, LoggerProvider } from "@opentelemetry/sdk-logs
 import { MeterProvider, PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import { BatchSpanProcessor, TracerProvider } from "@opentelemetry/sdk-trace";
 import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
-import { Config, ConfigProvider, Effect, Option } from "effect";
+import { optionalConfig } from "@repo/config/optional-config";
+import { Config, ConfigProvider, Effect } from "effect";
 import { attemptAsync, once } from "es-toolkit";
 
 import { reportExportFailure } from "./export-failure.ts";
@@ -32,7 +33,7 @@ const DISABLE_VARIABLE = "OTEL_SDK_DISABLED";
 const SHARED_ENDPOINT_VARIABLE = "OTEL_EXPORTER_OTLP_ENDPOINT";
 
 const settingOf = (variable: string): Config.Config<string | undefined> =>
-  Config.option(Config.String(variable)).pipe(Config.map(Option.getOrUndefined));
+  optionalConfig(Config.String(variable));
 
 const signalEndpoint = (signal: string): Config.Config<string | undefined> =>
   Config.all({

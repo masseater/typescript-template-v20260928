@@ -303,6 +303,7 @@ const lintOptions = {
         "project/logs": LINT_SEVERITY.ERROR,
         "project/no-internal-mocks": LINT_SEVERITY.ERROR,
         "project/no-manual-memoization": LINT_SEVERITY.ERROR,
+        "project/optional-config": LINT_SEVERITY.ERROR,
         "project/process-boundary": LINT_SEVERITY.ERROR,
         "project/react-legacy": LINT_SEVERITY.ERROR,
         "project/retired-imports": LINT_SEVERITY.ERROR,
@@ -353,6 +354,7 @@ const lintOptions = {
                 name: [
                   "Codec",
                   "Command",
+                  "Config",
                   "Deferred",
                   "Duration",
                   "Effect",

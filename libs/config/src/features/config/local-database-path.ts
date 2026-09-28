@@ -1,4 +1,6 @@
-import { Config, ConfigProvider, Effect, Option, Path } from "effect";
+import { Config, ConfigProvider, Effect, Path } from "effect";
+
+import { optionalConfig } from "./optional-config.ts";
 
 const localDatabaseVariable = "TEMPLATE_LOCAL_DATABASE";
 const paths = Effect.runSync(Path.Path.pipe(Effect.provide(Path.layer)));
@@ -12,15 +14,11 @@ const localDatabase = {
 
 const localDatabaseDirectory = (): string => {
   const override = Effect.runSync(
-    Config.option(Config.String(localDatabaseVariable)).pipe(
+    optionalConfig(Config.String(localDatabaseVariable)).pipe(
       Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv()),
     ),
   );
-  return Option.match(override, {
-    onNone: () => repositoryDirectory,
-    onSome: (overridePath) =>
-      overridePath === "" ? repositoryDirectory : paths.resolve(overridePath),
-  });
+  return override === undefined || override === "" ? repositoryDirectory : paths.resolve(override);
 };
 
 const localDatabasePersistence = localDatabaseDirectory();
