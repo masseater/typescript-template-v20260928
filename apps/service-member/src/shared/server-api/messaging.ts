@@ -15,7 +15,7 @@ import {
   requirePaid,
   schema,
 } from "@repo/db";
-import { DateTime, Effect } from "effect";
+import { DateTime, Effect, Predicate } from "effect";
 
 import { maySendGroupMessage } from "#shared/messaging/index.ts";
 import { canReadGroupConversation } from "./groups.ts";
@@ -365,23 +365,25 @@ const groupConversationSummary = Effect.fn("groupConversationSummary")(
   },
 );
 
+const presentSummaries = <Summary, Failure, Requirements>(
+  memberships: readonly { readonly conversationId: string }[],
+  summarize: (conversationId: string) => Effect.Effect<Summary | undefined, Failure, Requirements>,
+) =>
+  Effect.forEach(memberships, (membership) => Effect.result(summarize(membership.conversationId)), {
+    concurrency: "unbounded",
+  }).pipe(
+    Effect.flatMap((settled) => Effect.forEach(settled, Effect.fromResult)),
+    Effect.map((found) => found.filter(Predicate.isNotUndefined)),
+  );
+
 const listGroupConversations = Effect.fn("listGroupConversations")(function* listGroupConversations(
   viewerId: string,
   page: OffsetPage,
 ) {
   yield* requireMessagingMember(viewerId);
-  const settled = yield* Effect.forEach(
-    yield* memberships(viewerId),
-    (membership) => Effect.result(groupConversationSummary(viewerId, membership.conversationId)),
-    { concurrency: "unbounded" },
+  const summaries = yield* presentSummaries(yield* memberships(viewerId), (conversationId) =>
+    groupConversationSummary(viewerId, conversationId),
   );
-  const summaries: ConversationSummary[] = [];
-  for (const summary of settled) {
-    const found = yield* Effect.fromResult(summary);
-    if (found !== undefined) {
-      summaries.push(found);
-    }
-  }
   summaries.sort((left, right) => right.lastMessageAt - left.lastMessageAt);
   return {
     conversations: summaries.slice(page.offset, page.offset + page.limit),
@@ -502,18 +504,9 @@ const listDirectConversations = Effect.fn("listDirectConversations")(
         .where(eq(conversationParticipant.memberId, viewerId))
         .orderBy(desc(conversation.lastMessageAt), desc(conversation.id)),
     );
-    const settled = yield* Effect.forEach(
-      memberships,
-      (membership) => Effect.result(directConversationSummary(viewerId, membership.conversationId)),
-      { concurrency: "unbounded" },
+    const summaries = yield* presentSummaries(memberships, (conversationId) =>
+      directConversationSummary(viewerId, conversationId),
     );
-    const summaries: DirectConversationSummary[] = [];
-    for (const summary of settled) {
-      const found = yield* Effect.fromResult(summary);
-      if (found !== undefined) {
-        summaries.push(found);
-      }
-    }
     return {
       conversations: summaries.slice(page.offset, page.offset + page.limit),
       total: summaries.length,
