@@ -64,11 +64,9 @@ jobs:
           AFFECTED_FILTERS: ${{ steps.affected.outputs.filters }}
         run: vp run --fail-if-no-match $AFFECTED_FILTERS prepr
       - if: steps.affected.outputs.paths != ''
-        run: vp run compile:paraglide
-      - if: steps.affected.outputs.paths != ''
         env:
           AFFECTED_PATHS: ${{ steps.affected.outputs.paths }}
-        run: vp test run --project '!@repo/*' --exclude '**/*.dev-server.test.ts' $AFFECTED_PATHS
+        run: vp run test $AFFECTED_PATHS
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always() && (steps.affected.outputs.root == 'true' || steps.affected.outputs.filters != '')
         with:
@@ -123,8 +121,7 @@ jobs:
       - *browser-cache
       - *setup
       - *vite-task-cache
-      - run: vp run compile:paraglide
-      - run: vp test run --project node --project node-isolated --project workers --shard=${{ matrix.shard }}/4
+      - run: vp run test:unit --shard=${{ matrix.shard }}/4
 
   merge-queue:
     if: ${{ always() && startsWith(github.head_ref, 'mergify/merge-queue/') }}

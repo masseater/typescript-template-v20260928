@@ -292,20 +292,17 @@ describe("lifecycle entry points", () => {
     expect(lifecycleOutsideGates()).toStrictEqual([]);
   });
 
-  it("runs the repository check once inside prepr and the unit suite on the merge queue", () => {
+  it("starts tests in a workflow only through a root task, so CI runs what the task runs locally", () => {
     expect.hasAssertions();
-    expect(workflowRuns("../../../../../../.github/workflows/check.yml")).toStrictEqual([
-      "vp run --filter @repo/dont-review-it pr-affected",
-      "vp run -w prepr",
-      "vp run --fail-if-no-match $AFFECTED_FILTERS prepr",
-      "vp run compile:paraglide",
-      "vp test run --project '!@repo/*' --exclude '**/*.dev-server.test.ts' $AFFECTED_PATHS",
-      "vp run -r premerge",
-      "vp run compile:paraglide",
-      "vp test run --project node --project node-isolated --project workers --shard=${{ matrix.shard }}/4",
-      "vp run --filter @repo/e2e test:e2e",
-      "vp run -r prepr",
-    ]);
+    const runs = Object.keys(workflows).flatMap((file) => workflowRuns(file));
+    expect(runs.length).toBeGreaterThan(0);
+    expect(runs.filter((command) => /^vp test\b/u.test(command))).toStrictEqual([]);
+    const rootTasks = runs.flatMap((command) => {
+      const [, task] = /^vp run (?<task>\w[\w:-]*)(?: |$)/u.exec(command) ?? [];
+      return task === undefined ? [] : [task];
+    });
+    expect(rootTasks.length).toBeGreaterThan(0);
+    expect(rootTasks.filter((task) => !taskNames(".").includes(task))).toStrictEqual([]);
   });
 
   it("every workspace declares its tasks where the lifecycle finds them", () => {
@@ -467,9 +464,7 @@ describe("test ownership", () => {
 
   it("leaves the workspace projects out of the root test task", () => {
     expect.hasAssertions();
-    expect(commands(".", "test")).toStrictEqual([
-      "vp test run --project '!@repo/*' --exclude '**/*.dev-server.test.ts'",
-    ]);
+    expect(commands(".", "test").join(" ")).toContain("--project '!@repo/*'");
     expect(commands(".", "test:dev-server")).toStrictEqual(["vp test run --project dev-server"]);
     expect(commands(".", "test:storybook")).toStrictEqual(["vp test run --project storybook"]);
     expect(unmatchedProjectNames()).toStrictEqual([]);
