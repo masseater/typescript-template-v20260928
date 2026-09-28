@@ -31,6 +31,7 @@ const Tick = Schema.Struct({
   event: Schema.Literal("tick"),
 });
 const TickQuery = Schema.Struct({ from: Schema.FiniteFromString });
+const ItemPath = Schema.Struct({ id: Schema.FiniteFromString });
 
 const origin = "http://localhost:3001";
 const profileLink = "https://profile.example.test/member";
@@ -215,6 +216,35 @@ describe("an api route behind a start server route given invalid input", () => {
       error: { error: "入力内容を確認してください。" },
       status: httpStatus.badRequest,
     });
+  });
+});
+
+const itemApp = createApi("").get(
+  "/items/:id",
+  ...api.route(
+    { params: ItemPath, response: ItemPath },
+    (_asked, path) => Effect.succeed(path),
+    {},
+  ),
+);
+
+describe.for([
+  ["/items/42", [httpStatus.ok, { id: "42" }]],
+  ["/items/first", [httpStatus.badRequest, { error: "入力内容を確認してください。" }]],
+] as const)("an api route reading its path parameters from %s", ([path, statusAndJson]) => {
+  const it = test.extend("pathAnswer", () =>
+    Effect.runPromise(
+      Effect.gen(function* pathAnswerProgram() {
+        const answered = yield* Effect.promise(() =>
+          Promise.resolve(itemApp.fetch(new Request(`${origin}${path}`))),
+        );
+        const answeredJson: unknown = yield* Effect.promise(() => answered.json());
+        return [answered.status, answeredJson];
+      }),
+    ));
+
+  it("is answered through the contract", ({ pathAnswer }) => {
+    expect(pathAnswer).toStrictEqual(statusAndJson);
   });
 });
 

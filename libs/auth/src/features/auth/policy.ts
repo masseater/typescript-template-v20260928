@@ -6,6 +6,7 @@ import {
   strongAuthenticationMethods,
   type AccountState,
   type AuthenticationMethod,
+  type Role,
 } from "@repo/config/identity";
 import { APIError } from "better-auth/api";
 import { DateTime } from "effect";
@@ -49,7 +50,7 @@ const sessionIsLive = (
     readonly user: {
       readonly accountState: AccountState;
       readonly emailVerified: boolean;
-      readonly role: string;
+      readonly role: Role;
       readonly securityVersion: number;
     };
   },
@@ -62,7 +63,9 @@ const sessionIsLive = (
   sessionRecord.user.accountState === ACCOUNT_STATE.active &&
   sessionRecord.user.role === audienceRoles[audience];
 
-const isPrivilegedRole = (role: string): boolean => role !== ROLE.member;
+const privilegedRoles: ReadonlySet<Role> = new Set([ROLE.administrator, ROLE.staff]);
+
+const isPrivilegedRole = (role: Role): boolean => privilegedRoles.has(role);
 
 const authenticationMethodsByPath = new Map<string, AuthenticationMethod>([
   ["/passkey/verify-authentication", AUTHENTICATION_METHOD.passkey],
@@ -82,7 +85,7 @@ const assertEligibleUser: <
   TUser extends {
     readonly accountState: AccountState;
     readonly emailVerified: boolean;
-    readonly role: string;
+    readonly role: Role;
   },
 >(
   eligibleUser: TUser | undefined,

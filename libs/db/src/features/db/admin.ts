@@ -5,6 +5,7 @@ import {
   ROLE,
   accountStates,
   adminPermissions,
+  type AccountPermission,
   type AccountState,
   type AdminPermission,
 } from "@repo/config/identity";
@@ -240,7 +241,7 @@ export const deleteUser = Effect.fn("deleteUser")(function* deleteUser(removal: 
   return removed;
 });
 
-const adminPermissionOf = (permission: string | null): AdminPermission | undefined =>
+const adminPermissionOf = (permission: AccountPermission | null): AdminPermission | undefined =>
   adminPermissions.find((level) => level === permission);
 
 export const listAdmins = Effect.fn("listAdmins")(function* listAdmins(sessionId: string) {

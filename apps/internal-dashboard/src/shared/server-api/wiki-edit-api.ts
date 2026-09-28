@@ -1,5 +1,10 @@
 import { verifySession } from "@repo/auth";
-import { STAFF_PERMISSION, grantsStaffLevel, httpStatus } from "@repo/config";
+import {
+  STAFF_PERMISSION,
+  grantsStaffLevel,
+  httpStatus,
+  type AccountPermission,
+} from "@repo/config";
 import {
   WikiDraftConflict,
   discardWikiDraft,
@@ -10,8 +15,15 @@ import {
 import { annotateSpan } from "@repo/observability";
 import { FileStore } from "@repo/runtime";
 import { sessionFailures } from "@repo/runtime/account";
-import { createApi, readJsonBody, readSearchParams, type ApiRoutes } from "@repo/runtime/http";
-import { Effect, Encoding } from "effect";
+import {
+  createApi,
+  readJsonBody,
+  readPathParams,
+  readSearchParams,
+  type ApiRoutes,
+  type RouteParams,
+} from "@repo/runtime/http";
+import { Effect, Encoding, Schema } from "effect";
 
 import {
   WikiDraftDiscard,
@@ -75,7 +87,7 @@ const publishedSource = Effect.fn("publishedSource")(function* publishedSource(p
   return { markdown, revision: yield* gitBlobRevision(markdown) };
 });
 
-const canPublish = (user: Readonly<{ permission: string | null }>): boolean =>
+const canPublish = (user: Readonly<{ permission: AccountPermission | null }>): boolean =>
   grantsStaffLevel(user.permission, STAFF_PERMISSION.editor);
 
 const settledDraft = Effect.fn("settledWikiDraft")(function* settledDraft(
@@ -95,7 +107,7 @@ const settledDraft = Effect.fn("settledWikiDraft")(function* settledDraft(
 
 const openSource = Effect.fn("openSource")(function* openSource(
   path: string,
-  user: Readonly<{ permission: string | null }>,
+  user: Readonly<{ permission: AccountPermission | null }>,
 ) {
   const published = yield* publishedSource(path);
   const publisher = yield* WikiPublisher;
@@ -165,9 +177,14 @@ const readImage = Effect.fn("readWikiImage")(function* readImage(name: string) {
   return { bytes: new Uint8Array(image.bytes), name };
 });
 
-const getImage = Effect.fn("serveWikiImage")(function* getImage(request: Request) {
+const WikiImagePath = Schema.Struct({ name: Schema.String });
+
+const getImage = Effect.fn("serveWikiImage")(function* getImage(
+  request: Request,
+  params: RouteParams,
+) {
   yield* verifySession(request.headers);
-  const name = new URL(request.url).pathname.split("/").at(-1) ?? "";
+  const { name } = yield* readPathParams(WikiImagePath, params);
   const extension = imageNamePattern.exec(name)?.groups?.["extension"];
   const contentType = extension === undefined ? undefined : imageTypes.get(extension);
   if (contentType === undefined) {

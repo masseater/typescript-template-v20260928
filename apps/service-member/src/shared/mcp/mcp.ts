@@ -1,8 +1,9 @@
 import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
-import { ACCOUNT_STATE, APPLICATION, MEMBER_MCP_SCOPE, ROLE } from "@repo/config";
+import { sessionIsLive } from "@repo/auth";
+import { APPLICATION, MEMBER_MCP_SCOPE } from "@repo/config";
 import { and, eq, query, requirePaid, schema } from "@repo/db";
 import { mcpEndpoint, toolFailure, toolRunner } from "@repo/runtime";
-import { Clock, Effect, Schema } from "effect";
+import { Effect, Schema } from "effect";
 
 import { ProfileUpdate, maximumMessageBodyLength } from "#shared/contracts/index.ts";
 import { getProfile, listMembers, updateProfile } from "#shared/members/index.ts";
@@ -47,36 +48,18 @@ const failureCodes: ReadonlyMap<string, string> = new Map([
 const requireMemberSession = Effect.fn("requireMemberSession")(function* requireMemberSession(
   actor: MemberMcpActor,
 ) {
-  const now = yield* Clock.currentTimeMillis;
-  const [row] = yield* query((database) =>
+  const [sessionRecord] = yield* query((database) =>
     database
-      .select({
-        accountState: user.accountState,
-        audience: session.audience,
-        emailVerified: user.emailVerified,
-        expiresAt: session.expiresAt,
-        id: user.id,
-        role: user.role,
-        securityVersion: user.securityVersion,
-        sessionSecurityVersion: session.securityVersion,
-      })
+      .select({ session, user })
       .from(session)
       .innerJoin(user, eq(user.id, session.userId))
       .where(and(eq(session.id, actor.sessionId), eq(user.id, actor.userId)))
       .limit(1),
   );
-  if (
-    row === undefined ||
-    row.audience !== APPLICATION.user ||
-    row.expiresAt.getTime() <= now ||
-    row.sessionSecurityVersion !== row.securityVersion ||
-    row.role !== ROLE.member ||
-    row.accountState !== ACCOUNT_STATE.active ||
-    !row.emailVerified
-  ) {
+  if (sessionRecord === undefined || !sessionIsLive(sessionRecord, APPLICATION.user)) {
     return yield* new MessagingMemberRequired();
   }
-  return row.id;
+  return sessionRecord.user.id;
 });
 
 const denied = (scope: string): ToolFailure => toolFailure(`permission_required:${scope}`);

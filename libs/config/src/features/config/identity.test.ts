@@ -16,7 +16,6 @@ describe.for([
   ["viewer", "operator", false],
   ["editor", "viewer", false],
   [null, "viewer", false],
-  [undefined, "viewer", false],
 ] as const)("an administrator holding %s asked for %s", ([held, required, granted]) => {
   const it = test.extend("adminGranted", () => grantsAdminLevel(held, required));
 

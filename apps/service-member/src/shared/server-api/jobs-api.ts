@@ -1,5 +1,5 @@
 import { verifySession } from "@repo/auth";
-import { JobPayload, readJobs, httpStatus } from "@repo/config";
+import { JobPayload, WorkflowInstanceState, httpStatus, readJobs } from "@repo/config";
 import { sessionFailures } from "@repo/runtime/account";
 import { CreatedResource } from "@repo/runtime/contracts";
 import { createApi, readJsonBody } from "@repo/runtime/http";
@@ -13,19 +13,18 @@ import type { ApiRoutes } from "@repo/runtime/http";
 
 const JobCreate = Schema.Struct({});
 
+const JobPath = Schema.Struct({ id: JobPayload.fields.jobId });
+
 const JobAccepted = CreatedResource;
 
 const JobStatusView = Schema.Struct({
+  ...WorkflowInstanceState.fields,
   id: Schema.String,
-  status: Schema.String,
-  output: Schema.optionalKey(Schema.Unknown),
-  error: Schema.optionalKey(Schema.NullOr(Schema.Struct({ message: Schema.String }))),
 });
 
 const failures = {
   ...sessionFailures,
   ConfigurationInvalid: "unexpected" as const,
-  InputInvalid: { message: "入力内容を確認してください。", status: httpStatus.badRequest },
   JobLookupFailed: "unexpected" as const,
   JobNotFound: { message: "ジョブが見つかりません。", status: httpStatus.notFound },
 };
@@ -50,23 +49,13 @@ function jobsApi(api: ApiRoutes<AppServices>) {
     .get(
       "/jobs/:id",
       ...api.route(
-        { response: JobStatusView },
-        (request) =>
+        { params: JobPath, response: JobStatusView },
+        (request, { id }) =>
           Effect.gen(function* handleRequest() {
             const { user } = yield* verifySession(request.headers);
-            const id = new URL(request.url).pathname.split("/").at(-1) ?? "";
-            const payload = yield* Schema.decodeEffect(JobPayload)({
-              jobId: id,
-              ownerId: user.id,
-            }).pipe(Effect.mapError(() => ({ _tag: "InputInvalid" as const })));
             const jobs = yield* readJobs(env);
-            const status = yield* jobStatus(jobs, payload);
-            return {
-              id,
-              status: status.status,
-              ...(status.output === undefined ? {} : { output: status.output }),
-              ...(status.error === undefined ? {} : { error: status.error }),
-            };
+            const state = yield* jobStatus(jobs, { jobId: id, ownerId: user.id });
+            return { ...state, id };
           }),
         failures,
       ),

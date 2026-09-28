@@ -39,7 +39,7 @@ describe.for([
   [
     "InputInvalid",
     inputFailures.query,
-    Cause.fail(new InputInvalid()),
+    Cause.fail(new InputInvalid({ cause: new Error("invalid") })),
     { error: invalidInput },
     httpStatus.badRequest,
   ],

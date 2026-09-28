@@ -1,4 +1,9 @@
-import { httpStatus, memberApiKeyHeader, memberApiKeyReadPermissions } from "@repo/config";
+import {
+  httpStatus,
+  memberApiKeyHeader,
+  memberApiKeyReadPermissions,
+  type Role,
+} from "@repo/config";
 import { findUser } from "@repo/db";
 import { Effect } from "effect";
 
@@ -64,7 +69,7 @@ const verifyMemberApiKey = Effect.fn("verifyMemberApiKey")(function* verifyMembe
       readonly email: string;
       readonly id: string;
       readonly name: string;
-      readonly role: string;
+      readonly role: Role;
       readonly twoFactorEnabled: boolean;
     };
   }>;

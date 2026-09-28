@@ -4,6 +4,7 @@ import {
   ROLE,
   STAFF_PERMISSION,
   staffPermissions,
+  type AccountPermission,
   type StaffPermission,
 } from "@repo/config";
 import { and, desc, eq } from "drizzle-orm";
@@ -38,7 +39,7 @@ const staffActor = (
   action: AuditEntry["action"],
 ): Omit<AuditEntry, "targetId"> => ({ action, actorId: actor.user.id, actorKind: ROLE.staff });
 
-const staffPermissionOf = (permission: string | null): StaffPermission | undefined =>
+const staffPermissionOf = (permission: AccountPermission | null): StaffPermission | undefined =>
   staffPermissions.find((level) => level === permission);
 
 export const listStaff = Effect.fn("listStaff")(function* listStaff(sessionId: string) {
