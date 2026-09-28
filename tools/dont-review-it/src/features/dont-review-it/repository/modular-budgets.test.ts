@@ -2,6 +2,7 @@ import { modularBudgets } from "@repo/config";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
+  emptyLayerFindings,
   featureFindings,
   isModularWorkspace,
   isPublicApiIndex,
@@ -46,6 +47,17 @@ describe("modular budgets", () => {
       "features/loose.ts: place slice code in a directory, not a loose file.",
       "features/search: missing public API index (features/search/index.ts).",
     ]);
+  });
+
+  it("reports a layer directory that holds no source file and leaves absent layers alone", () => {
+    expect.hasAssertions();
+    expect(
+      emptyLayerFindings([
+        { layer: "app", sourceFiles: 0 },
+        { layer: "features", sourceFiles: 3 },
+        { layer: "shared", sourceFiles: undefined },
+      ]),
+    ).toStrictEqual(["app: no source files. Remove the empty directory."]);
   });
 
   it.for([

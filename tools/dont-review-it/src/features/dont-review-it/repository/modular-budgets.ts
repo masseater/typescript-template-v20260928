@@ -55,4 +55,21 @@ const featureFindings = (
     return [];
   });
 
-export { featureFindings, isModularWorkspace, isPublicApiIndex, layerBudgetFindings };
+type LayerContents = Readonly<{
+  layer: "app" | "features" | "shared";
+  sourceFiles: number | undefined;
+}>;
+
+const emptyLayerFindings = (layers: readonly LayerContents[]): readonly string[] =>
+  layers
+    .filter((contents) => contents.sourceFiles === 0)
+    .map((contents) => `${contents.layer}: no source files. Remove the empty directory.`);
+
+export {
+  emptyLayerFindings,
+  featureFindings,
+  isModularWorkspace,
+  isPublicApiIndex,
+  layerBudgetFindings,
+};
+export type { LayerContents };
