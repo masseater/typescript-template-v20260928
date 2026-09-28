@@ -54,6 +54,7 @@ const Button = ({
       return (
         <BaseButton
           data-slot="button"
+          data-variant={variant}
           type={type}
           disabled={disabled}
           kind={buttonKind}
@@ -66,6 +67,7 @@ const Button = ({
     return (
       <BaseButton
         data-slot="button"
+        data-variant={variant}
         type={type}
         disabled={disabled}
         kind={buttonKind}
@@ -80,6 +82,7 @@ const Button = ({
     return (
       <BaseButton
         data-slot="button"
+        data-variant={variant}
         type={type}
         aria-label={ariaLabel}
         disabled={disabled}
@@ -93,6 +96,7 @@ const Button = ({
   return (
     <BaseButton
       data-slot="button"
+      data-variant={variant}
       type={type}
       aria-label={ariaLabel}
       disabled={disabled}

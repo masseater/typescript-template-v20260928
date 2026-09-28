@@ -1,6 +1,7 @@
 import { NodeServices } from "@effect/platform-node";
 import { it } from "@effect/vitest";
 import { plugin } from "@shadcn/lint";
+import { createLightTheme } from "baseui";
 import { Effect, FileSystem, Path, Schema } from "effect";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -32,6 +33,7 @@ import {
 } from "./design-system-test-fixture.ts";
 import { hoverViolations, relativeLuminance } from "./hover-colors-test-fixture.ts";
 import { field } from "./record-field-test-fixture.ts";
+import { appTheme } from "./src/features/ui/baseweb-theme.ts";
 import { Heading } from "./src/features/ui/shared/ui/heading.tsx";
 
 const appManifests: Readonly<Record<string, unknown>> = import.meta.glob(
@@ -185,6 +187,48 @@ describe("dark color scheme", () => {
     expect(tone(dark.foreground)).toBeGreaterThan(tone(dark.background));
     expect(tone(dark.card)).toBeGreaterThan(tone(dark.background));
     expect(tone(dark.card)).toBeLessThan(tone(dark.foreground));
+  });
+});
+
+const baseWebDefaults: Readonly<Record<string, unknown>> = createLightTheme().colors;
+const tokenReference = /^var\((?<name>--[\w-]+)\)$/u;
+
+const themeColorViolations = (colors: Readonly<Record<string, unknown>>, css: string): string[] => {
+  const declared = declarations(css);
+  return Object.entries(colors)
+    .filter(([key, value]) => value !== baseWebDefaults[key])
+    .filter(([, value]) => {
+      const name = typeof value === "string" ? tokenReference.exec(value)?.groups?.name : undefined;
+      return name === undefined || !declared.has(name);
+    })
+    .map(([key, value]) => `${key}: ${String(value)}`);
+};
+
+describe("Base Web theme", () => {
+  it("draws every overridden colour from a stylesheet token", () => {
+    expect.hasAssertions();
+    expect(themeColorViolations(appTheme.colors, stylesheet)).toStrictEqual([]);
+  });
+
+  it("fills danger buttons with the destructive token and separators with the border token", () => {
+    expect.hasAssertions();
+    expect(appTheme.colors.buttonDangerPrimaryFill).toBe("var(--destructive)");
+    expect(appTheme.colors.negative).toBe("var(--destructive)");
+    expect(appTheme.colors.borderOpaque).toBe("var(--border)");
+  });
+
+  it("reports a hex colour written into the theme", () => {
+    expect.hasAssertions();
+    expect(
+      themeColorViolations({ ...appTheme.colors, negative: "#b01d3a" }, stylesheet),
+    ).toStrictEqual(["negative: #b01d3a"]);
+  });
+
+  it("reports a token the stylesheet does not define", () => {
+    expect.hasAssertions();
+    expect(
+      themeColorViolations({ ...appTheme.colors, negative: "var(--nowhere)" }, stylesheet),
+    ).toStrictEqual(["negative: var(--nowhere)"]);
   });
 });
 

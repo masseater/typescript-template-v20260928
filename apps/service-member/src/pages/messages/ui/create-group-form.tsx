@@ -12,6 +12,7 @@ import {
 import { useNavigate, useRouter } from "@tanstack/react-router";
 
 import { useCreateGroupForm } from "#pages/messages/model/create-group-form.ts";
+import { maximumGroupNameLength } from "#shared/contracts/index.ts";
 
 import type { ReactElement } from "react";
 function CreateGroupForm(): ReactElement {
@@ -38,7 +39,7 @@ function CreateGroupForm(): ReactElement {
         <Field
           label="グループ名"
           name="name"
-          maxLength={100}
+          maxLength={maximumGroupNameLength}
           value={form.name}
           onValueChange={form.handleNameChange}
         />

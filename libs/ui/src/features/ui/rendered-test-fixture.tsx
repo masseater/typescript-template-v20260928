@@ -47,4 +47,8 @@ const renderedAt = (
   );
 };
 
-export { actionState, renderedAt };
+const primaryActions = (markup: string): number => {
+  return markup.split('data-variant="primary"').length - 1;
+};
+
+export { actionState, primaryActions, renderedAt };

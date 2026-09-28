@@ -71,10 +71,12 @@ export {
   GroupJoined,
   GroupLeave,
   GroupLeft,
+  GroupName,
   GroupQuery,
   GroupRename,
   GroupRenamed,
   GroupView,
+  maximumGroupNameLength,
 } from "./groups.ts";
 export {
   ConversationList,
