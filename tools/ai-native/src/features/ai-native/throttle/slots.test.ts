@@ -947,10 +947,15 @@ describe("reserveWaiterPath with writeWaiterEntry", () => {
       Effect.runPromise(
         Effect.gen(function* () {
           yield* ensureSlots(slotDirectory, 1);
-          const first = reserveWaiterPath(slotDirectory);
+          const first = reserveWaiterPath(slotDirectory, {
+            now: () => 1_000,
+            uniqueSuffix: () => "ffffffff",
+          });
           yield* writeWaiterEntry(first);
-          yield* Effect.sleep("5 millis");
-          const second = reserveWaiterPath(slotDirectory);
+          const second = reserveWaiterPath(slotDirectory, {
+            now: () => 1_001,
+            uniqueSuffix: () => "00000000",
+          });
           yield* writeWaiterEntry(second);
           return (
             (yield* sweepWaiters(slotDirectory)).join("\n") ===

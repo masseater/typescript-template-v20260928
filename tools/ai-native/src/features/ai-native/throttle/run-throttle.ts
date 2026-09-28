@@ -1,10 +1,10 @@
 import { Effect } from "effect";
 
 import { joinPath, optionalSetting, temporaryDirectory } from "../host.ts";
-import { runWithSlot } from "./run-command.ts";
+import { runningWithSlot } from "./run-command.ts";
 import { ensureSlots, tryAcquireAny, type SlotHold } from "./slots.ts";
 import { parseInvocation } from "./usage.ts";
-import { waitForSlot, type WaitConfiguration } from "./wait-for-slot.ts";
+import { waitingForSlot, type WaitConfiguration } from "./wait-for-slot.ts";
 
 const DEFAULT_WAIT_BUDGET_MS = 900_000;
 const DEFAULT_POLL_MS = 1_000;
@@ -42,7 +42,7 @@ const acquireSlot = (configuration: WaitConfiguration): Promise<SlotHold | null>
       if (immediate !== null) {
         return immediate;
       }
-      const hold = yield* Effect.promise(() => waitForSlot(configuration));
+      const hold = yield* waitingForSlot(configuration);
       return hold === "budget-exhausted" ? null : hold;
     }).pipe(
       Effect.match({
@@ -66,13 +66,10 @@ export const runThrottle = (argv: readonly string[], seams: ThrottleSeams = {}):
       const hold = yield* Effect.promise(() => acquireSlot(resolveConfiguration(seams)));
       return hold === null
         ? 1
-        : yield* Effect.promise(() =>
-            runWithSlot({
-              invocation,
-              hold,
-              dependencies:
-                seams.killGraceMs === undefined ? {} : { killGraceMs: seams.killGraceMs },
-            }),
-          );
+        : yield* runningWithSlot({
+            invocation,
+            hold,
+            dependencies: seams.killGraceMs === undefined ? {} : { killGraceMs: seams.killGraceMs },
+          });
     }),
   );

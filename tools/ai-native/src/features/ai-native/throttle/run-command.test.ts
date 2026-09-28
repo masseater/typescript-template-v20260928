@@ -1,10 +1,12 @@
 import { standardIoTest } from "@repo/dont-review-it";
-import { Deferred, Effect } from "effect";
+import { Clock, Deferred, Effect, Fiber, Option, Ref } from "effect";
+import { TestClock } from "effect/testing";
 import { describe, expect, vi } from "vite-plus/test";
 
-import { epochMillis, filesystem, joinPath, readFileString, removePath } from "../host.ts";
+import { untilHolds } from "../condition-polling-test-fixture.ts";
+import { filesystem, joinPath, readFileString, removePath } from "../host.ts";
 import { TREE_TERMINATION_SIGNAL } from "./process-tree.ts";
-import { runWithSlot } from "./run-command.ts";
+import { runningWithSlot, runWithSlot, type ChildExit } from "./run-command.ts";
 import { runThrottle } from "./run-throttle.ts";
 
 const KNOWN_CHILD_PID = 314_159;
@@ -39,7 +41,7 @@ const LINGERING_ARGUMENTS = ["-e", "setInterval(() => {}, 1000);"];
 
 const TERMINABLE_MEMBER = `const { writeFileSync } = require("node:fs"); const [, stamp] = process.argv; process.on("SIGTERM", () => { writeFileSync(stamp, "terminated"); process.exit(0); }); writeFileSync(stamp, "ready"); setInterval(() => {}, 1000);`;
 
-const TRAPPING_MEMBER = `const { writeFileSync } = require("node:fs"); const [, stamp, heartbeat] = process.argv; let beats = 0; process.on("SIGTERM", () => { writeFileSync(stamp, "trapped"); }); writeFileSync(stamp, "ready"); setInterval(() => { beats += 1; writeFileSync(heartbeat, String(beats)); }, 20);`;
+const TRAPPING_MEMBER = `const { writeFileSync } = require("node:fs"); const [, stamp, pidFile] = process.argv; process.on("SIGTERM", () => { writeFileSync(stamp, "trapped"); }); writeFileSync(pidFile, String(process.pid)); writeFileSync(stamp, "ready"); setInterval(() => {}, 1000);`;
 
 const STARTS_A_MEMBER_THEN_EXITS_ZERO = `const { spawn } = require("node:child_process"); const { existsSync } = require("node:fs"); const [, member, stamp, ...rest] = process.argv; spawn(process.execPath, ["-e", member, stamp, ...rest], { stdio: "ignore" }); const settle = () => (existsSync(stamp) ? process.exit(0) : setTimeout(settle, 10)); settle();`;
 
@@ -484,35 +486,6 @@ describe("runWithSlot", () => {
             }),
           ),
       )
-      .extend("theEscalationOutlastedTheTimeout", ({ slotDirectory, stampsDirectory }) =>
-        Effect.runPromise(
-          Effect.gen(function* () {
-            const pidFile = joinPath(stampsDirectory, "grandchild-pid");
-            const before = epochMillis();
-            yield* Effect.promise(() =>
-              runThrottle(
-                [
-                  "--timeout",
-                  "1",
-                  "--",
-                  process.execPath,
-                  "-e",
-                  `const { spawn } = require("node:child_process"); const { writeFileSync } = require("node:fs"); const grandchild = spawn(process.execPath, ["-e", "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000);"], { stdio: "ignore" }); writeFileSync("${pidFile}", String(grandchild.pid)); setInterval(() => {}, 1000);`,
-                ],
-                {
-                  slotDir: slotDirectory,
-                  limit: 1,
-                  waitBudgetMs: WAIT_BUDGET_MS,
-                  pollMs: POLL_MS,
-                  isInteractive: false,
-                  killGraceMs: GRANDCHILD_KILL_GRACE_MS,
-                },
-              ),
-            );
-            return epochMillis() - before > 1_000 + GRANDCHILD_KILL_GRACE_MS;
-          }),
-        ),
-      )
       .extend("theProbeOfTheGrandchild", ({ slotDirectory, stampsDirectory }) =>
         Effect.runPromise(
           Effect.gen(function* () {
@@ -537,18 +510,22 @@ describe("runWithSlot", () => {
                 },
               ),
             );
-            yield* Effect.sleep("200 millis");
             const grandchildPid = Number((yield* readFileString(pidFile)).trim());
-            return yield* Effect.sync(() => {
+            const probe = Effect.sync(() => {
               try {
                 process.kill(grandchildPid, 0);
-                throw new Error("the grandchild was still alive after the timeout");
+                return "alive";
               } catch (probedGrandchild) {
                 return probedGrandchild instanceof Error
                   ? probedGrandchild.message
                   : String(probedGrandchild);
               }
             });
+            yield* untilHolds(
+              "the grandchild is gone",
+              Effect.map(probe, (probed) => probed !== "alive"),
+            );
+            return yield* probe;
           }),
         ),
       );
@@ -566,14 +543,6 @@ describe("runWithSlot", () => {
       { timeout: 50_000 },
       ({ theSurvivingGrandchildTimeoutIsNamedOnStderr }) => {
         expect(theSurvivingGrandchildTimeoutIsNamedOnStderr).toBe(true);
-      },
-    );
-
-    it(
-      "waits past the timeout before escalating to SIGKILL",
-      { timeout: 50_000 },
-      ({ theEscalationOutlastedTheTimeout }) => {
-        expect(theEscalationOutlastedTheTimeout).toBe(true);
       },
     );
 
@@ -749,8 +718,7 @@ describe("runWithSlot", () => {
         Effect.runPromise(
           Effect.gen(function* () {
             const stamp = joinPath(stampsDirectory, "member");
-            const heartbeat = joinPath(stampsDirectory, "heartbeat");
-            const before = epochMillis();
+            const pidFile = joinPath(stampsDirectory, "member-pid");
             yield* Effect.promise(() =>
               runThrottle(
                 [
@@ -760,7 +728,7 @@ describe("runWithSlot", () => {
                   STARTS_A_MEMBER_THEN_EXITS_THREE,
                   TRAPPING_MEMBER,
                   stamp,
-                  heartbeat,
+                  pidFile,
                 ],
                 {
                   slotDir: slotDirectory,
@@ -772,14 +740,20 @@ describe("runWithSlot", () => {
                 },
               ),
             );
-            const waited = epochMillis() - before;
-            const lastBeat = yield* readFileString(heartbeat);
-            yield* Effect.sleep("300 millis");
-            return {
-              stamp: yield* readFileString(stamp),
-              outlastedTheGrace: waited >= TRAPPING_KILL_GRACE_MS,
-              stillBeating: (yield* readFileString(heartbeat)) !== lastBeat,
-            };
+            const memberPid = Number((yield* readFileString(pidFile)).trim());
+            const probe = Effect.sync(() => {
+              try {
+                process.kill(memberPid, 0);
+                return "alive";
+              } catch (probedMember) {
+                return probedMember instanceof Error ? probedMember.message : String(probedMember);
+              }
+            });
+            yield* untilHolds(
+              "the trapping member is gone",
+              Effect.map(probe, (probed) => probed !== "alive"),
+            );
+            return { stamp: yield* readFileString(stamp), member: yield* probe };
           }),
         ),
       );
@@ -790,11 +764,81 @@ describe("runWithSlot", () => {
       ({ theTrappingMemberAfterTheRun }) => {
         expect(theTrappingMemberAfterTheRun).toStrictEqual({
           stamp: "trapped",
-          outlastedTheGrace: true,
-          stillBeating: false,
+          member: "kill ESRCH",
         });
       },
     );
+  });
+
+  describe("a timeout on a platform that grants the tree a grace period", () => {
+    const KILL_GRACE_MS = 5_000;
+    const it = test.extend("theTreeSignalsAroundTheGracePeriod", () =>
+      Effect.runPromise(
+        Effect.gen(function* () {
+          const treeEnd = yield* Deferred.make<ChildExit>();
+          const signalled = yield* Ref.make<readonly (readonly [NodeJS.Signals, number])[]>([]);
+          const running = yield* Effect.forkChild(
+            runningWithSlot({
+              invocation: {
+                timeoutSec: 1,
+                executable: process.execPath,
+                args: LINGERING_ARGUMENTS,
+                commandLine: `${process.execPath} -e setInterval`,
+              },
+              hold: { release: () => Promise.resolve() },
+              dependencies: {
+                platform: "linux",
+                killGraceMs: KILL_GRACE_MS,
+                spawnChild: () =>
+                  Effect.succeed({ pid: KNOWN_CHILD_PID, exited: Deferred.await(treeEnd) }),
+                signalTree: ({ signal }) =>
+                  Effect.gen(function* () {
+                    const at = yield* Clock.currentTimeMillis;
+                    yield* Ref.update(signalled, (earlier) => [...earlier, [signal, at] as const]);
+                    if (signal === TREE_TERMINATION_SIGNAL.forced) {
+                      yield* Deferred.succeed(treeEnd, {
+                        kind: "exit",
+                        exitCode: null,
+                        bySignal: signal,
+                      });
+                    }
+                    return null;
+                  }),
+              },
+            }),
+          );
+          yield* Effect.repeat(
+            TestClock.adjust("1 second").pipe(
+              Effect.andThen(Ref.get(signalled)),
+              Effect.map((sent) => sent.length > 0),
+            ),
+            { until: (sentAny: boolean) => sentAny, times: 10 },
+          );
+          yield* TestClock.adjust(`${KILL_GRACE_MS - 1} millis`);
+          const withinTheGrace = yield* Ref.get(signalled);
+          yield* TestClock.adjust("1 millis");
+          const afterTheGrace = yield* Ref.get(signalled);
+          yield* TestClock.withLive(Effect.timeoutOption(Fiber.join(running), "10 seconds"));
+          const [terminated, killed] = afterTheGrace;
+          return {
+            withinTheGrace: withinTheGrace.map(([signal]) => signal),
+            afterTheGrace: afterTheGrace.map(([signal]) => signal),
+            grantedMs:
+              terminated === undefined || killed === undefined ? undefined : killed[1] - terminated[1],
+          };
+        }).pipe(Effect.provide(TestClock.layer())),
+      ),
+    );
+
+    it("sends SIGKILL only once the grace period has passed after SIGTERM", ({
+      theTreeSignalsAroundTheGracePeriod,
+    }) => {
+      expect(theTreeSignalsAroundTheGracePeriod).toStrictEqual({
+        withinTheGrace: [TREE_TERMINATION_SIGNAL.graceful],
+        afterTheGrace: [TREE_TERMINATION_SIGNAL.graceful, TREE_TERMINATION_SIGNAL.forced],
+        grantedMs: KILL_GRACE_MS,
+      });
+    });
   });
 
   describe("a timeout on a platform whose tree dies without a grace period", () => {
@@ -864,17 +908,12 @@ describe("runWithSlot", () => {
           }),
         ),
       )
-      .extend("theRunTimedOutWithoutAGracePeriodEndedPromptly", () =>
+      .extend("theMomentARunTimedOutWithoutAGracePeriodEnded", () =>
         Effect.runPromise(
           Effect.gen(function* () {
-            const lingeringEnd = Deferred.makeUnsafe<{
-              kind: "exit";
-              exitCode: number | null;
-              bySignal: NodeJS.Signals | null;
-            }>();
-            const before = epochMillis();
-            yield* Effect.promise(() =>
-              runWithSlot({
+            const lingeringEnd = yield* Deferred.make<ChildExit>();
+            const running = yield* Effect.forkChild(
+              runningWithSlot({
                 invocation: {
                   timeoutSec: 1,
                   executable: process.execPath,
@@ -895,8 +934,17 @@ describe("runWithSlot", () => {
                 },
               }),
             );
-            return epochMillis() - before < 10_000;
-          }),
+            yield* Effect.repeat(
+              TestClock.adjust("1 second").pipe(
+                Effect.andThen(Deferred.isDone(lingeringEnd)),
+              ),
+              { until: (signalled: boolean) => signalled, times: 10 },
+            );
+            const code = yield* TestClock.withLive(
+              Effect.timeoutOption(Fiber.join(running), "10 seconds"),
+            );
+            return { code, endedAt: yield* Clock.currentTimeMillis };
+          }).pipe(Effect.provide(TestClock.layer())),
         ),
       )
       .extend("theTimeoutWithoutAGracePeriodIsNamedOnStderr", ({ stderr }) =>
@@ -947,10 +995,13 @@ describe("runWithSlot", () => {
       });
     });
 
-    it("ends without waiting out a grace period", ({
-      theRunTimedOutWithoutAGracePeriodEndedPromptly,
+    it("ends at the moment of the timeout without waiting out a grace period", ({
+      theMomentARunTimedOutWithoutAGracePeriodEnded,
     }) => {
-      expect(theRunTimedOutWithoutAGracePeriodEndedPromptly).toBe(true);
+      expect(theMomentARunTimedOutWithoutAGracePeriodEnded).toStrictEqual({
+        code: Option.some(1),
+        endedAt: 1_000,
+      });
     });
 
     it("names the timeout on stderr", ({ theTimeoutWithoutAGracePeriodIsNamedOnStderr }) => {

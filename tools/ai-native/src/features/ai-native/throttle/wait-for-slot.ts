@@ -1,6 +1,6 @@
-import { Effect } from "effect";
+import { Clock, Effect } from "effect";
 
-import { baseName, epochMillis } from "../host.ts";
+import { baseName } from "../host.ts";
 import {
   dropInterruptHandler,
   installInterruptHandler,
@@ -23,11 +23,18 @@ export type WaitConfiguration = AcquireConfiguration & {
   interactive: boolean;
 };
 
+type SlotAttempt = (configuration: AcquireConfiguration) => Effect.Effect<SlotHold | null>;
+
 type PollState = {
   entryName: string;
   startedAt: number;
   lastPrinted: string;
 };
+
+const MILLISECONDS_PER_SECOND = 1000;
+
+const elapsedSince = (startedAt: number): Effect.Effect<number> =>
+  Effect.map(Clock.currentTimeMillis, (now) => now - startedAt);
 
 const reportProgress = (
   configuration: WaitConfiguration,
@@ -37,7 +44,7 @@ const reportProgress = (
     const waiting = yield* sweepWaiters(configuration.slotDir);
     const line = `throttle: waiting ${waiting.indexOf(held.entryName) + 1}/${waiting.length}`;
     if (configuration.interactive) {
-      const elapsedSec = Math.floor((epochMillis() - held.startedAt) / 1000);
+      const elapsedSec = Math.floor((yield* elapsedSince(held.startedAt)) / MILLISECONDS_PER_SECOND);
       process.stderr.write(`\r\u001B[K${line} ${elapsedSec}s`);
       return held.lastPrinted;
     }
@@ -60,54 +67,52 @@ const budgetExhausted = (configuration: WaitConfiguration): "budget-exhausted" =
 };
 
 const pollForSlot = (
-  configuration: WaitConfiguration,
+  wait: { readonly configuration: WaitConfiguration; readonly attempt: SlotAttempt },
   held: PollState,
-): Promise<SlotHold | "budget-exhausted"> =>
-  Effect.runPromise(
-    Effect.gen(function* pollHeldSlot() {
-      const lastPrinted = yield* reportProgress(configuration, held);
-      const hold = yield* Effect.promise(() => tryAcquireAny(configuration));
-      if (hold !== null) {
-        closeProgressLine(configuration);
-        return hold;
-      }
-      if (epochMillis() - held.startedAt >= configuration.waitBudgetMs) {
-        return budgetExhausted(configuration);
-      }
-      yield* Effect.sleep(`${configuration.pollMs} millis`);
-      return yield* Effect.promise(() => pollForSlot(configuration, { ...held, lastPrinted }));
-    }),
-  );
+): Effect.Effect<SlotHold | "budget-exhausted", Error> =>
+  Effect.gen(function* pollHeldSlot() {
+    const lastPrinted = yield* reportProgress(wait.configuration, held);
+    const hold = yield* wait.attempt(wait.configuration);
+    if (hold !== null) {
+      closeProgressLine(wait.configuration);
+      return hold;
+    }
+    if ((yield* elapsedSince(held.startedAt)) >= wait.configuration.waitBudgetMs) {
+      return budgetExhausted(wait.configuration);
+    }
+    yield* Effect.sleep(`${wait.configuration.pollMs} millis`);
+    return yield* pollForSlot(wait, { ...held, lastPrinted });
+  });
 
-export const waitForSlot = (
+const attemptOnDisk: SlotAttempt = (configuration) =>
+  Effect.promise(() => tryAcquireAny(configuration));
+
+export const waitingForSlot = (
   configuration: WaitConfiguration,
-): Promise<SlotHold | "budget-exhausted"> =>
-  Effect.runPromise(
-    Effect.gen(function* waitUntilFree() {
-      const waiterPath = reserveWaiterPath(configuration.slotDir);
-      const interruptHandler = makeWaitingInterruptHandler({
-        entryPath: waiterPath,
-        removeEntry: removeWaiter,
-      });
-      installInterruptHandler(interruptHandler);
-      yield* writeWaiterEntry(waiterPath);
-      return yield* Effect.promise(() =>
-        pollForSlot(configuration, {
-          entryName: baseName(waiterPath),
-          startedAt: epochMillis(),
-          lastPrinted: "",
-        }),
-      ).pipe(
-        Effect.ensuring(
-          removeWaiter(waiterPath).pipe(
-            Effect.orDie,
-            Effect.andThen(
-              Effect.sync(() => {
-                dropInterruptHandler(interruptHandler);
-              }),
-            ),
+  attempt: SlotAttempt = attemptOnDisk,
+): Effect.Effect<SlotHold | "budget-exhausted"> =>
+  Effect.gen(function* waitUntilFree() {
+    const startedAt = yield* Clock.currentTimeMillis;
+    const waiterPath = reserveWaiterPath(configuration.slotDir, { now: () => startedAt });
+    const interruptHandler = makeWaitingInterruptHandler({
+      entryPath: waiterPath,
+      removeEntry: removeWaiter,
+    });
+    installInterruptHandler(interruptHandler);
+    yield* writeWaiterEntry(waiterPath);
+    return yield* pollForSlot(
+      { configuration, attempt },
+      { entryName: baseName(waiterPath), startedAt, lastPrinted: "" },
+    ).pipe(
+      Effect.ensuring(
+        removeWaiter(waiterPath).pipe(
+          Effect.orDie,
+          Effect.andThen(
+            Effect.sync(() => {
+              dropInterruptHandler(interruptHandler);
+            }),
           ),
         ),
-      );
-    }),
-  );
+      ),
+    );
+  }).pipe(Effect.orDie);
