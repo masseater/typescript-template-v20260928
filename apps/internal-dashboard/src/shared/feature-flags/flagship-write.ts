@@ -1,3 +1,10 @@
+import {
+  booleanForVariation,
+  flagDefinitionFor,
+  flagVariations,
+  variationForBoolean,
+  type FlagKey,
+} from "@repo/feature-flags/definitions";
 import { Effect, Redacted, Schema } from "effect";
 import {
   FetchHttpClient,
@@ -6,14 +13,6 @@ import {
   HttpClientResponse,
   type HttpClientError,
 } from "effect/unstable/http";
-
-import {
-  booleanForVariation,
-  flagDefinitionFor,
-  flagVariations,
-  variationForBoolean,
-  type FlagKey,
-} from "./definitions.ts";
 
 const RemoteFlag = Schema.Struct({
   defaultVariation: Schema.Literals(flagVariations),

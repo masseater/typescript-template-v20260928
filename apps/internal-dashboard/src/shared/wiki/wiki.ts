@@ -1,18 +1,18 @@
 import { APPLICATION, STAFF_PERMISSION, grantsStaffLevel } from "@repo/config";
-import {
-  FlagEditorAccess,
-  FlagEditorRequired,
-  configuredFeatureFlagsLayer,
-} from "@repo/feature-flags";
 import { configuredAppLayer } from "@repo/runtime";
 import { readAppStorage, readWorkerConfig } from "@repo/runtime/bindings";
 import { Effect, Layer } from "effect";
 
+import {
+  FlagEditorAccess,
+  FlagEditorRequired,
+  configuredFeatureFlagsLayer,
+} from "#shared/feature-flags/index.ts";
 import { WikiPublisher } from "#shared/wiki-publish/index.ts";
 
+import type { FeatureFlags } from "#shared/feature-flags/index.ts";
 import type { AuthFailure } from "@repo/auth";
 import type { ConfigurationInvalid } from "@repo/config";
-import type { FeatureFlags } from "@repo/feature-flags";
 import type { TelemetryInvalid } from "@repo/observability";
 import type { AppServices } from "@repo/runtime";
 

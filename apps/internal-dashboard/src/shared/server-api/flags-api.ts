@@ -1,12 +1,17 @@
 import { verifySession } from "@repo/auth";
 import { ConfigurationInvalid, httpStatus, readConfig } from "@repo/config";
-import { FeatureFlags, requireFlagEditor, toggleFlag, toggleFlagRemote } from "@repo/feature-flags";
 import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody, type ApiRoutes } from "@repo/runtime/http";
 import { env } from "cloudflare:workers";
 import { Effect } from "effect";
 
 import { FlagList, FlagToggle, FlagToggled } from "#shared/contracts/index.ts";
+import {
+  FeatureFlags,
+  requireFlagEditor,
+  toggleFlag,
+  toggleFlagRemote,
+} from "#shared/feature-flags/index.ts";
 
 import type { WikiServices } from "#shared/wiki/index.ts";
 
