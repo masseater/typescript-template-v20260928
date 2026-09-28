@@ -4,7 +4,6 @@ import { startRoute } from "@repo/runtime/worker";
 import { Effect } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
-import { googleAnalyticsBootstrap } from "./bootstrap.ts";
 import { memberAppHead } from "./head.ts";
 
 const measurementId = "G-DEVSERVERMEASURE";
@@ -54,7 +53,9 @@ describe("service-member analytics document output", () => {
     const configured = memberAppHead("Service", "/styles.css", measurementId);
     const absent = memberAppHead("Service", "/styles.css", undefined);
     expect(configured.scripts?.[0]?.src).toContain(measurementId);
-    expect(configured.scripts?.[1]?.children).toBe(googleAnalyticsBootstrap(measurementId));
+    expect(configured.scripts?.[1]?.children).toContain(
+      'gtag("config","G-DEVSERVERMEASURE",{send_page_view:false})',
+    );
     expect(absent.scripts).toBeUndefined();
   });
 });

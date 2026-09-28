@@ -190,6 +190,7 @@ it.effect("sends mail without message content when enabled", () =>
       kind: NOTIFICATION_KIND.conversationMessage,
       recipientId: "alert",
       subjectId: "conversation-c",
+      title: "secret body",
     });
     const [delivered] = yield* drainMailbox();
     assert.isDefined(delivered);
