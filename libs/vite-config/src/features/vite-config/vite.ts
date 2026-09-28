@@ -46,7 +46,7 @@ import { withoutEnvFileLoader } from "./env-file-loader.ts";
 import { paths } from "./host.ts";
 import { lifecycle, lifecycleInherits, lifecycles } from "./lifecycle.ts";
 import { localizedApps } from "./paraglide-options.ts";
-import { withoutInlangState, workspaceParaglideCompile } from "./paraglide.ts";
+import { paraglideSources, withoutInlangState, workspaceParaglideCompile } from "./paraglide.ts";
 import { previewDevVars } from "./preview-dev-vars.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
 import { measured, telemetryEnv, type RunConfig, type Tasks } from "./run-config.ts";
@@ -227,15 +227,22 @@ const paraglideAppTasks = measured({
   ),
 } satisfies Tasks);
 
-const paraglideAppRun = (packageRoot: string): RunConfig => ({
-  tasks: {
-    ...paraglideAppTasks,
-    "check:effect": {
-      ...awaitingEffectDiagnostics(packageRoot)["check:effect"],
-      dependsOn: paraglideCompileDependency,
+const paraglideAppRun = (packageRoot: string): RunConfig => {
+  const effectCheck = awaitingEffectDiagnostics(packageRoot)["check:effect"];
+  return {
+    tasks: {
+      ...paraglideAppTasks,
+      "check:effect": {
+        ...effectCheck,
+        input: [
+          ...effectCheck.input,
+          ...paraglideSources.map((pattern) => ({ base: "package" as const, pattern })),
+        ],
+        dependsOn: paraglideCompileDependency,
+      },
     },
-  },
-});
+  };
+};
 
 const appConfig = (
   app: Application,

@@ -5,7 +5,7 @@ import { Effect } from "effect";
 import { baselinePath } from "./effect-typecheck.ts";
 import { paths } from "./host.ts";
 import { telemetryEnv } from "./run-config.ts";
-import { taskInput } from "./task-input.ts";
+import { dependencyManifests, taskInput } from "./task-input.ts";
 import { workspaceDependencyRanges } from "./workspace-packages.ts";
 
 const typecheckedFiles = ["**/*.{ts,tsx}", "**/package.json", "**/tsconfig*.json"] as const;
@@ -31,6 +31,7 @@ const effectTypecheckInputs = (packageRoot: string): TaskInputEntry[] => {
   );
   return [
     ...taskInput,
+    ...dependencyManifests,
     ...range.flatMap((directory) =>
       typecheckedFiles.map((pattern) => ({
         base: "workspace" as const,
