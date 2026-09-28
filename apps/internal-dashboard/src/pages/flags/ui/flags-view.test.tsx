@@ -13,7 +13,7 @@ function rendered(failure: string | undefined, flags: readonly FlagEntry[] | und
         failure={failure}
         flags={flags}
         onReload={() => undefined}
-        onToggled={() => Promise.resolve()}
+        onToggle={() => Promise.resolve()}
       />
     </RegistryProvider>,
   );

@@ -1,16 +1,14 @@
 import { CheckboxField, STATUS_VARIANT, StatusMessage, useAction } from "@repo/ui";
 
-import { toggleFlag } from "#pages/flags/api/flags.ts";
-
 import type { FlagEntry } from "#shared/contracts/index.ts";
 import type { ReactElement } from "react";
 
 function FlagRow({
   entry,
-  onToggled,
+  onToggle,
 }: Readonly<{
   entry: FlagEntry;
-  onToggled: () => Promise<void>;
+  onToggle: (key: FlagEntry["key"], enabled: boolean) => Promise<void>;
 }>): ReactElement {
   const action = useAction();
 
@@ -28,7 +26,7 @@ function FlagRow({
           label={entry.enabled ? "オン" : "オフ"}
           name={`flag-${String(entry.key)}`}
           onCheckedChange={(checked) => {
-            action.run(() => toggleFlag(entry.key, checked === true).then(onToggled));
+            action.run(() => onToggle(entry.key, checked === true));
           }}
         />
       </div>

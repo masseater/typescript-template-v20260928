@@ -2,8 +2,9 @@ import { Effect, Option, Schema, SchemaGetter } from "effect";
 
 import { auditActions, metricKeys, metricPeriods } from "./dashboard-literals.ts";
 
-const adminPageSize = 50;
 const maximumAdminPageSize = 100;
+const adminPageSize = 50;
+const maximumAdminPage = Math.floor(Number.MAX_SAFE_INTEGER / adminPageSize);
 const maximumKeywordLength = 100;
 const secondPage = 2;
 const maximumTrendDays = 365;
@@ -75,6 +76,7 @@ export {
   UserKeyword,
   adminPageSize,
   laterPage,
+  maximumAdminPage,
   maximumAdminPageSize,
   maximumIdentifierLength,
   maximumKeywordLength,

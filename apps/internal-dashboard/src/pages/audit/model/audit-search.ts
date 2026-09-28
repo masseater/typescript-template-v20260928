@@ -1,4 +1,4 @@
-import { adminPageSize, laterPage, searchNormalizer } from "@repo/config/paging";
+import { adminPageSize, laterPage, maximumAdminPage, searchNormalizer } from "@repo/config/paging";
 import { Schema } from "effect";
 
 import { AuditAction } from "./audit-filter.ts";
@@ -6,13 +6,12 @@ import { AuditAction } from "./audit-filter.ts";
 import type { AuditPage } from "@repo/config/paging";
 import type { AuditFilter } from "./audit-filter.ts";
 
-const maximumAuditPage = Math.floor(Number.MAX_SAFE_INTEGER / adminPageSize);
 const FilterText = Schema.String.check(Schema.isNonEmpty());
 
 const AuditSearchParams = Schema.Struct({
   action: Schema.optionalKey(AuditAction),
   actorId: Schema.optionalKey(FilterText),
-  page: Schema.optionalKey(laterPage(maximumAuditPage)),
+  page: Schema.optionalKey(laterPage(maximumAdminPage)),
   targetId: Schema.optionalKey(FilterText),
 });
 

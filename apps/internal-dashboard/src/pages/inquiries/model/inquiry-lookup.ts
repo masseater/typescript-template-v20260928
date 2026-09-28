@@ -1,4 +1,4 @@
-import { localState, useTextInput } from "@repo/ui";
+import { useOptionalString, useTextInput } from "@repo/ui";
 import { useQuery } from "@tanstack/react-query";
 import { Option } from "effect";
 
@@ -10,14 +10,11 @@ import {
 
 import type { InquiryLookup } from "./inquiry-lookup-state.ts";
 
-const useLookedUpMember = localState(Option.none<string>());
-const useSelectedInquiry = localState(Option.none<string>());
-
 function useInquiryLookup(): InquiryLookup {
   const memberId = useTextInput();
   const lookupId = useTextInput();
-  const [lookedUpMember, setLookedUpMember] = useLookedUpMember();
-  const [selectedInquiry, setSelectedInquiry] = useSelectedInquiry();
+  const [lookedUpMember, setLookedUpMember] = useOptionalString();
+  const [selectedInquiry, setSelectedInquiry] = useOptionalString();
   const counts = useQuery(inquiryCountsOptions);
   const memberListing = useQuery(memberInquiriesOptions(Option.getOrUndefined(lookedUpMember)));
   const selection = useQuery(inquiryOptions(Option.getOrUndefined(selectedInquiry)));

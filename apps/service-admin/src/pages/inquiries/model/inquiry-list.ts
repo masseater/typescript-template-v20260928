@@ -1,13 +1,11 @@
 import { inquiryStatuses } from "@repo/config";
-import { adminPageSize, laterPage, searchNormalizer } from "@repo/config/paging";
+import { adminPageSize, laterPage, maximumAdminPage, searchNormalizer } from "@repo/config/paging";
 import { Schema } from "effect";
 
 import type { InquiryListQuery } from "#shared/contracts/index.ts";
 
-const maximumInquiriesPage = Math.floor(Number.MAX_SAFE_INTEGER / adminPageSize);
-
 const InquiriesSearchParams = Schema.Struct({
-  page: Schema.optionalKey(laterPage(maximumInquiriesPage)),
+  page: Schema.optionalKey(laterPage(maximumAdminPage)),
   status: Schema.optionalKey(Schema.Literals(inquiryStatuses)),
 });
 
