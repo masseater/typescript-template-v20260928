@@ -57,7 +57,6 @@ const rootOwnedPaths = [
   "vite.config.ts",
   "vitest.mutation.config.ts",
   "vitest.workers.config.ts",
-  "vitest.workers.main.ts",
 ] as const;
 
 export default defineConfig({

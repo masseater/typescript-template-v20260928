@@ -20,5 +20,9 @@
     "@repo/telemetry": "workspace:*",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
+  },
+  "workersTest": {
+    "defaultHandler": true,
+    "entry": "./src/features/monitor/monitor-test-fixture.ts"
   }
 }
