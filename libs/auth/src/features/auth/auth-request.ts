@@ -28,7 +28,7 @@ const verifyEmailToken = Effect.fn("verifyEmailToken")(function* verifyEmailToke
   const { instance: authInstance } = yield* Auth;
   const baseURL = authInstance.options.baseURL;
   if (typeof baseURL !== "string") {
-    return yield* new EmailVerificationFailed({ rateLimited: false });
+    return yield* new AuthFailure({ cause: new TypeError("auth baseURL is not a string") });
   }
   const verification = new URL("/api/auth/verify-email", baseURL);
   verification.searchParams.set("token", token);
@@ -39,12 +39,20 @@ const verifyEmailToken = Effect.fn("verifyEmailToken")(function* verifyEmailToke
   if (responseBody !== null) {
     yield* Effect.promise(() => responseBody.cancel());
   }
-  if (!authResponse.ok) {
+  if (authResponse.ok) {
+    return { verified: true } as const;
+  }
+  if (
+    authResponse.status >= httpStatus.badRequest &&
+    authResponse.status < httpStatus.internalServerError
+  ) {
     return yield* new EmailVerificationFailed({
       rateLimited: authResponse.status === httpStatus.tooManyRequests,
     });
   }
-  return { verified: true } as const;
+  return yield* new AuthFailure({
+    cause: new Error(`auth verify-email answered ${authResponse.status}`),
+  });
 });
 
 export { handleAuthRequest, verifyEmailToken };

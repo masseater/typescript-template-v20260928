@@ -7,6 +7,7 @@ const httpStatus = {
   found: 302,
   internalServerError: 500,
   methodNotAllowed: 405,
+  multipleChoices: 300,
   noContent: 204,
   notFound: 404,
   notImplemented: 501,
