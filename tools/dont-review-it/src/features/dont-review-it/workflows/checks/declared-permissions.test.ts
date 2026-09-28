@@ -100,4 +100,81 @@ describe("undeclaredPermissions", () => {
       ]);
     });
   });
+
+  describe("a scope beyond reading the contents granted to every job of a workflow with several", () => {
+    const it = test.extend("problems", () =>
+      undeclaredPermissions({
+        document: parseWorkflowDocument({
+          relativePath: ".github/workflows/ci.yml",
+          source:
+            "permissions:\n  contents: read\n  pull-requests: read\njobs:\n  build:\n    steps: []\n  test:\n    steps: []\n",
+        }),
+        config: defaultWorkflowChecksConfig,
+      }));
+
+    it("is reported at the scope", ({ problems }) => {
+      expect(problems).toStrictEqual([
+        {
+          file: ".github/workflows/ci.yml",
+          line: 3,
+          message:
+            "A workflow with more than one job must not grant pull-requests to all of them, because every job then holds a token that only some of them use. Keep only contents: read on the workflow and declare pull-requests on the jobs that use it.",
+        },
+      ]);
+    });
+  });
+
+  describe("a blanket grant to every job of a workflow with several", () => {
+    const it = test.extend("problems", () =>
+      undeclaredPermissions({
+        document: parseWorkflowDocument({
+          relativePath: ".github/workflows/ci.yml",
+          source: "permissions: read-all\njobs:\n  build:\n    steps: []\n  test:\n    steps: []\n",
+        }),
+        config: defaultWorkflowChecksConfig,
+      }));
+
+    it("is reported by its value", ({ problems }) => {
+      expect(problems).toStrictEqual([
+        {
+          file: ".github/workflows/ci.yml",
+          line: 1,
+          message:
+            "A workflow with more than one job must not grant read-all to all of them, because every job then holds a token that only some of them use. Keep only contents: read on the workflow and declare read-all on the jobs that use it.",
+        },
+      ]);
+    });
+  });
+
+  describe("a workflow that shares only reading the contents and lets a job widen it", () => {
+    const it = test.extend("problems", () =>
+      undeclaredPermissions({
+        document: parseWorkflowDocument({
+          relativePath: ".github/workflows/ci.yml",
+          source:
+            "permissions:\n  contents: read\njobs:\n  build:\n    permissions:\n      contents: read\n      pull-requests: read\n    steps: []\n  test:\n    steps: []\n",
+        }),
+        config: defaultWorkflowChecksConfig,
+      }));
+
+    it("is accepted", ({ problems }) => {
+      expect(problems).toStrictEqual([]);
+    });
+  });
+
+  describe("a wider grant on a workflow with a single job", () => {
+    const it = test.extend("problems", () =>
+      undeclaredPermissions({
+        document: parseWorkflowDocument({
+          relativePath: ".github/workflows/ci.yml",
+          source:
+            "permissions:\n  contents: read\n  issues: read\njobs:\n  build:\n    steps: []\n",
+        }),
+        config: defaultWorkflowChecksConfig,
+      }));
+
+    it("is accepted, because no other job receives it", ({ problems }) => {
+      expect(problems).toStrictEqual([]);
+    });
+  });
 });
