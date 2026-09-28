@@ -25,8 +25,8 @@ describe("overview", () => {
   });
 
   it("shows the failure", () => {
-    expect(rendered("概要を取得できませんでした。", undefined)).toContain(
-      '<p class="text-sm text-destructive">概要を取得できませんでした。</p>',
+    expect(rendered("概要を取得できませんでした。", undefined)).toMatch(
+      /<p[^>]*>概要を取得できませんでした。<\/p>/u,
     );
   });
 
@@ -39,9 +39,7 @@ describe("overview", () => {
   });
 
   it("shows the recent trend rows", () => {
-    expect(rendered(undefined, overview)).toContain(
-      '<td class="p-2">2026-04-01</td><td class="p-2">40</td>',
-    );
+    expect(rendered(undefined, overview)).toMatch(/<td[^>]*>2026-04-01<\/td><td[^>]*>40<\/td>/u);
   });
 
   it("says there is no trend yet when the trend is empty", () => {

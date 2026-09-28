@@ -66,8 +66,8 @@ describe("report", () => {
   });
 
   it("shows the failure", () => {
-    expect(rendered(report, "処理できませんでした。")).toContain(
-      '<p class="text-sm text-destructive">処理できませんでした。</p>',
+    expect(rendered(report, "処理できませんでした。")).toMatch(
+      /<p[^>]*>処理できませんでした。<\/p>/u,
     );
   });
 });

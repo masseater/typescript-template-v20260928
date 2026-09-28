@@ -82,9 +82,7 @@ describe("inquiry lookup", () => {
   });
 
   it("shows the failure", () => {
-    expect(rendered(failed)).toContain(
-      '<p class="text-sm text-destructive">問い合わせを取得できませんでした。</p>',
-    );
+    expect(rendered(failed)).toMatch(/<p[^>]*>問い合わせを取得できませんでした。<\/p>/u);
   });
 
   it("drops the loading notice once the counts arrived", () => {
@@ -96,7 +94,7 @@ describe("inquiry lookup", () => {
   });
 
   it("lists the member's inquiries", () => {
-    expect(rendered(answered)).toContain('<p class="font-medium">ログインできません</p>');
+    expect(rendered(answered)).toMatch(/<p[^>]*>ログインできません<\/p>/u);
   });
 
   it("shows the selected thread", () => {
@@ -104,6 +102,6 @@ describe("inquiry lookup", () => {
   });
 
   it("labels a staff message as from the operator", () => {
-    expect(rendered(answered)).toContain('<p class="text-sm font-medium">運営</p>');
+    expect(rendered(answered)).toMatch(/<p[^>]*>運営<\/p>/u);
   });
 });

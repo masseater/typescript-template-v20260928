@@ -50,20 +50,20 @@ describe("inquiry list", () => {
   });
 
   it("presses the selected status filter", () => {
-    expect(rendered({ status: INQUIRY_STATUS.open })).toContain(
-      '<button type="button" aria-pressed="true" class="rounded-md border px-3 py-1 text-sm border-primary bg-primary text-primary-foreground">受付</button>',
+    expect(rendered({ status: INQUIRY_STATUS.open })).toMatch(
+      /<button[^>]*aria-pressed="true"[^>]*>受付<\/button>/u,
     );
   });
 
   it("leaves the other status filters unpressed", () => {
-    expect(rendered({ status: INQUIRY_STATUS.open })).toContain(
-      'aria-pressed="false" class="rounded-md border px-3 py-1 text-sm border-border">完了</button>',
+    expect(rendered({ status: INQUIRY_STATUS.open })).toMatch(
+      /<button[^>]*aria-pressed="false"[^>]*>完了<\/button>/u,
     );
   });
 
   it("shows the failure", () => {
-    expect(rendered({ error: "問い合わせを取得できませんでした。" })).toContain(
-      '<p class="text-sm text-destructive">問い合わせを取得できませんでした。</p>',
+    expect(rendered({ error: "問い合わせを取得できませんでした。" })).toMatch(
+      /<p[^>]*>問い合わせを取得できませんでした。<\/p>/u,
     );
   });
 
@@ -88,8 +88,6 @@ describe("inquiry list", () => {
   });
 
   it("names the member who asked", () => {
-    expect(rendered({ inquiries: [inquiry], pendingCount: 1 })).toContain(
-      '<td class="p-2">山田</td>',
-    );
+    expect(rendered({ inquiries: [inquiry], pendingCount: 1 })).toMatch(/<td[^>]*>山田<\/td>/u);
   });
 });

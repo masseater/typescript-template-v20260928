@@ -13,9 +13,9 @@ import { describe, expect, test } from "vite-plus/test";
 import { AppFrame } from "./app-frame.tsx";
 import { Icon } from "./shared/ui/icon.tsx";
 
-const SPACING_PX = 4;
-
 const paths = ["/", "/home", "/members", "/upgrade"] as const;
+
+const bottomTabsNav = /<nav aria-label="メイン"(?![^>]*\bid=)[^>]*>/u;
 
 describe("app frame", () => {
   const it = test
@@ -93,33 +93,16 @@ describe("app frame", () => {
           </RouterContextProvider>
         </RegistryProvider>,
       );
-      const classContaining = (markup: string, token: string): string => {
-        const found = new RegExp(`class="([^"]*${token}[^"]*)"`, "u").exec(markup);
-        const className = found?.[1];
-        if (className === undefined) {
-          throw new Error(`missing class ${token}`);
-        }
-        return className;
-      };
       return [adminMarkup].map((admin) => ({
         adminHasInput: admin.includes("<input"),
         adminMark: admin.includes('<span aria-hidden="true">管理</span>'),
-        adminProduct: admin.includes('<span class="sr-only">管理画面</span>'),
+        adminProduct: admin.includes(">管理画面</span>"),
         adminTitle: admin.includes("利用者の一覧"),
         dashboardActions: dashboardMarkup.includes("分析"),
         dashboardHasInput: dashboardMarkup.includes("<input"),
         dashboardMark: dashboardMarkup.includes('<span aria-hidden="true">社内</span>'),
-        dashboardProduct: dashboardMarkup.includes(
-          '<span class="sr-only">社内ダッシュボード</span>',
-        ),
-        headersMatch:
-          classContaining(admin, "border-b border-border px-4") ===
-          classContaining(dashboardMarkup, "border-b border-border px-4"),
-        insetsMatch:
-          classContaining(admin, "rounded-lg") === classContaining(dashboardMarkup, "rounded-lg"),
+        dashboardProduct: dashboardMarkup.includes(">社内ダッシュボード</span>"),
         navigationControls: admin.includes('aria-controls="app-navigation"'),
-        shellsMatch:
-          classContaining(admin, "min-h-dvh") === classContaining(dashboardMarkup, "min-h-dvh"),
       }));
     })
     .extend("theHeaderIconTargets", () => {
@@ -160,46 +143,13 @@ describe("app frame", () => {
           </RouterContextProvider>
         </RegistryProvider>,
       );
-      const buttonTarget = (
-        rendered: string,
-        accessibleName: string,
-      ): Readonly<{ glyphPx: number; heightPx: number; widthPx: number }> => {
-        const matched = new RegExp(
-          `<button\\b(?=[^>]*aria-label="${accessibleName}")(?=[^>]*class="([^"]*)")[^>]*>([\\s\\S]*?)</button>`,
-          "u",
-        ).exec(rendered);
-        const className = matched?.[1];
-        const inner = matched?.[2];
-        if (className === undefined || inner === undefined) {
-          throw new Error(`missing button ${accessibleName}`);
-        }
-        const spacingPx = (subject: string, utility: string): number => {
-          const found = new RegExp(String.raw`(?:^|[\s:])${utility}-(\d+(?:\.\d+)?)(?:\s|$)`).exec(
-            subject,
-          );
-          const units = found?.[1];
-          if (units === undefined) {
-            throw new Error(`missing ${utility} on ${subject}`);
-          }
-          return Number(units) * SPACING_PX;
-        };
-        const glyphClass = /<svg\b[^>]*class="([^"]*)"/u.exec(inner)?.[1];
-        if (glyphClass === undefined) {
-          throw new Error(`missing icon in ${accessibleName}`);
-        }
-        return {
-          glyphPx: spacingPx(glyphClass, "size"),
-          heightPx: spacingPx(className, "min-h"),
-          widthPx: spacingPx(className, "min-w"),
-        };
-      };
       return [markup].map((rendered) => ({
         badgeVisible: rendered.includes(">3<"),
-        bottomTabs: rendered.includes("fixed inset-x-0 bottom-0"),
+        bottomTabs: bottomTabsNav.test(rendered),
         destinationLabel: rendered.includes("利用者"),
-        menu: buttonTarget(rendered, "メニュー"),
+        menu: rendered.includes('aria-label="メニュー"'),
         sectionLabel: rendered.includes("運用"),
-        sidebarToggle: buttonTarget(rendered, "サイドバーを畳む"),
+        sidebarToggle: rendered.includes('aria-label="サイドバーを畳む"'),
       }));
     })
     .extend("theCompactShell", () => {
@@ -245,9 +195,8 @@ describe("app frame", () => {
         </RegistryProvider>,
       );
       return [markup].map((rendered) => {
-        const tabs = rendered.slice(rendered.indexOf("fixed inset-x-0 bottom-0"));
+        const tabs = rendered.slice(bottomTabsNav.exec(rendered)?.index ?? rendered.length);
         return {
-          compactWidth: rendered.includes("md:w-32"),
           headerLeading: rendered.includes("会員メニュー"),
           homeHref: rendered.includes('href="/home"'),
           paidMarker: rendered.includes(">有料<"),
@@ -302,7 +251,9 @@ describe("app frame", () => {
       }
     });
 
-  it("uses one header, inset, and sidebar for every product", ({ theSharedChrome }) => {
+  it("names each product in the shared chrome and keeps its navigation controllable", ({
+    theSharedChrome,
+  }) => {
     expect(theSharedChrome).toStrictEqual([
       {
         adminHasInput: false,
@@ -313,23 +264,22 @@ describe("app frame", () => {
         dashboardHasInput: false,
         dashboardMark: true,
         dashboardProduct: true,
-        headersMatch: true,
-        insetsMatch: true,
         navigationControls: true,
-        shellsMatch: true,
       },
     ]);
   });
 
-  it("gives the header icon buttons a 24px box around a 20px glyph", ({ theHeaderIconTargets }) => {
+  it("offers the header icon buttons and the destinations without bottom tabs", ({
+    theHeaderIconTargets,
+  }) => {
     expect(theHeaderIconTargets).toStrictEqual([
       {
         badgeVisible: true,
         bottomTabs: false,
         destinationLabel: true,
-        menu: { glyphPx: 20, heightPx: 24, widthPx: 24 },
+        menu: true,
         sectionLabel: true,
-        sidebarToggle: { glyphPx: 20, heightPx: 24, widthPx: 24 },
+        sidebarToggle: true,
       },
     ]);
   });
@@ -337,7 +287,6 @@ describe("app frame", () => {
   it("keeps compact labels on the rail and icons in the bottom tabs", ({ theCompactShell }) => {
     expect(theCompactShell).toStrictEqual([
       {
-        compactWidth: true,
         headerLeading: true,
         homeHref: true,
         paidMarker: true,

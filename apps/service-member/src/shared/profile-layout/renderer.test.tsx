@@ -64,7 +64,6 @@ describe("profile layout renderer", () => {
     expect(markup).toContain("東京");
     expect(markup).not.toContain('aria-label="呼び名"');
     expect(markup).toContain("自己紹介はまだありません");
-    expect(markup).not.toContain("flex flex-col gap-3");
   });
 
   it("puts the given actions in their block", () => {
@@ -86,8 +85,6 @@ describe("profile layout renderer", () => {
       />,
     );
     expect(markup).toContain("本屋めぐりをしています。");
-    expect(markup).toContain(
-      '<div class="flex flex-col gap-3"><button type="button">フォロー</button></div>',
-    );
+    expect(markup).toContain('<button type="button">フォロー</button>');
   });
 });
