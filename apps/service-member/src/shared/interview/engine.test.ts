@@ -149,7 +149,24 @@ describe("answers outside the sheet's limits", () => {
     });
     expect(view.messages.at(-1)).toStrictEqual({
       role: "interviewer",
-      text: "すみません、うまく受け取れませんでした。なんて呼べばいいですか？",
+      text: "すみません、呼び名として受け取れませんでした。なんて呼べばいいですか？",
+    });
+  });
+
+  it("a correction that the field cannot hold leaves the sheet and names the field", () => {
+    expect.hasAssertions();
+    const finished = advance(begin(), { kind: "finish" });
+    const tooLong = "あ".repeat(NICKNAME_LIMIT + 1);
+    const refused = viewOf(advance(finished, { kind: "text", text: `呼び名は${tooLong}` }));
+    expect(refused.phase).toBe("summary");
+    expect(refused.fields[0]).toStrictEqual({
+      key: "nickname",
+      label: "呼び名",
+      status: "unanswered",
+    });
+    expect(refused.messages.at(-1)).toStrictEqual({
+      role: "interviewer",
+      text: "すみません、その内容では呼び名を直せませんでした。",
     });
   });
 });

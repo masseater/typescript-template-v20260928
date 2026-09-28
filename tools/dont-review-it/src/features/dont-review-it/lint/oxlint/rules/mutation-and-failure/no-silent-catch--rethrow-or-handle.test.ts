@@ -56,6 +56,23 @@ describe("dont-review-it/no-silent-catch--rethrow-or-handle", () => {
         name: "a failure named outside a catch clause is not this rule's subject",
         code: "const failure = new Error('reading the catalog failed');\nreport(failure);",
       },
+      {
+        name: "a failed decode thrown as a failure that names the input is carried to the caller",
+        documented: true,
+        code: "const read = (raw) =>\n  Option.getOrThrowWith(decodeSearch(raw), () => new InvalidSearch());",
+      },
+      {
+        name: "a failed decode replaced with a value that says what went wrong is carried",
+        code: "const read = (raw) => Option.getOrElse(decodeSearch(raw), () => ({ unreadable: raw }));",
+      },
+      {
+        name: "an empty fallback for a value that was not decoded is not this rule's subject",
+        code: "const tags = Option.getOrElse(Record.get(index, key), () => []);",
+      },
+      {
+        name: "an empty fallback piped from a value that was not decoded is not this rule's subject",
+        code: "const tags = pipe(Record.get(index, key), Option.getOrElse(() => ({})));",
+      },
     ],
     invalid: [
       {
@@ -145,6 +162,27 @@ describe("dont-review-it/no-silent-catch--rethrow-or-handle", () => {
         name: "an inner catch clause is judged on its own statements",
         code: "try {\n  run();\n} catch (outer) {\n  try {\n    recover();\n  } catch (inner) {\n    retry();\n  }\n  throw outer;\n}",
         errors: [{ messageId: "silentCatch" }],
+      },
+      {
+        name: "a failed decode replaced with an empty object is reported",
+        documented: true,
+        code: "const read = (raw) => Option.getOrElse(decodeSearch(raw), () => ({}));",
+        errors: [{ messageId: "emptyDecodeFallback" }],
+      },
+      {
+        name: "a failed decode replaced with an empty array from a block body is reported",
+        code: "const read = (raw) =>\n  Result.getOrElse(Schema.decodeUnknownResult(Tags)(raw), () => {\n    return [];\n  });",
+        errors: [{ messageId: "emptyDecodeFallback" }],
+      },
+      {
+        name: "a failed decode piped into an empty object is reported",
+        code: "const read = (raw) => pipe(decodeSearch(raw), Option.getOrElse(() => ({})));",
+        errors: [{ messageId: "emptyDecodeFallback" }],
+      },
+      {
+        name: "a failed decode piped by method into an empty object is reported",
+        code: "const read = (raw) => decodeSearch(raw).pipe(Option.getOrElse(() => ({})));",
+        errors: [{ messageId: "emptyDecodeFallback" }],
       },
       {
         name: "a silent catch clause in a test file carries no exemption",

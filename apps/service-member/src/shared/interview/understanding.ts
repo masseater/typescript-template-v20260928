@@ -1,4 +1,4 @@
-import { Schema } from "effect";
+import { Result, Schema } from "effect";
 
 import {
   FieldKey,
@@ -10,7 +10,7 @@ import {
   readable,
 } from "./sheet.ts";
 
-import type { SheetData } from "./sheet.ts";
+import type { FieldName } from "./sheet.ts";
 import type { InterviewState } from "./state.ts";
 
 const maximumQuestion = 300;
@@ -26,6 +26,8 @@ const Understanding = Schema.Struct({
 });
 
 type UnderstandingData = typeof Understanding.Type;
+type Interpretation = UnderstandingData & { readonly unreadable?: FieldName };
+type Heard = Pick<Interpretation, "unreadable" | "values">;
 
 const finishPattern =
   /^(?:(?:もう)?(?:終わり|おわり|おしまい|終了|終わる|終わらせて|やめる|やめたい)|もう(?:いい|いいよ|十分))(?:で|です|にして|にします|にしたい|ください)?(?:お願いします)?[。!！]?$/u;
@@ -34,23 +36,30 @@ const skipPattern =
 const correctionPattern =
   /^(?<label>[^はを:：]+)\s*[はを:：]\s*(?<value>.+?)(?:に(?:して|変えて|変更して)(?:ください)?)?。?$/u;
 
-function correction(text: string): SheetData {
+function hear(key: FieldName, spoken: readonly string[]): Heard {
+  return Result.match(readValue(key, spoken), {
+    onFailure: ({ field }) => ({ unreadable: field, values: {} }),
+    onSuccess: (values) => ({ values }),
+  });
+}
+
+function correction(text: string): Heard {
   const groups = correctionPattern.exec(text)?.groups;
   const label = groups?.["label"]?.trim();
   const key = fieldKeys.find((candidate) => fieldDefinitions[candidate].label === label);
   const value = groups?.["value"];
-  return key === undefined || value === undefined ? {} : readValue(key, [value]);
+  return key === undefined || value === undefined ? { values: {} } : hear(key, [value]);
 }
 
-function understandByRules(state: InterviewState, text: string): UnderstandingData {
+function understandByRules(state: InterviewState, text: string): Interpretation {
   if (state.phase !== "asking") {
-    return { finish: false, skip: false, values: correction(text) };
+    return { finish: false, skip: false, ...correction(text) };
   }
   const finish = finishPattern.test(text);
   const skip = !finish && skipPattern.test(text);
   const answers = !finish && !skip && state.reply?.kind !== "confirm";
-  return { finish, skip, values: answers ? readValue(state.current, [text]) : {} };
+  return { finish, skip, ...(answers ? hear(state.current, [text]) : { values: {} }) };
 }
 
-export { Understanding, understandByRules };
-export type { UnderstandingData };
+export { Understanding, hear, understandByRules };
+export type { Interpretation, UnderstandingData };

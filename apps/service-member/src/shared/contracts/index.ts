@@ -9,6 +9,7 @@ export {
 export {
   CHECKOUT_RETURN,
   HostedPage,
+  InvalidCheckoutReturn,
   InvoiceList,
   OfferView,
   PlanView,

@@ -1,12 +1,12 @@
 ---
-description: "Disallow a catch clause whose body never carries the failure it bound out of the clause, so a failure that was caught reaches something able to act on it instead of ending where it was caught"
+description: "Disallow a catch clause whose body never carries the failure it bound out of the clause, and a failed decode replaced with an empty object or array, so a failure that was caught reaches something able to act on it instead of ending where it was caught"
 ---
 
 # no-silent-catch--rethrow-or-handle
 
 <!-- BEGIN GENERATED rule-header -->
 
-Disallow a catch clause whose body never carries the failure it bound out of the clause, so a failure that was caught reaches something able to act on it instead of ending where it was caught
+Disallow a catch clause whose body never carries the failure it bound out of the clause, and a failed decode replaced with an empty object or array, so a failure that was caught reaches something able to act on it instead of ending where it was caught
 
 - Tool: `oxlint`
 - Fixable: no
@@ -21,11 +21,13 @@ Disallow a catch clause whose body never carries the failure it bound out of the
 
 A `catch` clause that binds a failure and never carries it out of the clause, an empty body included. Every read of the bound name is walked outward: a read that reaches the clause boundary carries the failure, while one standing in the condition of an `if`, a loop, a conditional expression or a `switch` only steers control and does not.
 
+A `getOrElse` that replaces a failed decode with an empty object or array is the same silence outside a `catch`: the decode is a call whose name starts with `decode`, and the fallback is a function that returns `{}` or `[]`, passed beside it or piped after it.
+
 A clause that binds nothing belongs to [no-discarded-failure--receive-and-surface-it](./no-discarded-failure--receive-and-surface-it.md), so the two never report the same clause.
 
 ## Fix
 
-Choose an ending that takes the failure with it: rethrow it, throw one that names this layer's part with the original as `cause`, hand it to the call that acts on it, or return a value that holds it.
+Choose an ending that takes the failure with it: rethrow it, throw one that names this layer's part with the original as `cause`, hand it to the call that acts on it, or return a value that holds it. For a failed decode, return the failure or throw one that names what could not be read, so the caller can tell a malformed input from an absent one.
 
 <!-- BEGIN GENERATED examples -->
 
@@ -59,6 +61,11 @@ try {
 }
 ```
 
+```ts
+// a failed decode replaced with an empty object is reported
+const read = (raw) => Option.getOrElse(decodeSearch(raw), () => ({}));
+```
+
 Code this rule accepts.
 
 ```ts
@@ -83,6 +90,12 @@ try {
 }
 ```
 
+```ts
+// a failed decode thrown as a failure that names the input is carried to the caller
+const read = (raw) =>
+  Option.getOrThrowWith(decodeSearch(raw), () => new InvalidSearch());
+```
+
 <!-- END GENERATED examples -->
 
 ### Forbidden bypasses (do not do this)
@@ -97,6 +110,7 @@ try {
 | messageId | Text |
 | --- | --- |
 | `silentCatch` | A catch clause must not end without carrying the failure it bound out of the clause. Choose an ending that takes the failure with it: rethrow it, throw a failure that names this layer's part in it with the original passed as \`cause\`, hand it to the call that acts on it, or return a value that holds it. |
+| `emptyDecodeFallback` | A failed decode must not be replaced with an empty object or array, which reads the same as an input that named nothing. Return the failure, or throw a failure that names what could not be read, so the caller can tell a malformed input from an absent one. |
 
 <!-- END GENERATED messages -->
 

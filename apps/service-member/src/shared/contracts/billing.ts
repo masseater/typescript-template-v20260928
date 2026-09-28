@@ -71,15 +71,21 @@ const CheckoutReturnSearch = Schema.Struct({
   checkout: Schema.optionalKey(Schema.Literals(checkoutReturns)),
 });
 
+class InvalidCheckoutReturn extends Schema.TaggedError<InvalidCheckoutReturn>()(
+  "InvalidCheckoutReturn",
+  {},
+) {}
+
 const decodeCheckoutReturn = Schema.decodeUnknownOption(CheckoutReturnSearch);
 
 function readCheckoutReturn(raw: unknown): typeof CheckoutReturnSearch.Type {
-  return Option.getOrElse(decodeCheckoutReturn(raw), () => ({}));
+  return Option.getOrThrowWith(decodeCheckoutReturn(raw), () => new InvalidCheckoutReturn());
 }
 
 export {
   CHECKOUT_RETURN,
   HostedPage,
+  InvalidCheckoutReturn,
   InvoiceList,
   OfferView,
   PlanView,

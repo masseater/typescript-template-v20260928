@@ -10,7 +10,7 @@ import { Understanding, understandByRules } from "./understanding.ts";
 
 import type { ConfigurationInvalid } from "@repo/config";
 import type { InterviewState } from "./state.ts";
-import type { UnderstandingData } from "./understanding.ts";
+import type { Interpretation, UnderstandingData } from "./understanding.ts";
 
 type ModelAccess = Parameters<typeof createWorkersAiChat>[1];
 
@@ -25,7 +25,7 @@ const modelOptions = {
 
 interface InterviewReading {
   readonly source: "model" | "rules";
-  readonly understanding: UnderstandingData;
+  readonly understanding: Interpretation;
 }
 
 interface InterviewerShape {

@@ -1,4 +1,4 @@
-import { Effect, Option, Schema } from "effect";
+import { Effect, Option, Result, Schema } from "effect";
 
 const maximumNickname = 30;
 const maximumOccupation = 50;
@@ -90,14 +90,24 @@ const fieldDefinitions: Readonly<Record<FieldName, FieldDefinition>> = {
   },
 };
 
-const separators = /[、,，]/u;
-const decodeReadable = Schema.decodeUnknownOption(ReadableSheet);
+class UnreadableAnswer extends Schema.TaggedError<UnreadableAnswer>()("UnreadableAnswer", {
+  field: FieldKey,
+}) {}
 
-function readValue(key: FieldName, spoken: readonly string[]): SheetData {
+const separators = /[、,，]/u;
+const decodeSheet = Schema.decodeUnknownResult(Sheet);
+
+function readValue(
+  key: FieldName,
+  spoken: readonly string[],
+): Result.Result<SheetData, UnreadableAnswer> {
   const parts = spoken.flatMap((part) => part.split(separators));
   const candidate =
     key === "interests" ? parts.filter((part) => part.trim() !== "") : spoken.join("、");
-  return Option.getOrElse(decodeReadable({ [key]: candidate }), () => ({}));
+  return Result.mapError(
+    decodeSheet({ [key]: candidate }),
+    () => new UnreadableAnswer({ field: key }),
+  );
 }
 
 function displayValue(sheet: SheetData, key: FieldName): string | undefined {

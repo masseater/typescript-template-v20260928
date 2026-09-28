@@ -1,9 +1,9 @@
-import { fieldDefinitions, fieldKeys, maximumInterests, readValue } from "./sheet.ts";
-import { understandByRules } from "./understanding.ts";
+import { fieldDefinitions, fieldKeys, maximumInterests } from "./sheet.ts";
+import { hear, understandByRules } from "./understanding.ts";
 
 import type { FieldName, ReplyForm, SheetData } from "./sheet.ts";
 import type { InterviewState, MemberUtterance } from "./state.ts";
-import type { UnderstandingData } from "./understanding.ts";
+import type { Interpretation, UnderstandingData } from "./understanding.ts";
 
 const maximumMessages = 100;
 const thanks = "ありがとうございます。";
@@ -101,8 +101,8 @@ function needsModel(utterance: MemberUtterance): boolean {
 function interpret(
   state: InterviewState,
   utterance: MemberUtterance,
-  understood: UnderstandingData | undefined,
-): UnderstandingData {
+  understood: Interpretation | undefined,
+): Interpretation {
   if (utterance.kind === "text") {
     if (understood === undefined) {
       return understandByRules(state, utterance.text);
@@ -110,8 +110,7 @@ function interpret(
     return understood;
   }
   if (utterance.kind === "choice" && state.phase === "asking") {
-    const values = readValue(state.current, utterance.values);
-    return { ...understood, finish: false, skip: false, values };
+    return { ...understood, finish: false, skip: false, ...hear(state.current, utterance.values) };
   }
   return { finish: utterance.kind === "finish", skip: utterance.kind === "skip", values: {} };
 }
@@ -131,15 +130,19 @@ function merged(
 
 function openingFor(
   state: Asking,
-  understanding: UnderstandingData,
+  understanding: Interpretation,
   skipped: readonly FieldName[],
 ): string {
   if (skipped.length > state.skipped.length) {
     return "わかりました、飛ばしますね。";
   }
-  return Object.keys(understanding.values).length > 0
-    ? thanks
-    : "すみません、うまく受け取れませんでした。";
+  if (Object.keys(understanding.values).length > 0) {
+    return thanks;
+  }
+  const { unreadable } = understanding;
+  return unreadable === undefined
+    ? "すみません、うまく受け取れませんでした。"
+    : `すみません、${fieldDefinitions[unreadable].label}として受け取れませんでした。`;
 }
 
 function modelQuestion(next: FieldName, understanding: UnderstandingData): Asked | undefined {
@@ -151,7 +154,7 @@ function modelQuestion(next: FieldName, understanding: UnderstandingData): Asked
   return { text: message, ...(fits ? { reply } : {}) };
 }
 
-function afterAnswer(state: Asking, understanding: UnderstandingData): InterviewState {
+function afterAnswer(state: Asking, understanding: Interpretation): InterviewState {
   const progress = { messages: state.messages, ...merged(state, understanding) };
   if (understanding.finish) {
     return summarizing(progress, "わかりました、ここまでにしますね。");
@@ -164,9 +167,15 @@ function afterAnswer(state: Asking, understanding: UnderstandingData): Interview
   return asking(progress, next, modelQuestion(next, understanding) ?? scripted);
 }
 
-function afterCorrection(state: Settled, understanding: UnderstandingData): Settled {
+function unchanged({ unreadable }: Interpretation): string {
+  return unreadable === undefined
+    ? "どの項目をどう直すかを、「職種は〇〇」のように教えてください。"
+    : `すみません、その内容では${fieldDefinitions[unreadable].label}を直せませんでした。`;
+}
+
+function afterCorrection(state: Settled, understanding: Interpretation): Settled {
   if (Object.keys(understanding.values).length === 0) {
-    const text = "どの項目をどう直すかを、「職種は〇〇」のように教えてください。";
+    const text = unchanged(understanding);
     return { ...state, messages: says(state, { role: "interviewer", text }) };
   }
   return summarizing({ messages: state.messages, ...merged(state, understanding) }, "直しました。");
@@ -175,7 +184,7 @@ function afterCorrection(state: Settled, understanding: UnderstandingData): Sett
 function advance(
   state: InterviewState,
   utterance: MemberUtterance,
-  understood?: UnderstandingData,
+  understood?: Interpretation,
 ): InterviewState {
   const understanding = interpret(state, utterance, understood);
   const messages = says(state, { role: "member", text: spoken(utterance) });

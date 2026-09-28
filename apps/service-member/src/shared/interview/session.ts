@@ -31,7 +31,7 @@ import { State } from "./state.ts";
 import { TurnRejected } from "./turn-rejected.ts";
 
 import type { InterviewState, MemberUtterance } from "./state.ts";
-import type { UnderstandingData } from "./understanding.ts";
+import type { Interpretation } from "./understanding.ts";
 
 const dailyModelTurns = 60;
 
@@ -40,7 +40,7 @@ const encodeState = Schema.encodeEffect(State);
 
 interface Reading {
   readonly source: "model" | "rules";
-  readonly understanding?: UnderstandingData;
+  readonly understanding?: Interpretation;
 }
 
 const replace = Effect.fn("interview.replace")(function* replace(
@@ -111,6 +111,7 @@ const takeTurn = Effect.fn("interview.turn")(function* takeTurn(
   });
   const next = advance(state, utterance, understanding);
   const view = yield* replace(userId, version, { state: next });
+  const unreadable = understanding?.unreadable;
   yield* logAt("Info", {
     attributes: {
       answered: fieldKeys.filter((key) => next.sheet[key] !== undefined).length,
@@ -118,6 +119,7 @@ const takeTurn = Effect.fn("interview.turn")(function* takeTurn(
       question: next.messages.at(-1)?.text === understanding?.message ? "model" : "scripted",
       source,
       utterance: utterance.kind,
+      ...(unreadable === undefined ? {} : { unreadable }),
     },
     eventName: "interview.turn",
   });
