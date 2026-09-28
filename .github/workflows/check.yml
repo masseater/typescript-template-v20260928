@@ -54,7 +54,7 @@ jobs:
         env:
           CHECK_SHARD: ${{ matrix.shard }}
           PR_FILES_PATH: ${{ runner.temp }}/pr-files.txt
-        run: vp run --filter @repo/dont-review-it pr-affected
+        run: vp run --filter @repo/dont-review-it --fail-if-no-match pr-affected
       - if: steps.affected.outputs.root == 'true'
         run: git fetch --no-tags --depth=2 origin ${{ github.sha }}
       - if: steps.affected.outputs.root == 'true'
@@ -146,7 +146,7 @@ jobs:
       - *browser-cache
       - *setup
       - *vite-task-cache
-      - run: vp run --filter @repo/e2e test:e2e
+      - run: vp run --filter @repo/e2e --fail-if-no-match test:e2e
 
   cache:
     if: github.event_name == 'push'

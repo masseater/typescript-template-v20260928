@@ -184,6 +184,7 @@ export {
 } from "./jobs.ts";
 export type { JobResult, JobsBindings } from "./jobs.ts";
 export { effectTsgoNoEmit } from "./effect-typecheck.ts";
+export { filteredRunArguments, filteredRunCommand } from "./filtered-run.ts";
 export { adminPageSize, maximumAdminPageSize } from "./paging.ts";
 export type {
   AppConfig,

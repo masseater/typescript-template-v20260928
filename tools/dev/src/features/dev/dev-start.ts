@@ -5,6 +5,7 @@ import { reportFailed, runCli } from "@repo/cli";
 import {
   applicationReadyPaths,
   applications,
+  filteredRunArguments,
   loopbackAddress,
   waitUntilResponds,
 } from "@repo/config";
@@ -42,7 +43,7 @@ function migrateDatabase(
     const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
     const handle = yield* spawner
       .spawn(
-        ChildProcess.make(vp, ["run", "--filter", "@repo/db-local", "db:migrate:local"], {
+        ChildProcess.make(vp, filteredRunArguments("@repo/db-local", "db:migrate:local"), {
           cwd: repositoryRoot,
           extendEnv: true,
           stderr: "inherit",

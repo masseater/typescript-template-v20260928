@@ -116,6 +116,7 @@ const softPresetRules = Object.fromEntries(
     "dont-review-it/no-twin-declaration--merge-into-one-owner",
     "dont-review-it/no-unchecked-authored-path--include-it-in-every-declared-check",
     "dont-review-it/no-unchecked-cast--parse-at-boundary",
+    "dont-review-it/no-unguarded-filtered-run--add-fail-if-no-match",
     "dont-review-it/no-undersized-external-snapshot--use-inline-snapshot",
     "dont-review-it/no-unordered-import--group-by-origin-then-sort-by-specifier",
     "dont-review-it/no-unregistered-rule-plugin--enable-the-plugin",

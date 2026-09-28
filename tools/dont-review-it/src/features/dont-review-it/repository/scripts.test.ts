@@ -82,8 +82,19 @@ const nodeFileCommands = [
   "vp check && node src/cli.ts",
 ];
 
-const vitePlusCommands = [
+const unguardedFilterCommands = [
   "vp run --filter @repo/dev setup",
+  "vp run --filter=@repo/dev setup",
+  "CI=true vp run --filter @repo/dev setup",
+  "exec vp run --filter @repo/dev preview",
+  "vp check && vp run --filter @repo/dev setup",
+  "bash -c 'vp config && vp run --filter @repo/dev prepare-browser'",
+];
+
+const vitePlusCommands = [
+  "vp run --filter @repo/dev --fail-if-no-match setup",
+  "bash -c 'vp config && vp run --filter @repo/dev --fail-if-no-match prepare-browser'",
+  "vp run --fail-if-no-match $AFFECTED_FILTERS prepr",
   "vp run -r build",
   "vp exec knip",
   "vp dlx wrangler deploy",
@@ -141,6 +152,23 @@ describe("workspace script conventions", () => {
     const tools = packageNames(workspaceManifests.filter(({ area }) => area === "tools"));
     const consumers = workspaceManifests.filter(({ area }) => area !== "tools");
     expect(consumers.flatMap((consumer) => toolReferences(consumer, tools))).toStrictEqual([]);
+  });
+});
+
+describe("filtered runs", () => {
+  it.for(unguardedFilterCommands)(
+    "rejects a filtered run that succeeds when the filter matches nothing: %s",
+    (command) => {
+      expect.assertions(1);
+      expect(scriptViolations({ scripts: { probe: command } })).toStrictEqual([
+        `probe: vp run --filter には --fail-if-no-match を付け、フィルタがどのパッケージにも当たらないときに失敗させてください: ${command}`,
+      ]);
+    },
+  );
+
+  it.for(unguardedFilterCommands)("rejects the same filtered run from tasks: %s", (command) => {
+    expect.assertions(1);
+    expect(taskViolations({ probe: { command: ["vp check", command] } })).toHaveLength(1);
   });
 });
 

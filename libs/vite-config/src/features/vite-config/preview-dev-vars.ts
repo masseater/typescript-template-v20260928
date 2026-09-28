@@ -1,3 +1,4 @@
+import { filteredRunCommand } from "@repo/config";
 import { Effect } from "effect";
 
 import { filesystem, isNotFound, paths } from "./host.ts";
@@ -28,7 +29,7 @@ const previewDevVars = (appRoot: string): Plugin => {
           const source = yield* readDevVars(appRoot);
           if (source === undefined) {
             reportMissingDevVars(
-              `Missing ${paths.join(appRoot, ".dev.vars")}; run vp run --filter @repo/dev setup before building for preview`,
+              `Missing ${paths.join(appRoot, ".dev.vars")}; run ${filteredRunCommand("@repo/dev", "setup")} before building for preview`,
             );
             return;
           }

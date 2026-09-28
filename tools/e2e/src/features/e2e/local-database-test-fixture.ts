@@ -1,4 +1,5 @@
 import { NodeServices } from "@effect/platform-node";
+import { filteredRunArguments } from "@repo/config";
 import { localDatabaseVariable } from "@repo/config/local-database-path";
 import { Effect, FileSystem } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
@@ -62,13 +63,13 @@ const startIsolatedDatabase = (): Effect.Effect<
       .makeTempDirectory({ prefix })
       .pipe(Effect.mapError((cause) => failed("E2E_DATABASE_DIRECTORY_UNAVAILABLE", cause)));
     const environment = { [localDatabaseVariable]: directory };
-    yield* runVitePlus(["run", "--filter", databasePackage, "db:migrate:local"], environment);
+    yield* runVitePlus(filteredRunArguments(databasePackage, "db:migrate:local"), environment);
     return {
       directory,
       environment,
       promoteToAdministrator: (email: string) =>
         runVitePlus(
-          ["run", "--filter", databasePackage, "db:bootstrap:local", email],
+          filteredRunArguments(databasePackage, "db:bootstrap:local", email),
           environment,
         ).pipe(Effect.provide(NodeServices.layer)),
       remove: removeDirectory(directory),

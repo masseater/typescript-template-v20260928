@@ -33,7 +33,7 @@ jobs:
           key: vite-task-${{ runner.os }}-${{ runner.arch }}-load-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             vite-task-${{ runner.os }}-${{ runner.arch }}-main-
-      - run: vp run --filter @repo/load ci service-member "$LOAD_PROFILE"
+      - run: vp run --filter @repo/load --fail-if-no-match ci service-member "$LOAD_PROFILE"
         env:
           LOAD_PROFILE: ${{ inputs.profile }}
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0

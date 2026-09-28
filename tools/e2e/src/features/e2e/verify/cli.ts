@@ -2,7 +2,7 @@
 
 import { NodeServices } from "@effect/platform-node";
 import { causeRecord, runCli, runCommand } from "@repo/cli";
-import { ROLE } from "@repo/config";
+import { filteredRunCommand, ROLE } from "@repo/config";
 import { Console, Effect, Option, Schema } from "effect";
 import { Argument, Command, Flag } from "effect/unstable/cli";
 
@@ -35,7 +35,7 @@ runCli(verifyCommand, (cause) =>
     cause,
     fields: {
       remediation:
-        "Run member verification with `vp run --filter @repo/e2e verify member --environment local` after `vp run --filter @repo/dev setup` and starting apps.",
+        `Run member verification with \`${filteredRunCommand("@repo/e2e", "verify", "member", "--environment", "local")}\` after \`${filteredRunCommand("@repo/dev", "setup")}\` and starting apps.`,
     },
   }),
 );

@@ -1,4 +1,9 @@
-import { applicationOrigins, applicationReadyPaths, applications } from "@repo/config";
+import {
+  applicationOrigins,
+  applicationReadyPaths,
+  applications,
+  filteredRunArguments,
+} from "@repo/config";
 import { Effect, FileSystem, Path, Schema } from "effect";
 import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 
@@ -119,7 +124,7 @@ const launch = Effect.fn("launch")(function* launch(app: App) {
   const quotedLog = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.String))(log).pipe(
     Effect.orDie,
   );
-  const command = `exec ${vp} run --filter @repo/${app} preview >> ${quotedLog} 2>&1`;
+  const command = `exec ${[vp, ...filteredRunArguments(`@repo/${app}`, "preview")].join(" ")} >> ${quotedLog} 2>&1`;
   return yield* run(
     "tmux",
     ["-L", socket, "new-session", "-d", "-s", app, "-c", root, "fish", "-c", command],

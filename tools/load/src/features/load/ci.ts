@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { NodeServices } from "@effect/platform-node";
 import { causeRecord, firstUserArgumentIndex, reportFailed, runCli } from "@repo/cli";
+import { filteredRunCommand } from "@repo/config";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { Console, Effect, Path, Schema, type Scope } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
@@ -65,8 +66,12 @@ const runWithPreview = (
   ).pipe(Effect.provide(NodeServices.layer));
 
 const remediations: Readonly<Partial<Record<LoadCiFailure["reason"], string>>> = {
-  usage_invalid:
-    "vp run --filter @repo/load ci <service-member|service-admin|internal-dashboard> [smoke|peak]",
+  usage_invalid: filteredRunCommand(
+    "@repo/load",
+    "ci",
+    "<service-member|service-admin|internal-dashboard>",
+    "[smoke|peak]",
+  ),
 };
 
 const announceFailure = (failed: {

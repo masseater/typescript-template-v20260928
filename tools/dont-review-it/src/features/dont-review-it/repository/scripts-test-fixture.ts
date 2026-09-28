@@ -104,9 +104,39 @@ function runsFileWithNode(tokens: readonly string[]): boolean {
   );
 }
 
+const shells = new Set(["bash", "sh", "fish", "zsh"]);
+
+function runsUnguardedFilter(tokens: readonly string[]): boolean {
+  const index = leadingCommand(tokens);
+  if (index === -1) {
+    return false;
+  }
+  const binary = binaryName(tokens[index] ?? "");
+  const script = tokens.indexOf("-c", index);
+  if (shells.has(binary) && script !== -1) {
+    return words(tokens[script + 1] ?? "").some((inner) => runsUnguardedFilter(inner));
+  }
+  const handed = tokens.slice(index + 1);
+  return (
+    binary === "vp" &&
+    handed[0] === "run" &&
+    handed.some((word) => word === "--filter" || word.startsWith("--filter=")) &&
+    !handed.includes("--fail-if-no-match")
+  );
+}
+
+function unguardedFilterViolations(name: string, command: string): string[] {
+  return words(command).some((tokens) => runsUnguardedFilter(tokens))
+    ? [
+        `${name}: vp run --filter には --fail-if-no-match を付け、フィルタがどのパッケージにも当たらないときに失敗させてください: ${command}`,
+      ]
+    : [];
+}
+
 function commandViolations(name: string, command: string): string[] {
   const segments = words(command);
   return [
+    ...unguardedFilterViolations(name, command),
     ...(segments.some((tokens) => runsFileWithNode(tokens))
       ? [
           `${name}: node でファイルを直接実行せず、パッケージの bin か vp run で実行してください: ${command}`,
@@ -149,5 +179,5 @@ function taskViolations(tasks: Readonly<Record<string, Task>>): string[] {
   });
 }
 
-export { scriptViolations, taskViolations };
+export { scriptViolations, taskViolations, unguardedFilterViolations };
 export type { Command, Task };

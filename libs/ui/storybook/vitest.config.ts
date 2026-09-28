@@ -1,11 +1,11 @@
-import { storybookOrigin } from "@repo/config";
+import { filteredRunCommand, storybookOrigin } from "@repo/config";
 import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
 import { defineConfig } from "vite-plus";
 import { playwright } from "vite-plus/test/browser-playwright";
 
 const storybook = await storybookTest({
   configDir: import.meta.dirname,
-  storybookScript: "vp run --filter @repo/dev storybook",
+  storybookScript: filteredRunCommand("@repo/dev", "storybook"),
   storybookUrl: storybookOrigin,
 });
 

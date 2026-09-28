@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { NodeServices } from "@effect/platform-node";
 import { causeRecord, firstUserArgumentIndex, reportFailed, runCli } from "@repo/cli";
-import { applicationOrigins, mailpitOrigin } from "@repo/config";
+import { applicationOrigins, filteredRunCommand, mailpitOrigin } from "@repo/config";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { Console, Effect, Path, Schema, Sink, Stdio } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
@@ -43,14 +43,18 @@ const { home, scenarios, summaryFile } = Effect.runSync(
     };
   }).pipe(Effect.provide(NodeServices.layer)),
 );
-const usage =
-  "vp run --filter @repo/load load <service-member|service-admin|internal-dashboard> [smoke|peak]";
-const rebuild = "vp run --filter @repo/dev setup loopback, then vp run --filter @repo/<app> build";
+const usage = filteredRunCommand(
+  "@repo/load",
+  "load",
+  "<service-member|service-admin|internal-dashboard>",
+  "[smoke|peak]",
+);
+const rebuild = `${filteredRunCommand("@repo/dev", "setup", "loopback")}, then ${filteredRunCommand("@repo/<app>", "build")}`;
 const remediations: Readonly<Partial<Record<Failure["reason"], string>>> = {
   build_missing: rebuild,
   origin_mismatch: rebuild,
-  target_unreachable: "vp run --filter @repo/<app> preview",
-  traces_not_cleared: "restart vp run --filter @repo/<app> preview",
+  target_unreachable: filteredRunCommand("@repo/<app>", "preview"),
+  traces_not_cleared: `restart ${filteredRunCommand("@repo/<app>", "preview")}`,
   usage_invalid: usage,
 };
 

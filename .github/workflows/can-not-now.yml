@@ -27,7 +27,7 @@ jobs:
       - id: tasks
         env:
           GH_TOKEN: ${{ github.token }}
-        run: vp run --filter @repo/dont-review-it can-not-now
+        run: vp run --filter @repo/dont-review-it --fail-if-no-match can-not-now
       - if: steps.tasks.outputs.count != '0'
         uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1.0.231
         with:

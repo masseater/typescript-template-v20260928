@@ -33,7 +33,7 @@ jobs:
           node-version-file: package.json
           cache: true
       - id: prepare
-        run: vp run --filter @repo/infra-cloudflare prepare:ci-env
+        run: vp run --filter @repo/infra-cloudflare --fail-if-no-match prepare:ci-env
         env:
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
           BUDGET_JPY: ${{ secrets.BUDGET_JPY }}
@@ -53,9 +53,9 @@ jobs:
           TEMPLATE_SERVICE_MEMBER_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_MEMBER_ORIGIN }}
           STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
       - if: steps.prepare.outputs.configured == 'true'
-        run: vp run --filter @repo/infra-cloudflare deploy:ordered
+        run: vp run --filter @repo/infra-cloudflare --fail-if-no-match deploy:ordered
       - if: steps.prepare.outputs.configured == 'true'
-        run: vp run --filter @repo/infra-cloudflare probe:origins
+        run: vp run --filter @repo/infra-cloudflare --fail-if-no-match probe:origins
 
   production:
     if: github.event_name == 'workflow_dispatch' && inputs.target == 'production'
@@ -71,7 +71,7 @@ jobs:
           node-version-file: package.json
           cache: true
       - id: prepare
-        run: vp run --filter @repo/infra-cloudflare prepare:ci-env
+        run: vp run --filter @repo/infra-cloudflare --fail-if-no-match prepare:ci-env
         env:
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
           BUDGET_JPY: ${{ secrets.BUDGET_JPY }}
@@ -94,6 +94,6 @@ jobs:
           TEMPLATE_WIKI_PUBLISH_PRIVATE_KEY: ${{ secrets.TEMPLATE_WIKI_PUBLISH_PRIVATE_KEY }}
           TEMPLATE_WIKI_PUBLISH_REPOSITORY: ${{ secrets.TEMPLATE_WIKI_PUBLISH_REPOSITORY }}
       - if: steps.prepare.outputs.configured == 'true'
-        run: vp run --filter @repo/infra-cloudflare deploy:ordered
+        run: vp run --filter @repo/infra-cloudflare --fail-if-no-match deploy:ordered
       - if: steps.prepare.outputs.configured == 'true'
-        run: vp run --filter @repo/infra-cloudflare probe:origins
+        run: vp run --filter @repo/infra-cloudflare --fail-if-no-match probe:origins

@@ -13,7 +13,7 @@ describe("the schema page of the wiki", () => {
       }).pipe(Effect.orDie, Effect.provide(NodeServices.layer)),
     ));
 
-  it("matches the ER diagram of the current schema; regenerate it with `vp run --filter @repo/db db:generate`", ({
+  it("matches the ER diagram of the current schema; regenerate it with the db:generate task of @repo/db", ({
     committedPage,
   }) => {
     expect(committedPage).toBe(schemaDocument());

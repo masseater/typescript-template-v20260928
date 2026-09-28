@@ -31,4 +31,4 @@ jobs:
         with:
           node-version-file: package.json
           cache: true
-      - run: vp run --filter @repo/load ci service-member smoke
+      - run: vp run --filter @repo/load --fail-if-no-match ci service-member smoke

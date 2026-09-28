@@ -95,6 +95,7 @@ import { requireVitestExtendBuilder } from "./lint/oxlint/rules/testing/require-
 import { forbidTrackedPath } from "./lint/oxlint/rules/toolchain/forbid-tracked-path--untrack-and-ignore.ts";
 import { noStandaloneTsconfig } from "./lint/oxlint/rules/toolchain/no-standalone-tsconfig--extend-shared-preset.ts";
 import { noUncheckedAuthoredPath } from "./lint/oxlint/rules/toolchain/no-unchecked-authored-path--include-it-in-every-declared-check.ts";
+import { noUnguardedFilteredRun } from "./lint/oxlint/rules/toolchain/no-unguarded-filtered-run--add-fail-if-no-match.ts";
 import { createNoVersionRange } from "./lint/oxlint/rules/toolchain/no-version-range--pin-the-exact-version.ts";
 import { createRequireCatalogEntry } from "./lint/oxlint/rules/toolchain/require-catalog-entry--register-shared-dependency.ts";
 import { requireRegisteredFile } from "./lint/oxlint/rules/toolchain/require-registered-file--restore-it-at-the-registered-path.ts";
@@ -249,6 +250,7 @@ const plugin: Plugin = {
     [noTestContextEscape.name]: noTestContextEscape,
     [noTwinDeclaration.name]: noTwinDeclaration,
     [noUncheckedAuthoredPath.name]: noUncheckedAuthoredPath,
+    [noUnguardedFilteredRun.name]: noUnguardedFilteredRun,
     [noUncheckedCast.name]: noUncheckedCast,
     [noUndersizedExternalSnapshot.name]: noUndersizedExternalSnapshot,
     [noUnorderedImport.name]: noUnorderedImport,

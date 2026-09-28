@@ -10,7 +10,7 @@ if [ -f "${HOME}/.config/vite-plus/env" ]; then
   . "${HOME}/.config/vite-plus/env"
 fi
 
-vp run --filter @repo/infra-cloudflare materialize:env
+vp run --filter @repo/infra-cloudflare --fail-if-no-match materialize:env
 
 hooks_path="$(git config --get core.hooksPath || true)"
 vite_hooks="$(pwd)/.vite-hooks/_"

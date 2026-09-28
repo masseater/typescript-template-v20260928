@@ -21,6 +21,7 @@ import {
   workspaceDirectories,
   workspaceNames,
 } from "./tasks-test-fixture.ts";
+import { unguardedFilterViolations } from "./scripts-test-fixture.ts";
 import { dedicatedToolVitestProjects, rootNodeTestIncludes } from "./tool-test-projects.ts";
 
 const hooks: Readonly<Record<string, string>> = import.meta.glob(
@@ -65,7 +66,7 @@ function misplacedHooks(): string[] {
         source !==
           [
             `node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= ${requiredNodeMajor} ? 0 : 1)' || { echo "Node ${requiredNodeMajor} or later is required by package.json engines; this hook ran on $(node --version)" >&2; exit 1; }`,
-            `vp run --filter @repo/dont-review-it hook:${stage}`,
+            `vp run --filter @repo/dont-review-it --fail-if-no-match hook:${stage}`,
             "",
           ].join("\n") ||
         commands("tools/dont-review-it", `hook:${stage}`).join("\n") !==
@@ -163,7 +164,7 @@ function reachesTest(directory: string, stages: string[]): boolean {
 function filterCoveredTestProjects(): Set<string> {
   const packages = new Set(
     workflowRuns("../../../../../../.github/workflows/check.yml").flatMap((command) => {
-      const match = /^vp run --filter (@repo\/[\w-]+) (test(?::[\w-]+)?)$/u.exec(command);
+      const match = /^vp run --filter (@repo\/[\w-]+) --fail-if-no-match (test(?::[\w-]+)?)$/u.exec(command);
       return match?.[1] === undefined ? [] : [match[1]];
     }),
   );
@@ -295,7 +296,7 @@ describe("lifecycle entry points", () => {
   it("runs the repository check once inside prepr and the unit suite on the merge queue", () => {
     expect.hasAssertions();
     expect(workflowRuns("../../../../../../.github/workflows/check.yml")).toStrictEqual([
-      "vp run --filter @repo/dont-review-it pr-affected",
+      "vp run --filter @repo/dont-review-it --fail-if-no-match pr-affected",
       "vp run -w prepr",
       "vp run --fail-if-no-match $AFFECTED_FILTERS prepr",
       "vp run compile:paraglide",
@@ -303,7 +304,7 @@ describe("lifecycle entry points", () => {
       "vp run -r premerge",
       "vp run compile:paraglide",
       "vp test run --project node --project node-isolated --project workers --shard=${{ matrix.shard }}/4",
-      "vp run --filter @repo/e2e test:e2e",
+      "vp run --filter @repo/e2e --fail-if-no-match test:e2e",
       "vp run -r prepr",
     ]);
   });
@@ -314,6 +315,34 @@ describe("lifecycle entry points", () => {
       /^packages:\n {2}- apps\/\*\n {2}- libs\/\*\n {2}- infra\/\*\n {2}- tools\/\*\n(?! {2}-)/u,
     );
     expect(configuredDirectories).toStrictEqual(workspaceDirectories);
+  });
+});
+
+const WorkflowSteps = Schema.Struct({
+  jobs: Schema.Record(
+    Schema.String,
+    Schema.Struct({
+      steps: Schema.optionalKey(Schema.Array(Schema.Struct({ run: Schema.optionalKey(Schema.String) }))),
+    }),
+  ),
+});
+
+const workflowStepRuns = Object.entries(workflows).flatMap(([file, source]) =>
+  Object.entries(Schema.decodeUnknownSync(WorkflowSteps)(parse(source)).jobs).flatMap(
+    ([job, { steps = [] }]) =>
+      steps.flatMap(({ run }) => (run === undefined ? [] : [[`${file}#${job}`, run] as const])),
+  ),
+);
+
+describe("filtered runs outside the task graph", () => {
+  it("fails every filtered run in a workflow step or a git hook when the filter matches nothing", () => {
+    expect.hasAssertions();
+    expect(workflowStepRuns.length).toBeGreaterThan(0);
+    expect(
+      [...workflowStepRuns, ...Object.entries(hooks)].flatMap(([name, command]) =>
+        unguardedFilterViolations(name, command),
+      ),
+    ).toStrictEqual([]);
   });
 });
 

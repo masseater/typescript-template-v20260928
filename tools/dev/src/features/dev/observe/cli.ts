@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { causeRecord, reportFailed, runCli, runCommand } from "@repo/cli";
-import { APPLICATION, applicationOrigins } from "@repo/config";
+import { APPLICATION, applicationOrigins, filteredRunCommand } from "@repo/config";
 import { receiverOrigin } from "@repo/local";
 import { TraceId } from "@repo/observability";
 import { Cause, Clock, Console, DateTime, Effect, Option, Schema } from "effect";
@@ -111,7 +111,7 @@ const remediation = {
   explorer:
     "Check arguments and that --app points at a running local app on a loopback origin. Use --help for read-only query commands.",
   exported:
-    "Start the OTLP receiver with `vp run --filter @repo/local up` and check that --trace-id and --minutes cover the exported trace.",
+    `Start the OTLP receiver with \`${filteredRunCommand("@repo/local", "up")}\` and check that --trace-id and --minutes cover the exported trace.`,
 } as const;
 
 function queryFailure(
