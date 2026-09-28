@@ -5,7 +5,6 @@ import {
   AdminInquiryList,
   AdminInquiryThread,
   InquiryListQuery,
-  InquiryMemberSummary,
   InquiryReply,
 } from "#shared/contracts/index.ts";
 
@@ -21,12 +20,6 @@ function loadInquiry(id: string): Promise<typeof AdminInquiryThread.Type> {
     .then((response) => apiData(AdminInquiryThread, response));
 }
 
-function loadMemberSummary(memberId: string): Promise<typeof InquiryMemberSummary.Type> {
-  return adminClient()
-    .inquiries.member.get({ query: { id: memberId } })
-    .then((response) => apiData(InquiryMemberSummary, response));
-}
-
 function replyToInquiry(values: typeof InquiryReply.Type): Promise<typeof AdminInquiryThread.Type> {
   return adminClient()
     .inquiries.reply.post(values)
@@ -39,4 +32,4 @@ function closeInquiry(id: string): Promise<typeof AdminInquiryThread.Type> {
     .then((response) => apiData(AdminInquiryThread, response));
 }
 
-export { closeInquiry, loadInquiry, loadInquiries, loadMemberSummary, replyToInquiry };
+export { closeInquiry, loadInquiry, loadInquiries, replyToInquiry };
