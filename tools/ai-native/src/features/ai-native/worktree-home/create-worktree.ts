@@ -51,7 +51,7 @@ export const createWorktree = (
     const repositoryRoot = yield* repositoryRootOf(run, worktreeRequest.cwd);
     if (repositoryRoot === undefined) {
       return yield* new WorktreeHomeFailure({
-        message: `worktree-home: ${worktreeRequest.cwd} is not inside a git repository`,
+        message: `worktree-home: ${worktreeRequest.cwd} has no working tree to add a worktree beside`,
       });
     }
     const location = yield* locationFor(run, { ...worktreeRequest, repositoryRoot });

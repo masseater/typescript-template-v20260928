@@ -12,3 +12,11 @@ export const unresolvedDestinationReason = [
   "worktree-home: the path of `git worktree add` could not be read as a literal path, so whether it lands inside the repository cannot be checked.",
   "Write the destination as a literal path outside the repository, such as ~/worktrees/<host>/<owner>/<repo>/<branch>.",
 ].join("\n");
+
+export const unconfirmedRepositoryReason = (gitFailure: string): string =>
+  [
+    "worktree-home: whether the worktree would land inside the repository cannot be checked, because git could not name the repository.",
+    gitFailure,
+    "",
+    "`git worktree add` only succeeds inside a repository, so run it from a directory git can read, with a literal destination outside the repository such as ~/worktrees/<host>/<owner>/<repo>/<branch>.",
+  ].join("\n");

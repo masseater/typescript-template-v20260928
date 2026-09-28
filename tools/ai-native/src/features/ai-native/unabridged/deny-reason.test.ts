@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 
+import { malformedBashInputReason } from "../bash-command.ts";
 import { denyReasonOf } from "./deny-reason.ts";
 
 describe("denyReasonOf", () => {
@@ -29,20 +30,12 @@ Read the whole record instead:
     });
   });
 
-  describe("a tool call no command line can be read out of", () => {
+  describe("a tool other than Bash", () => {
     const it = test
       .extend("theDenyReasonOfAReadOfAFilePath", () =>
         denyReasonOf("Read", { file_path: "/repo/x.ts" }))
       .extend("theDenyReasonOfAReadWhoseInputTails", () =>
         denyReasonOf("Read", { command: "vp test | tail -5" }),
-      )
-      .extend("theDenyReasonOfABashCallHandedNothing", () => denyReasonOf("Bash", null))
-      .extend("theDenyReasonOfABashCallHandedABareString", () =>
-        denyReasonOf("Bash", "vp test | tail -5"),
-      )
-      .extend("theDenyReasonOfABashCallHandedAnEmptyInput", () => denyReasonOf("Bash", {}))
-      .extend("theDenyReasonOfABashCallWhoseCommandIsANumber", () =>
-        denyReasonOf("Bash", { command: 7 }),
       );
 
     it("refuses nothing for a Read holding a file path", ({ theDenyReasonOfAReadOfAFilePath }) => {
@@ -54,29 +47,45 @@ Read the whole record instead:
     }) => {
       expect(theDenyReasonOfAReadWhoseInputTails).toBe(undefined);
     });
+  });
 
-    it("refuses nothing for a Bash call handed no input", ({
-      theDenyReasonOfABashCallHandedNothing,
-    }) => {
-      expect(theDenyReasonOfABashCallHandedNothing).toBe(undefined);
+  describe("a Bash call no command line can be read out of", () => {
+    const it = test
+      .extend("theDenyReasonOfABashCallHandedNothing", () => denyReasonOf("Bash", null))
+      .extend("theDenyReasonOfABashCallHandedABareString", () =>
+        denyReasonOf("Bash", "vp test | tail -5"),
+      )
+      .extend("theDenyReasonOfABashCallHandedAnEmptyInput", () => denyReasonOf("Bash", {}))
+      .extend("theDenyReasonOfABashCallWhoseCommandIsANumber", () =>
+        denyReasonOf("Bash", { command: 7 }),
+      );
+
+    it("refuses a Bash call handed no input", ({ theDenyReasonOfABashCallHandedNothing }) => {
+      expect(theDenyReasonOfABashCallHandedNothing).toBe(`unabridged: ${malformedBashInputReason}`);
     });
 
-    it("refuses nothing for a Bash call handed a bare string", ({
+    it("refuses a Bash call handed a bare string", ({
       theDenyReasonOfABashCallHandedABareString,
     }) => {
-      expect(theDenyReasonOfABashCallHandedABareString).toBe(undefined);
+      expect(theDenyReasonOfABashCallHandedABareString).toBe(
+        `unabridged: ${malformedBashInputReason}`,
+      );
     });
 
-    it("refuses nothing for a Bash call handed an input without a command line", ({
+    it("refuses a Bash call handed an input without a command line", ({
       theDenyReasonOfABashCallHandedAnEmptyInput,
     }) => {
-      expect(theDenyReasonOfABashCallHandedAnEmptyInput).toBe(undefined);
+      expect(theDenyReasonOfABashCallHandedAnEmptyInput).toBe(
+        `unabridged: ${malformedBashInputReason}`,
+      );
     });
 
-    it("refuses nothing for a Bash call whose command line is not a string", ({
+    it("refuses a Bash call whose command line is not a string", ({
       theDenyReasonOfABashCallWhoseCommandIsANumber,
     }) => {
-      expect(theDenyReasonOfABashCallWhoseCommandIsANumber).toBe(undefined);
+      expect(theDenyReasonOfABashCallWhoseCommandIsANumber).toBe(
+        `unabridged: ${malformedBashInputReason}`,
+      );
     });
   });
 });

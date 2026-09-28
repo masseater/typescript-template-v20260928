@@ -1,8 +1,17 @@
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
+import { malformedBashInputReason } from "../bash-command.ts";
 import { denyReasonOf } from "./deny-reason.ts";
-import { insideRepositoryReason, unresolvedDestinationReason } from "./message.ts";
+import { gitOutput, repositoryRootOf, type GitRunner } from "./git.ts";
+import {
+  insideRepositoryReason,
+  unconfirmedRepositoryReason,
+  unresolvedDestinationReason,
+} from "./message.ts";
+
+const failingGit: GitRunner = () =>
+  Effect.succeed({ status: 128, stderr: "fatal: not a git repository", stdout: "" });
 
 describe("denyReasonOf", () => {
   const it = test
@@ -130,6 +139,27 @@ describe("denyReasonOf", () => {
           toolName: "Bash",
         }),
       ),
+    )
+    .extend("gitFailureReason", () =>
+      Effect.runSync(
+        denyReasonOf({
+          cwd: "/repo",
+          home: "/home/dev",
+          repositoryRootOf: (directory) => repositoryRootOf(failingGit, directory),
+          toolInput: { command: "git worktree add .claude/worktrees/x" },
+          toolName: "Bash",
+        }),
+      ),
+    )
+    .extend("theGitFailure", () =>
+      Effect.runSync(
+        Effect.flip(
+          gitOutput(failingGit, {
+            cwd: "/repo",
+            handed: ["rev-parse", "--path-format=absolute", "--git-common-dir"],
+          }),
+        ),
+      ),
     );
 
   it("refuses a worktree inside the repository", ({ nestedReason }) => {
@@ -156,7 +186,7 @@ describe("denyReasonOf", () => {
     expect(missingPathReason).toBe(unresolvedDestinationReason);
   });
 
-  it("allows an add run outside any repository", ({ outsideRepositoryReason }) => {
+  it("allows an add git places in no working tree", ({ outsideRepositoryReason }) => {
     expect(outsideRepositoryReason).toBe(undefined);
   });
 
@@ -164,7 +194,14 @@ describe("denyReasonOf", () => {
     expect(otherToolReason).toBe(undefined);
   });
 
-  it("ignores a Bash input without a command string", ({ malformedInputReason }) => {
-    expect(malformedInputReason).toBe(undefined);
+  it("refuses a Bash input without a command string", ({ malformedInputReason }) => {
+    expect(malformedInputReason).toBe(`worktree-home: ${malformedBashInputReason}`);
+  });
+
+  it("refuses an add when git cannot name the repository", ({
+    gitFailureReason,
+    theGitFailure,
+  }) => {
+    expect(gitFailureReason).toBe(unconfirmedRepositoryReason(theGitFailure.message));
   });
 });

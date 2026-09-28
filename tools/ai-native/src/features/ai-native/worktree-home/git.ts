@@ -36,16 +36,12 @@ export const gitOutput = (
 export const repositoryRootOf = (
   run: GitRunner,
   directory: string,
-): Effect.Effect<string | undefined> =>
-  run({
+): Effect.Effect<string | undefined, WorktreeHomeFailure> =>
+  gitOutput(run, {
     cwd: directory,
     handed: ["rev-parse", "--path-format=absolute", "--git-common-dir"],
   }).pipe(
-    Effect.map((commonDirectory) => {
-      if (commonDirectory.status !== 0) {
-        return undefined;
-      }
-      const gitDirectory = commonDirectory.stdout.trim();
-      return gitDirectory.endsWith("/.git") ? gitDirectory.slice(0, -"/.git".length) : undefined;
-    }),
+    Effect.map((gitDirectory) =>
+      gitDirectory.endsWith("/.git") ? gitDirectory.slice(0, -"/.git".length) : undefined,
+    ),
   );
