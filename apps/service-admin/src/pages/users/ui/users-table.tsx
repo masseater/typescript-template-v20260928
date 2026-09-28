@@ -1,5 +1,5 @@
 import { useSessionUser } from "@repo/auth-ui";
-import { ADMIN_PERMISSION, grantsAdminLevel } from "@repo/config";
+import { operationVerdict } from "@repo/config";
 import { LoadingRow, NavigationLink, Table, TableBody } from "@repo/ui";
 import { createColumnHelper, metaHelper, tableFeatures, useTable } from "@tanstack/react-table";
 
@@ -72,7 +72,7 @@ function UsersTable({
   users,
 }: Readonly<{ onChanged: () => void; users: readonly ListedUser[] | undefined }>): ReactElement {
   const { permission } = useSessionUser();
-  const operator = grantsAdminLevel(permission, ADMIN_PERMISSION.operator);
+  const operator = operationVerdict("manageMembers", permission).permitted;
   const table = useTable({
     columns: usersTableColumns,
     data: users ?? emptyListedUsers,

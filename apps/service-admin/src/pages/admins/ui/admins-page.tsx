@@ -1,5 +1,5 @@
 import { ForbiddenNotice, useSessionUser } from "@repo/auth-ui";
-import { ADMIN_PERMISSION, grantsAdminLevel } from "@repo/config";
+import { operationVerdict } from "@repo/config";
 import { InvitationBoard, Page } from "@repo/ui";
 
 import { useAdminList } from "#pages/admins/model/admin-list.ts";
@@ -21,7 +21,7 @@ function AdminsPage(): ReactElement {
   const { permission } = useSessionUser();
   return (
     <Page title="管理者">
-      {grantsAdminLevel(permission, ADMIN_PERMISSION.owner) ? <AdminsBoard /> : <ForbiddenNotice />}
+      {operationVerdict("manageAdmins", permission).permitted ? <AdminsBoard /> : <ForbiddenNotice />}
     </Page>
   );
 }

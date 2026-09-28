@@ -1,4 +1,4 @@
-import { APPLICATION, STAFF_PERMISSION, grantsStaffLevel } from "@repo/config";
+import { APPLICATION, operationVerdict } from "@repo/config";
 import {
   FlagEditorAccess,
   FlagEditorRequired,
@@ -22,7 +22,7 @@ type WikiServices = AppServices | FeatureFlags | FlagEditorAccess | WikiPublishe
 
 const staffFlagEditors = Layer.succeed(FlagEditorAccess, {
   assertEditor: (user) =>
-    grantsStaffLevel(user.permission, STAFF_PERMISSION.editor)
+    operationVerdict("editFlags", user.permission).permitted
       ? Effect.void
       : Effect.fail(new FlagEditorRequired()),
 });

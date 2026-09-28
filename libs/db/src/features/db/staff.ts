@@ -2,7 +2,6 @@ import {
   APPLICATION,
   AUDIT_ACTION,
   ROLE,
-  STAFF_PERMISSION,
   staffPermissions,
   type StaffPermission,
 } from "@repo/config";
@@ -42,7 +41,7 @@ const staffPermissionOf = (permission: string | null): StaffPermission | undefin
   staffPermissions.find((level) => level === permission);
 
 export const listStaff = Effect.fn("listStaff")(function* listStaff(sessionId: string) {
-  yield* requireStaff(sessionId, STAFF_PERMISSION.editor);
+  yield* requireStaff(sessionId, "manageStaff");
   const checkedAt = DateTime.toDate(yield* DateTime.now);
   const staff = yield* query((database) =>
     database
@@ -57,7 +56,7 @@ export const listStaff = Effect.fn("listStaff")(function* listStaff(sessionId: s
       .where(
         and(
           eq(user.role, ROLE.staff),
-          liveStaff(database, { checkedAt, required: STAFF_PERMISSION.editor, sessionId }),
+          liveStaff(database, { checkedAt, operation: "manageStaff", sessionId }),
         ),
       )
       .orderBy(desc(user.createdAt), user.id),
@@ -70,7 +69,7 @@ export const inviteStaff = Effect.fn("inviteStaff")(function* inviteStaff(draft:
   readonly permission: StaffPermission;
   readonly sessionId: string;
 }) {
-  const actor = yield* requireStaff(draft.sessionId, STAFF_PERMISSION.editor);
+  const actor = yield* requireStaff(draft.sessionId, "manageStaff");
   return yield* issueInvite({
     audience: APPLICATION.wiki,
     audit: staffActor(actor, AUDIT_ACTION.staffInvited),
@@ -86,13 +85,13 @@ export const setStaffPermission = Effect.fn("setStaffPermission")(
     readonly staffId: string;
   }) {
     const { permission, sessionId, staffId } = change;
-    const actor = yield* requireStaff(sessionId, STAFF_PERMISSION.editor);
+    const actor = yield* requireStaff(sessionId, "manageStaff");
     const updatedAt = DateTime.toDate(yield* DateTime.now);
     const auditId = yield* freshId;
     const [, changedStaff] = yield* query((database) => {
       const live = liveStaff(database, {
         checkedAt: updatedAt,
-        required: STAFF_PERMISSION.editor,
+        operation: "manageStaff",
         sessionId,
       });
       const audit = database.run(
@@ -121,14 +120,14 @@ export const removeStaff = Effect.fn("removeStaff")(function* removeStaff(
   sessionId: string,
   staffId: string,
 ) {
-  const actor = yield* requireStaff(sessionId, STAFF_PERMISSION.editor);
+  const actor = yield* requireStaff(sessionId, "manageStaff");
   if (actor.user.id === staffId) {
     return yield* new TargetUnavailable();
   }
   const checkedAt = DateTime.toDate(yield* DateTime.now);
   const auditId = yield* freshId;
   const [, removedStaff] = yield* query((database) => {
-    const live = liveStaff(database, { checkedAt, required: STAFF_PERMISSION.editor, sessionId });
+    const live = liveStaff(database, { checkedAt, operation: "manageStaff", sessionId });
     const audit = database.run(
       auditWhenTargeted(database, {
         actorIsLive: live,

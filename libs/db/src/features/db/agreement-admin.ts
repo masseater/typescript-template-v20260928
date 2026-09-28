@@ -1,4 +1,4 @@
-import { ADMIN_PERMISSION, AUDIT_ACTION, type AgreementKind } from "@repo/config";
+import { AUDIT_ACTION, type AgreementKind } from "@repo/config";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { DateTime, Effect } from "effect";
 
@@ -13,7 +13,7 @@ import { liveAdmin, requireAdmin } from "./privileged-session.ts";
 const canPublishAgreements = Effect.fn("canPublishAgreements")(function* canPublishAgreements(
   sessionId: string,
 ) {
-  return yield* requireAdmin(sessionId, ADMIN_PERMISSION.operator).pipe(
+  return yield* requireAdmin(sessionId, "publishAgreements").pipe(
     Effect.as(true),
     Effect.catchTags({
       AdminStrongSessionRequired: () => Effect.succeed(false),
@@ -34,7 +34,7 @@ const listedColumns = {
 const listAgreementVersions = Effect.fn("listAgreementVersions")(function* listAgreementVersions(
   sessionId: string,
 ) {
-  yield* requireAdmin(sessionId);
+  yield* requireAdmin(sessionId, "browseAdminConsole");
   const versions = yield* query((database) =>
     database
       .select(listedColumns)
@@ -48,7 +48,7 @@ const readAgreementVersion = Effect.fn("readAgreementVersion")(function* readAgr
   sessionId: string,
   version: string,
 ) {
-  yield* requireAdmin(sessionId);
+  yield* requireAdmin(sessionId, "browseAdminConsole");
   const [found] = yield* query((database) =>
     database
       .select({ ...listedColumns, body: agreementVersion.body })
@@ -75,7 +75,7 @@ const createAgreementDraft = Effect.fn("createAgreementDraft")(
     readonly summary: string | undefined;
     readonly version: string;
   }) {
-    const actor = yield* requireAdmin(draft.sessionId);
+    const actor = yield* requireAdmin(draft.sessionId, "draftAgreements");
     const createdAt = DateTime.toDate(yield* DateTime.now);
     const draftId = yield* freshId;
     const [createdDraft] = yield* query((database) =>
@@ -107,7 +107,7 @@ const reviseAgreementDraft = Effect.fn("reviseAgreementDraft")(
     readonly sessionId: string;
     readonly summary: string | undefined;
   }) {
-    yield* requireAdmin(revision.sessionId);
+    yield* requireAdmin(revision.sessionId, "draftAgreements");
     const [revised] = yield* query((database) =>
       database
         .update(agreementVersion)
@@ -127,7 +127,7 @@ const publishAgreementVersion = Effect.fn("publishAgreementVersion")(
     readonly id: string;
     readonly sessionId: string;
   }) {
-    const actor = yield* requireAdmin(published.sessionId, ADMIN_PERMISSION.operator);
+    const actor = yield* requireAdmin(published.sessionId, "publishAgreements");
     const publishedAt = DateTime.toDate(yield* DateTime.now);
     const change = {
       action: AUDIT_ACTION.agreementPublished,
@@ -138,7 +138,7 @@ const publishAgreementVersion = Effect.fn("publishAgreementVersion")(
     const [, publishedVersions] = yield* query((database) => {
       const publishingAdminIsLive = liveAdmin(database, {
         checkedAt: publishedAt,
-        required: ADMIN_PERMISSION.operator,
+        operation: "publishAgreements",
         sessionId: published.sessionId,
       });
       const unpublishedDraft = and(

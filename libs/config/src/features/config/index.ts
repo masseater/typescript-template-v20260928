@@ -46,8 +46,6 @@ export {
   accountStates,
   adminPermissions,
   authenticationMethods,
-  grantsAdminLevel,
-  grantsStaffLevel,
   roles,
   staffPermissions,
   strongAuthenticationMethods,
@@ -61,6 +59,13 @@ export type {
   StaffPermission,
   StrongAuthenticationMethod,
 } from "./identity.ts";
+export { grantingPermissions, operationVerdict } from "./privileged-operations.ts";
+export type {
+  AdminOperation,
+  OperationVerdict,
+  PrivilegedOperation,
+  StaffOperation,
+} from "./privileged-operations.ts";
 export {
   memberApiKeyHeader,
   memberApiKeyRateLimitMax,
