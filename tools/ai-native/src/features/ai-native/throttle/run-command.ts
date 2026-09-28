@@ -1,3 +1,4 @@
+import { cliStderr } from "@repo/cli";
 import { Effect, type Scope } from "effect";
 import { ChildProcess } from "effect/unstable/process";
 import { attemptAsync } from "es-toolkit";
@@ -76,9 +77,7 @@ const timeoutFired = (parameters: {
   );
 
 const reportTreeTerminationFailure = (failure: Error): void => {
-  process.stderr.write(
-    `throttle: could not terminate the whole command tree: ${failure.message}\n`,
-  );
+  cliStderr.write(`throttle: could not terminate the whole command tree: ${failure.message}\n`);
 };
 
 type Verdict = {
@@ -132,11 +131,11 @@ const releaseFailureOf = (hold: SlotHold): Promise<unknown> =>
 
 const reportChildEnd = (settled: ChildExit): number => {
   if (settled.bySignal !== null) {
-    process.stderr.write(`throttle: command was killed by ${settled.bySignal}\n`);
+    cliStderr.write(`throttle: command was killed by ${settled.bySignal}\n`);
     return 1;
   }
   if (settled.exitCode !== 0) {
-    process.stderr.write(`throttle: command failed with exit code ${settled.exitCode}\n`);
+    cliStderr.write(`throttle: command failed with exit code ${settled.exitCode}\n`);
     return 1;
   }
   return 0;
@@ -144,13 +143,13 @@ const reportChildEnd = (settled: ChildExit): number => {
 
 const reportVerdict = (invocation: Invocation, verdict: Verdict): number => {
   if (verdict.settled.kind === "start-failure") {
-    process.stderr.write(
+    cliStderr.write(
       `throttle: could not start ${invocation.executable}: ${verdict.settled.failure.message}\n`,
     );
     return 1;
   }
   if (verdict.timedOut) {
-    process.stderr.write(`throttle: killed: ran past the ${invocation.timeoutSec}s timeout\n`);
+    cliStderr.write(`throttle: killed: ran past the ${invocation.timeoutSec}s timeout\n`);
     return 1;
   }
   return reportChildEnd(verdict.settled);
@@ -158,7 +157,7 @@ const reportVerdict = (invocation: Invocation, verdict: Verdict): number => {
 
 const reportReleaseFailure = (failure: unknown): number => {
   const detail = failure instanceof Error ? failure.message : String(failure);
-  process.stderr.write(`throttle: could not release the slot: ${detail}\n`);
+  cliStderr.write(`throttle: could not release the slot: ${detail}\n`);
   return 1;
 };
 
@@ -216,7 +215,7 @@ const spawnUnderHeldInterrupt = (input: {
       onUnreleased: warnUnreleased,
     });
     installInterruptHandler(held.handler);
-    process.stderr.write(`throttle: run ${input.invocation.commandLine}\n`);
+    cliStderr.write(`throttle: run ${input.invocation.commandLine}\n`);
     const started = yield* input.dependencies
       .spawnChild({
         executable: input.invocation.executable,

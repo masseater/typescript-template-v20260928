@@ -70,6 +70,14 @@ const missingWorkspaceGlobs = (patterns: readonly string[]): string[] => {
     .toSorted();
 };
 
+const uncoveredWorkspaces = (patterns: readonly string[]): string[] => {
+  const prefixes = patterns.map(globPrefix);
+  return workspaceDirectories.filter(
+    (directory) =>
+      !prefixes.some((prefix) => directory === prefix || directory.startsWith(`${prefix}/`)),
+  );
+};
+
 const extendsValue = (config: unknown): string | undefined => {
   if (typeof config !== "object" || config === null) {
     return undefined;
@@ -164,6 +172,22 @@ describe("inspection coverage", () => {
     expect.hasAssertions();
     expect(missingWorkspaceGlobs(templateWorkspaces)).toStrictEqual([]);
     expect(missingWorkspaceGlobs(awaitingPresetPackages)).toStrictEqual([]);
+  });
+
+  it("applies the template lint rules to every workspace", () => {
+    expect.hasAssertions();
+    expect(uncoveredWorkspaces(templateWorkspaces)).toStrictEqual([]);
+    expect(
+      uncoveredWorkspaces([
+        "apps/**",
+        "libs/**",
+        "infra/**",
+        "tools/dev/**",
+        "tools/e2e/**",
+        "tools/load/**",
+        "tools/dont-review-it/**",
+      ]),
+    ).toStrictEqual(["tools/ai-native", "tools/ai-native-telemetry"]);
   });
 
   it("points every literal lint override path at a file in the tree", () =>

@@ -15,6 +15,8 @@ const cliStderr: WriteTarget = {
   write: (line) => process.stderr.write(line),
 };
 
+const cliStderrIsInteractive = (): boolean => process.stderr.isTTY;
+
 const causeRecord = (
   eventName: string,
   failure: {
@@ -46,5 +48,13 @@ const runCli = <Failure>(
   );
 };
 
-export { causeRecord, cliStderr, cliStdout, firstUserArgumentIndex, reportFailed, runCli };
+export {
+  causeRecord,
+  cliStderr,
+  cliStderrIsInteractive,
+  cliStdout,
+  firstUserArgumentIndex,
+  reportFailed,
+  runCli,
+};
 export type { WriteTarget };

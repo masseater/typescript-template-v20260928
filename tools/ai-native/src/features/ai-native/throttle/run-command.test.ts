@@ -3,6 +3,7 @@ import { Deferred, Effect } from "effect";
 import { describe, expect, vi } from "vite-plus/test";
 
 import { epochMillis, filesystem, joinPath, readFileString, removePath } from "../host.ts";
+import { failureSpelling } from "./failure-codes.ts";
 import { TREE_TERMINATION_SIGNAL } from "./process-tree.ts";
 import { runWithSlot } from "./run-command.ts";
 import { runThrottle } from "./run-throttle.ts";
@@ -539,16 +540,15 @@ describe("runWithSlot", () => {
             );
             yield* Effect.sleep("200 millis");
             const grandchildPid = Number((yield* readFileString(pidFile)).trim());
-            return yield* Effect.sync(() => {
-              try {
-                process.kill(grandchildPid, 0);
-                throw new Error("the grandchild was still alive after the timeout");
-              } catch (probedGrandchild) {
-                return probedGrandchild instanceof Error
-                  ? probedGrandchild.message
-                  : String(probedGrandchild);
-              }
-            });
+            return yield* Effect.try({
+              try: () => process.kill(grandchildPid, 0),
+              catch: failureSpelling,
+            }).pipe(
+              Effect.match({
+                onFailure: (probedGrandchild) => probedGrandchild,
+                onSuccess: () => "the grandchild was still alive after the timeout",
+              }),
+            );
           }),
         ),
       );
@@ -578,7 +578,7 @@ describe("runWithSlot", () => {
     );
 
     it("leaves no grandchild behind", { timeout: 50_000 }, ({ theProbeOfTheGrandchild }) => {
-      expect(theProbeOfTheGrandchild).toBe("kill ESRCH");
+      expect(theProbeOfTheGrandchild).toBe("ESRCH");
     });
   });
 
