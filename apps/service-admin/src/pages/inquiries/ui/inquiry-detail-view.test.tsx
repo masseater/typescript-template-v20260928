@@ -93,14 +93,14 @@ describe("inquiry thread", () => {
   });
 
   it("lists the inquiries", () => {
-    expect(rendered(undefined, thread(INQUIRY_STATUS.open), [summary])).toContain(
-      '<span class="block truncate text-sm">ログインできません</span>',
+    expect(rendered(undefined, thread(INQUIRY_STATUS.open), [summary])).toMatch(
+      /<span[^>]*>ログインできません<\/span>/u,
     );
   });
 
   it("marks the operator's messages", () => {
-    expect(rendered(undefined, thread(INQUIRY_STATUS.open), [summary])).toContain(
-      '<li class="rounded-lg border border-border p-3 bg-muted">',
+    expect(rendered(undefined, thread(INQUIRY_STATUS.open), [summary])).toMatch(
+      /<p[^>]*>運営<\/p>/u,
     );
   });
 

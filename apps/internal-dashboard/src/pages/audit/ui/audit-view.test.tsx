@@ -65,12 +65,10 @@ describe("audit log", () => {
   });
 
   it("shows the total", () => {
-    expect(rendered(undefined, auditPage)).toContain(
-      '<p class="text-sm text-muted-foreground">全 1 件</p>',
-    );
+    expect(rendered(undefined, auditPage)).toMatch(/<p[^>]*>全 1 件<\/p>/u);
   });
 
   it("lists each event target", () => {
-    expect(rendered(undefined, auditPage)).toContain('<td class="p-2">member-board</td>');
+    expect(rendered(undefined, auditPage)).toMatch(/<td[^>]*>member-board<\/td>/u);
   });
 });
