@@ -114,6 +114,11 @@ export default defineConfig({
         command: `vp test run --project '!@repo/*' --exclude '${devServerTests}'`,
         dependsOn: ["compile:paraglide"],
       },
+      "test:unit": {
+        ...testRun.test,
+        command: "vp test run --project node --project node-isolated --project workers",
+        dependsOn: ["compile:paraglide"],
+      },
       "test:dev-server": {
         cache: false,
         command: "vp test run --project dev-server",
