@@ -66,7 +66,7 @@ function InquiryConversation({
             key={message.id}
             className={`rounded-lg border border-border p-3 ${message.authorKind === ROLE.administrator ? "bg-muted" : ""}`}
           >
-            <p className="text-sm leading-normal font-medium">
+            <p className="text-sm leading-normal font-bold">
               {message.authorKind === ROLE.administrator ? "運営" : "会員"}
             </p>
             <p className="text-base leading-normal whitespace-pre-wrap">{message.body}</p>
@@ -138,7 +138,7 @@ function MemberSummaryView({
       )}
       {summary !== undefined && (
         <>
-          <p className="text-base leading-normal font-medium">{summary.name}</p>
+          <p className="text-base leading-normal font-bold">{summary.name}</p>
           <p className="text-sm leading-normal text-muted-foreground">{summary.email}</p>
           <TextLink to="/members/$id" params={{ id: summary.id }}>
             利用者の詳細

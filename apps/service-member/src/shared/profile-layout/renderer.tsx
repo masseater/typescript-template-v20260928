@@ -29,7 +29,9 @@ function SheetField({
   }
   return (
     <section aria-label={label}>
-      <h2 className="text-sm font-medium text-muted-foreground">{label}</h2>
+      <Heading as="h2" size="block">
+        {label}
+      </Heading>
       <p className="text-base leading-relaxed whitespace-pre-wrap">{value}</p>
     </section>
   );

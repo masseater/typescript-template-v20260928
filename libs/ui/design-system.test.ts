@@ -522,6 +522,30 @@ const appSourceFiles = await Effect.runPromise(
 const primaryUtility =
   /(?<![\w-])(?:bg|text|border|ring|outline|fill|stroke|decoration|divide|accent|caret|shadow|from|via|to)-primary(?!\w)/gu;
 
+const fontWeightClass =
+  /(?<![\w-])font-(?:thin|extralight|light|normal|medium|semibold|bold|extrabold|black)(?![\w-])/gu;
+
+const fontWeights: Readonly<Record<string, number>> = {
+  "font-black": 900,
+  "font-bold": 700,
+  "font-extrabold": 800,
+  "font-extralight": 200,
+  "font-light": 300,
+  "font-medium": 500,
+  "font-normal": 400,
+  "font-semibold": 600,
+  "font-thin": 100,
+};
+
+const unloadedWeights = (files: readonly SourceFile[]): string[] => {
+  const textFace = firstFamily(resolvedValue(declarations(stylesheet), "--font-sans") ?? "");
+  const faces = loadedFaces(stylesheet).filter((face) => face.family === textFace);
+  return sourceMatches(files, fontWeightClass).filter((found) => {
+    const weight = fontWeights[found.slice(found.lastIndexOf(" ") + 1)] ?? 0;
+    return !faces.some((face) => weightCovers(face.weight, weight));
+  });
+};
+
 const probe = (source: string): SourceFile[] => [{ file: "apps/probe/src/probe.tsx", source }];
 
 describe("app sources keep to the design system", () => {
@@ -540,5 +564,17 @@ describe("app sources keep to the design system", () => {
     expect(
       sourceMatches(probe('<a className="text-link hover:text-primary" />'), primaryUtility),
     ).toStrictEqual(["apps/probe/src/probe.tsx: text-primary"]);
+  });
+
+  it("uses only the text weights the stylesheet loads", () => {
+    expect.hasAssertions();
+    expect(unloadedWeights(appSourceFiles)).toStrictEqual([]);
+  });
+
+  it("reports a text weight the stylesheet does not load", () => {
+    expect.hasAssertions();
+    expect(
+      unloadedWeights(probe('<p className="font-bold" /><p className="font-medium" />')),
+    ).toStrictEqual(["apps/probe/src/probe.tsx: font-medium"]);
   });
 });

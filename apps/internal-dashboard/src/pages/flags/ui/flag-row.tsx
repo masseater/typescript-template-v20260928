@@ -32,7 +32,7 @@ function FlagRow({
     <div className="flex flex-col gap-2 rounded-md border border-border bg-card p-4">
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <p className="font-medium">{entry.key}</p>
+          <p className="font-bold">{entry.key}</p>
           <p className="text-sm text-muted-foreground">{entry.description}</p>
         </div>
         <CheckboxField

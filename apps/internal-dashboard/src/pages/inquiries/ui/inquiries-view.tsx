@@ -68,7 +68,7 @@ function InquiriesView({ lookup }: Readonly<{ lookup: InquiryLookup }>): ReactEl
                       lookup.showInquiry(inquiry.id);
                     }}
                   >
-                    <p className="font-medium">{inquiry.subject}</p>
+                    <p className="font-bold">{inquiry.subject}</p>
                     <p className="text-sm text-muted-foreground">会員 ID: {inquiry.memberId}</p>
                   </button>
                 </li>
@@ -86,7 +86,7 @@ function InquiriesView({ lookup }: Readonly<{ lookup: InquiryLookup }>): ReactEl
           <ul className="flex flex-col gap-3">
             {selected.messages.map((message) => (
               <li key={message.id} className="rounded-lg border border-border p-3">
-                <p className="text-sm font-medium">
+                <p className="text-sm font-bold">
                   {message.authorKind === ROLE.administrator ? "運営" : "会員"}
                 </p>
                 <p className="whitespace-pre-wrap">{message.body}</p>

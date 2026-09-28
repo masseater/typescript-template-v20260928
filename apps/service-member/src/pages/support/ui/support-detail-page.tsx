@@ -50,7 +50,7 @@ function SupportDetailPage({ inquiryId }: Readonly<{ inquiryId: string }>): Reac
             key={message.id}
             className={`rounded-lg border border-border p-3 ${message.fromOperator ? "bg-muted" : ""}`}
           >
-            <p className="text-sm leading-normal font-medium">
+            <p className="text-sm leading-normal font-bold">
               {message.fromOperator ? "運営" : "自分"}
             </p>
             <p className="text-base leading-normal whitespace-pre-wrap">{message.body}</p>
