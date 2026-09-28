@@ -16,7 +16,8 @@
     "./testing": "./src/features/config/github-app-key-test-fixture.ts"
   },
   "dependencies": {
-    "effect": "catalog:"
+    "effect": "catalog:",
+    "jose": "6.2.12"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",

@@ -1466,6 +1466,9 @@ importers:
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.117
+      jose:
+        specifier: 6.2.12
+        version: 6.2.12
     devDependencies:
       '@cloudflare/workers-types':
         specifier: 'catalog:'

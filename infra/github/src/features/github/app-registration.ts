@@ -20,6 +20,7 @@ import {
   installationUrl,
   ownedRepository,
 } from "./app-installation.ts";
+import { pkcs8PrivateKey } from "./app-private-key.ts";
 import { GitHubAppFailure, gitHubRequest } from "./github-api.ts";
 
 import type { NetAddress } from "effect/unstable/net";
@@ -185,7 +186,10 @@ const registerApp = Effect.fn("registerGitHubApp")(
       definition,
       repository,
     });
-    const appKey = { appId: createdApp.id, privateKey: Redacted.make(createdApp.pem) };
+    const appKey = {
+      appId: createdApp.id,
+      privateKey: yield* pkcs8PrivateKey(Redacted.make(createdApp.pem)),
+    };
     const installationId = yield* awaitInstallation({
       address: definition,
       app: appKey,

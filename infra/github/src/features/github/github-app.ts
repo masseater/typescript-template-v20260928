@@ -5,6 +5,7 @@ import { type Resource as ResourceType, Resource } from "alchemy/Resource";
 import { Duration, Effect, type Layer } from "effect";
 
 import { ensureInstallation, uninstall } from "./app-installation.ts";
+import { holdsPkcs8Key, pkcs8PrivateKey } from "./app-private-key.ts";
 import {
   type AppDefinition,
   type RegisteredApp,
@@ -21,28 +22,31 @@ const humanStepTimeout = Duration.minutes(15);
 
 const appChange = (
   replaced: boolean,
-  installationId: number | undefined,
+  registered: RegisteredApp | undefined,
 ): { readonly action: "replace" | "update" } | undefined => {
   if (replaced) {
     return { action: "replace" };
   }
-  return installationId === undefined ? { action: "update" } : undefined;
+  return registered?.installationId === undefined || !holdsPkcs8Key(registered.privateKey)
+    ? { action: "update" }
+    : undefined;
 };
 
 const gitHubAppProvider = (): Layer.Layer<Provider.Provider<GitHubApp>, never, GitHubCredentials> =>
   Provider.succeed(GitHubApp, {
     delete: Effect.fn(function* deleteGitHubApp({ output, session }) {
       if (output.installationId !== undefined) {
-        yield* uninstall(output, output.installationId);
+        yield* uninstall(
+          { appId: output.appId, privateKey: yield* pkcs8PrivateKey(output.privateKey) },
+          output.installationId,
+        );
       }
       yield* session.note(
         `GitHub has no API to delete an App; delete ${output.slug} from its GitHub settings`,
       );
     }),
     diff: ({ news, olds, output }) =>
-      Effect.succeed(
-        appChange(isResolved(news) && replacesApp(olds, news), output?.installationId),
-      ),
+      Effect.succeed(appChange(isResolved(news) && replacesApp(olds, news), output)),
     reconcile: Effect.fn(function* reconcileGitHubApp({ news, output, session }) {
       const credentials = yield* yield* GitHubCredentials;
       const wait = { announce: session.note, pollInterval, timeout: humanStepTimeout };
@@ -53,14 +57,15 @@ const gitHubAppProvider = (): Layer.Layer<Provider.Provider<GitHubApp>, never, G
           wait,
         });
       }
+      const privateKey = yield* pkcs8PrivateKey(output.privateKey);
       const installationId = yield* ensureInstallation({
         address: news,
-        app: output,
+        app: { appId: output.appId, privateKey },
         slug: output.slug,
         token: credentials.token,
         wait,
       });
-      return { ...output, installationId };
+      return { ...output, installationId, privateKey };
     }),
   });
 

@@ -1,6 +1,7 @@
 import { Effect, Schema, type Redacted } from "effect";
 
 import { ConfigurationInvalid } from "./configuration-invalid.ts";
+import { Pkcs8PrivateKeyPem } from "./github-app-jwt.ts";
 
 const wikiPublishKey = {
   appId: "WIKI_PUBLISH_APP_ID",
@@ -16,15 +17,10 @@ const GitHubAppId = Schema.String.check(Schema.isPattern(/^[1-9][0-9]{0,15}$/u))
 const GitHubRepository = Schema.String.check(
   Schema.isPattern(/^[A-Za-z0-9-]{1,39}\/[A-Za-z0-9._-]{1,100}$/u),
 );
-const PrivateKeyPem = Schema.String.check(
-  Schema.isPattern(
-    /^-----BEGIN (?:RSA )?PRIVATE KEY-----[\s\S]+-----END (?:RSA )?PRIVATE KEY-----\s*$/u,
-  ),
-);
 
 const WikiPublishScalars = Schema.Struct({
   [wikiPublishKey.appId]: Schema.optionalKey(GitHubAppId),
-  [wikiPublishKey.privateKey]: Schema.optionalKey(Schema.RedactedFromValue(PrivateKeyPem)),
+  [wikiPublishKey.privateKey]: Schema.optionalKey(Schema.RedactedFromValue(Pkcs8PrivateKeyPem)),
   [wikiPublishKey.repository]: Schema.optionalKey(GitHubRepository),
 });
 

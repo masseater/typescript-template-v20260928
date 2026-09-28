@@ -31,15 +31,14 @@ const refused = (): Response =>
   HttpResponse.json({ message: "Bad credentials" }, { status: httpStatus.unauthorized });
 
 type FakeGitHubOptions = Readonly<{
-  keyFormat?: "pkcs1" | "pkcs8";
   unavailableStep?: string;
 }>;
 
 const fakeGitHub = Effect.fn("fakeGitHub")(function* fakeGitHub(
   publishedBlob: string | null,
-  { keyFormat = "pkcs8", unavailableStep }: FakeGitHubOptions = {},
+  { unavailableStep }: FakeGitHubOptions = {},
 ) {
-  const key = yield* gitHubAppKeyFixture(keyFormat);
+  const key = yield* gitHubAppKeyFixture("pkcs8");
   const calls: GitHubCall[] = [];
   const created =
     (path: string, response: JsonBodyType) =>

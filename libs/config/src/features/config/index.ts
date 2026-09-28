@@ -240,7 +240,7 @@ export {
   gitHubRequestTimeout,
   gitHubSuccessStatus,
 } from "./github-api.ts";
-export { signGitHubAppJwt } from "./github-app-jwt.ts";
+export { Pkcs8PrivateKeyPem, signGitHubAppJwt } from "./github-app-jwt.ts";
 export type { GitHubAppKey } from "./github-app-jwt.ts";
 export { GitHubAppKeyInvalid } from "./github-app-key-invalid.ts";
 export { webCrypto } from "./web-crypto.ts";

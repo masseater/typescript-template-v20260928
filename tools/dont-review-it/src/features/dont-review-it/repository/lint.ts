@@ -441,6 +441,7 @@ const softPresetRules = Object.fromEntries(
 
 const nodeBuiltinBoundaryFiles = [
   "infra/cloudflare/src/features/cloudflare/deployment.ts",
+  "infra/github/src/features/github/app-private-key.ts",
   "libs/config/src/features/config/local-database-path.test.ts",
   "libs/config/src/features/config/process-environment.test.ts",
   "libs/telemetry/src/features/telemetry/telemetry.test.ts",

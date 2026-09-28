@@ -1,4 +1,4 @@
-import { gitHubApiOrigin, httpStatus } from "@repo/config";
+import { gitHubApiOrigin, httpStatus, signGitHubAppJwt } from "@repo/config";
 import { gitHubAppKeyFixture } from "@repo/config/testing";
 import { Deferred, Effect, Fiber, Redacted, Ref, Result, Schema } from "effect";
 import { FetchHttpClient, HttpClient, type HttpClientResponse } from "effect/unstable/http";
@@ -273,6 +273,19 @@ describe("registerApp", () => {
                 };
               });
         const registered = yield* Fiber.join(registering);
+        const storedKeySigns = Result.isSuccess(registered)
+          ? yield* signGitHubAppJwt({
+              appId: String(appId),
+              privateKey: registered.success.privateKey,
+            }).pipe(
+              Effect.flatMap((jwt) =>
+                Effect.promise(() =>
+                  appKey.signedBy(`Bearer ${Redacted.value(jwt)}`, String(appId)),
+                ),
+              ),
+              Effect.orElseSucceed(() => false),
+            )
+          : false;
         return {
           announcements: (yield* Ref.get(announcements)).map((line) =>
             line.replace(localOrigin, "<origin>"),
@@ -282,8 +295,7 @@ describe("registerApp", () => {
                 appId: registered.success.appId,
                 htmlUrl: registered.success.htmlUrl,
                 installationId: registered.success.installationId,
-                privateKeyStored:
-                  Redacted.value(registered.success.privateKey) === appKey.privateKey,
+                privateKeyStored: storedKeySigns,
                 slug: registered.success.slug,
               }
             : undefined,
@@ -344,7 +356,7 @@ describe("ensureInstallation", () => {
   ] as const)("%s", ([, scenario, promisedReport]) => {
     const it = test.extend("installationReport", ({}, { onCleanup }) =>
       Effect.gen(function* installationReport() {
-        const appKey = yield* gitHubAppKeyFixture("pkcs1");
+        const appKey = yield* gitHubAppKeyFixture("pkcs8");
         const services = yield* Effect.context();
         const foreignKey = yield* gitHubAppKeyFixture("pkcs8");
         const installationChecks = yield* Ref.make(0);
@@ -423,7 +435,7 @@ describe("uninstall", () => {
   ] as const)("GitHub answering %i", ([uninstallStatus, removedPromised]) => {
     const it = test.extend("uninstallReport", ({}, { onCleanup }) =>
       Effect.gen(function* uninstallReport() {
-        const appKey = yield* gitHubAppKeyFixture("pkcs1");
+        const appKey = yield* gitHubAppKeyFixture("pkcs8");
         const services = yield* Effect.context();
         const removals = yield* Ref.make<readonly string[]>([]);
         const gitHubApi = setupServer(

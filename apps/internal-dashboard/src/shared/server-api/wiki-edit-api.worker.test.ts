@@ -396,21 +396,6 @@ describe("publishing a wiki draft", () => {
     ),
   );
 
-  authTest("signs with the PKCS#1 key GitHub hands out for an app", ({ auth }) =>
-    runWith(auth, () =>
-      Effect.gen(function* pkcs1() {
-        const github = yield* fakeGitHub(yield* publishedRevision(), { keyFormat: "pkcs1" });
-        (yield* MockNetwork).use(...github.handlers);
-        const { app, cookie } = yield* signedInEditor(WikiPublisher.layer(github.config));
-        yield* saveDraftWith(app, cookie, draftMarkdown);
-        const response = yield* publishDraft(app, cookie);
-        expect(yield* decodePublished(yield* jsonOf(response))).toStrictEqual({
-          url: pullRequestUrl,
-        });
-      }),
-    ),
-  );
-
   authTest("lets only staff who can change things publish", ({ auth }) =>
     runWith(auth, () =>
       Effect.gen(function* viewer() {

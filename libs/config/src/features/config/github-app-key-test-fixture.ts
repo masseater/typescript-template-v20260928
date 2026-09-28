@@ -1,26 +1,19 @@
-import { Effect, Encoding, Option, Result, Schema } from "effect";
+import { Effect, Encoding } from "effect";
+import { jwtVerify } from "jose";
 
 type GitHubAppKeyFixture = Readonly<{
   privateKey: string;
+  publicKey: CryptoKey;
   signedBy: (authorization: string | null, appId: string) => Promise<boolean>;
 }>;
 
 const rsaModulusLength = 2048;
-const pemLineLength = 64;
 const pkcs1Offset = 26;
-const JwtClaims = Schema.fromJsonString(Schema.Struct({ iss: Schema.String }));
+
+const pemLineLength = 64;
 
 const pem = (pemLabel: string, der: ArrayBuffer): string =>
   `-----BEGIN ${pemLabel}-----\n${(Encoding.encodeBase64(new Uint8Array(der)).match(new RegExp(`.{1,${String(pemLineLength)}}`, "gu")) ?? []).join("\n")}\n-----END ${pemLabel}-----\n`;
-
-const decodeSegment = (segment: string): Uint8Array =>
-  Result.getOrElse(Encoding.decodeBase64Url(segment), () => new Uint8Array());
-
-const jwtIssuer = (claimsSegment: string): Option.Option<string> =>
-  Option.map(
-    Schema.decodeOption(JwtClaims)(new TextDecoder().decode(decodeSegment(claimsSegment))),
-    (claims) => claims.iss,
-  );
 
 const gitHubAppKeyFixture = Effect.fn("gitHubAppKeyFixture")(function* gitHubAppKeyFixture(
   format: "pkcs1" | "pkcs8",
@@ -48,28 +41,24 @@ const gitHubAppKeyFixture = Effect.fn("gitHubAppKeyFixture")(function* gitHubApp
     Effect.filterOrFail((exported): exported is ArrayBuffer => exported instanceof ArrayBuffer),
   );
   const services = yield* Effect.context();
-  const signedBy = (authorization: string | null, appId: string): Promise<boolean> => {
-    const [header = "", claimsSegment = "", signature = ""] = (authorization ?? "")
-      .replace(/^Bearer /u, "")
-      .split(".");
-    return Effect.runPromiseWith(services)(
-      Effect.promise(() =>
-        crypto.subtle.verify(
-          "RSASSA-PKCS1-v1_5",
-          keyPair.publicKey,
-          new Uint8Array(decodeSegment(signature)),
-          new TextEncoder().encode(`${header}.${claimsSegment}`),
-        ),
+  const signedBy = (authorization: string | null, appId: string): Promise<boolean> =>
+    Effect.runPromiseWith(services)(
+      Effect.tryPromise(() =>
+        jwtVerify((authorization ?? "").replace(/^Bearer /u, ""), keyPair.publicKey, {
+          algorithms: ["RS256"],
+          issuer: appId,
+        }),
       ).pipe(
-        Effect.map((verified) => verified && Option.contains(jwtIssuer(claimsSegment), appId)),
+        Effect.as(true),
+        Effect.orElseSucceed(() => false),
       ),
     );
-  };
   return {
     privateKey:
       format === "pkcs8"
         ? pem("PRIVATE KEY", pkcs8)
         : pem("RSA PRIVATE KEY", pkcs8.slice(pkcs1Offset)),
+    publicKey: keyPair.publicKey,
     signedBy,
   } satisfies GitHubAppKeyFixture;
 }, Effect.orDie);

@@ -46,6 +46,13 @@ describe("readWikiPublishConfig", () => {
   describe.for([
     ["a partial setting", { [wikiPublishKey.appId]: "123456" }],
     ["a repository without an owner", { ...complete, [wikiPublishKey.repository]: "no-slash" }],
+    [
+      "a PKCS#1 key as GitHub hands it out",
+      {
+        ...complete,
+        [wikiPublishKey.privateKey]: `-----BEGIN RSA ${pemLabel}-----\nnot-a-real-key\n-----END RSA ${pemLabel}-----\n`,
+      },
+    ],
   ] as const)("%s", ([, input]) => {
     const it = test.extend("refusalTag", () =>
       Effect.runPromise(
