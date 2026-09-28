@@ -1,6 +1,8 @@
 import { Page, useToast } from "@repo/ui";
-import { useNavigate, useRouter } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 
+import { recordingsKey } from "#pages/recordings/api/recordings.ts";
 import { PeopleSection } from "./people-section.tsx";
 import { RecordingTable } from "./recording-table.tsx";
 import { UploadSection } from "./upload-section.tsx";
@@ -9,10 +11,10 @@ import type { RecordingsOverview } from "#pages/recordings/model/recording-state
 import type { ReactElement } from "react";
 
 function RecordingsPage({ overview }: Readonly<{ overview: RecordingsOverview }>): ReactElement {
-  const router = useRouter();
+  const queries = useQueryClient();
   const navigate = useNavigate();
   const notify = useToast();
-  const reload = (): Promise<void> => router.invalidate();
+  const reload = (): Promise<void> => queries.invalidateQueries({ queryKey: recordingsKey });
   const openUploaded = (recordingId: string): Promise<void> => {
     notify("success", "アップロードしました。文字起こしを始めます。");
     return navigate({ params: { id: recordingId }, to: "/recordings/$id" });

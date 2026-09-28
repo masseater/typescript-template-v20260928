@@ -1,15 +1,7 @@
 import { apiData } from "@repo/runtime/client";
 
 import { userClient } from "#shared/api/index.ts";
-import { HostedPage, PlanView } from "#shared/contracts/index.ts";
-
-type Plan = typeof PlanView.Type;
-
-function loadPlan(): Promise<Plan> {
-  return Promise.resolve(userClient()).then(({ api }) =>
-    api.billing.plan.get().then((response) => apiData(PlanView, response)),
-  );
-}
+import { HostedPage } from "#shared/contracts/index.ts";
 
 function openPortal(): Promise<void> {
   return Promise.resolve(userClient()).then(({ api }) =>
@@ -19,5 +11,4 @@ function openPortal(): Promise<void> {
   );
 }
 
-export { loadPlan, openPortal };
-export type { Plan };
+export { openPortal };

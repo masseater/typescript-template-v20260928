@@ -7,11 +7,12 @@ import {
   ThreadMissing,
   ThreadPending,
   ThreadRoute,
-  loadThread,
   normalizeThreadSearch,
+  threadOptions,
 } from "#pages/board/index.ts";
 
 import type { ThreadSearch } from "#pages/board/index.ts";
+import type { QueryClient } from "@tanstack/react-query";
 
 function requireThreadSearch(raw: unknown): ThreadSearch {
   try {
@@ -41,10 +42,14 @@ const Route = createFileRoute("/_member/board/$id")({
     }
   },
   loader: ({
+    context,
     deps,
     params,
-  }: Readonly<{ deps: Readonly<{ page: number }>; params: Readonly<{ id: string }> }>) =>
-    loadThread(params.id, deps.page),
+  }: Readonly<{
+    context: Readonly<{ queryClient: QueryClient }>;
+    deps: Readonly<{ page: number }>;
+    params: Readonly<{ id: string }>;
+  }>) => context.queryClient.query(threadOptions(params.id, deps.page)),
   component: ThreadRoute,
   errorComponent: ThreadFailed,
   notFoundComponent: ThreadMissing,

@@ -6,12 +6,13 @@ import {
   GroupMissing,
   GroupPending,
   GroupRoute,
+  groupOptions,
   InvalidGroupsSearch,
-  loadGroup,
   normalizeGroupsSearch,
 } from "#pages/groups/index.ts";
 
 import type { GroupsSearch } from "#pages/groups/index.ts";
+import type { QueryClient } from "@tanstack/react-query";
 
 function requireGroupsSearch(raw: unknown): GroupsSearch {
   try {
@@ -40,8 +41,15 @@ const Route = createFileRoute("/_member/groups/$id")({
       throw redirect({ params, replace: true, search, to: "/groups/$id" });
     }
   },
-  loader: ({ deps, params }: Readonly<{ deps: GroupsSearch; params: Readonly<{ id: string }> }>) =>
-    loadGroup(params.id, deps.invite),
+  loader: ({
+    context,
+    deps,
+    params,
+  }: Readonly<{
+    context: Readonly<{ queryClient: QueryClient }>;
+    deps: GroupsSearch;
+    params: Readonly<{ id: string }>;
+  }>) => context.queryClient.query(groupOptions(params.id, deps.invite)),
   component: GroupRoute,
   errorComponent: GroupFailed,
   notFoundComponent: GroupMissing,

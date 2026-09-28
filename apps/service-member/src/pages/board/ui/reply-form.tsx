@@ -1,7 +1,9 @@
 import { useToast } from "@repo/ui";
-import { useNavigate, useRouter } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { Effect } from "effect";
 
+import { boardKey } from "#pages/board/api/board.ts";
 import { pageSearch } from "#pages/board/model/board-search.ts";
 import { useReplyForm } from "#pages/board/model/reply-form.ts";
 import { maximumBoardBodyLength } from "#shared/contracts/index.ts";
@@ -30,14 +32,14 @@ function ReplyForm({
   threadId,
 }: Readonly<{ lastPage: number; threadId: string }>): ReactElement {
   const navigate = useNavigate();
-  const router = useRouter();
+  const queries = useQueryClient();
   const notify = useToast();
   const form = useReplyForm(threadId, () =>
     showPosted(
       threadId,
       lastPage,
       (id, page) => navigate({ params: { id }, search: pageSearch(page), to: "/board/$id" }),
-      () => router.invalidate(),
+      () => queries.invalidateQueries({ queryKey: boardKey }),
       notify,
     ),
   );

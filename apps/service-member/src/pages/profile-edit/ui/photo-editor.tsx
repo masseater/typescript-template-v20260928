@@ -1,6 +1,7 @@
 import { photoSlots } from "@repo/config";
-import { useRouter } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 
+import { profileOptions } from "#entities/profile/index.ts";
 import { PhotoSlotEditor } from "./photo-slot-editor.tsx";
 
 import type { Profile } from "#entities/profile/index.ts";
@@ -10,9 +11,9 @@ function PhotoEditor({
 }: Readonly<{
   profile: Profile;
 }>): ReactElement {
-  const router = useRouter();
+  const queryClient = useQueryClient();
   function refresh(): Promise<void> {
-    return router.invalidate().then(() => undefined);
+    return queryClient.invalidateQueries({ queryKey: profileOptions.queryKey });
   }
   return (
     <div className="flex flex-col gap-6">

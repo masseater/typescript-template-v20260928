@@ -1,5 +1,6 @@
 import { httpStatus } from "@repo/config";
 import { absent, apiData, apiDataOrNoneFor } from "@repo/runtime/client";
+import { queryOptions } from "@tanstack/react-query";
 import { notFound } from "@tanstack/react-router";
 
 import { userClient } from "#shared/api/index.ts";
@@ -85,11 +86,30 @@ function openConversation(recipientId: string, body: string): Promise<OpenedConv
   );
 }
 
+const messagesKey = ["messages"] as const;
+
+function conversationsOptions(page: number) {
+  return queryOptions({
+    queryFn: () => loadConversations(page),
+    queryKey: [...messagesKey, "list", page] as const,
+    retry: false,
+  });
+}
+
+function conversationOptions(id: string, page: number) {
+  return queryOptions({
+    queryFn: () => loadConversation(id, page),
+    queryKey: [...messagesKey, "conversation", id, page] as const,
+    retry: false,
+  });
+}
+
 export {
+  conversationOptions,
+  conversationsOptions,
   createGroup,
-  loadConversation,
-  loadConversations,
   lookupConversation,
+  messagesKey,
   openConversation,
   sendMessage,
 };

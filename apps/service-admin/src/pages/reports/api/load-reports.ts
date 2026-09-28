@@ -1,4 +1,5 @@
 import { apiData } from "@repo/runtime/client";
+import { queryOptions } from "@tanstack/react-query";
 
 import { adminClient } from "#shared/api/index.ts";
 import { ReportDetail, ReportList, ReportListQuery } from "#shared/contracts/index.ts";
@@ -28,5 +29,23 @@ function loadReport(id: string): Promise<ReportItem> {
     .then((response) => apiData(ReportDetail, response));
 }
 
-export { loadReport, loadReports };
-export type { ReportItem, ReportSummary };
+const reportsKey = ["admin-reports"] as const;
+
+type ReportsQuery = Readonly<{ page: number; status?: ReportStatus }>;
+
+function reportsOptions(query: ReportsQuery) {
+  return queryOptions({
+    queryFn: () => loadReports(query),
+    queryKey: [...reportsKey, "list", query.page, query.status ?? "all"],
+  });
+}
+
+function reportOptions(id: string) {
+  return queryOptions({
+    queryFn: () => loadReport(id),
+    queryKey: [...reportsKey, "detail", id],
+  });
+}
+
+export { reportOptions, reportsKey, reportsOptions };
+export type { ReportItem, ReportSummary, ReportsQuery };

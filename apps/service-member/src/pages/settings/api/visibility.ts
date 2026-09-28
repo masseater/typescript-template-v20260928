@@ -1,4 +1,5 @@
 import { apiData } from "@repo/runtime/client";
+import { queryOptions } from "@tanstack/react-query";
 
 import { userClient } from "#shared/api/index.ts";
 import { VisibilityView } from "#shared/contracts/index.ts";
@@ -17,5 +18,11 @@ function saveVisibility(values: Visibility): Promise<Visibility> {
   );
 }
 
-export { loadVisibility, saveVisibility };
+const visibilitySettingOptions = queryOptions({
+  queryFn: loadVisibility,
+  queryKey: ["visibility"],
+  retry: false,
+});
+
+export { saveVisibility, visibilitySettingOptions };
 export type { Visibility };

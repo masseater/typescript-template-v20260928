@@ -1,12 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { PlanRoute, loadPlan } from "#pages/settings/index.ts";
+import { planOptions } from "#entities/plan/index.ts";
+import { PlanRoute } from "#pages/settings/index.ts";
 import { readCheckoutReturn } from "#shared/contracts/index.ts";
+
+import type { QueryClient } from "@tanstack/react-query";
 
 const Route = createFileRoute("/_member/settings/plan")({
   validateSearch: readCheckoutReturn,
-  loader: loadPlan,
-  gcTime: 0,
+  loader: ({ context }: Readonly<{ context: Readonly<{ queryClient: QueryClient }> }>) =>
+    context.queryClient.query(planOptions),
   component: PlanRoute,
 });
 

@@ -1,4 +1,5 @@
 import { absent, apiDataOrNoneFor } from "@repo/runtime/client";
+import { queryOptions } from "@tanstack/react-query";
 import { notFound } from "@tanstack/react-router";
 import { Effect } from "effect";
 
@@ -22,4 +23,12 @@ function loadWikiEditor(path: string): Promise<WikiEditorData> {
   );
 }
 
-export { loadWikiEditor };
+function wikiEditorOptions(path: string) {
+  return queryOptions({
+    queryFn: () => loadWikiEditor(path),
+    queryKey: ["wiki-editor", path] as const,
+    retry: false,
+  });
+}
+
+export { wikiEditorOptions };

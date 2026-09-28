@@ -1,6 +1,7 @@
-import { localState, useAction } from "@repo/ui";
-import { useRouter } from "@tanstack/react-router";
+import { useAction } from "@repo/ui";
+import { useQueryClient } from "@tanstack/react-query";
 
+import { memberOptions } from "#entities/member/index.ts";
 import { followMember, unfollowMember } from "#pages/profile/api/follow.ts";
 import { blockMember, unblockMember } from "#shared/api/index.ts";
 import { ProfileLayoutRenderer } from "#shared/profile-layout/index.ts";
@@ -10,40 +11,24 @@ import { ProfileBody } from "./profile-body.tsx";
 import type { Member } from "#pages/profile/model/member.ts";
 import type { ReactElement } from "react";
 
-const useFollowingOverride = localState<boolean | undefined>(undefined);
-const useBlockedOverride = localState<boolean | undefined>(undefined);
-
-function overridden(override: boolean | undefined, stored: boolean | undefined): boolean {
-  return override ?? stored ?? false;
-}
-
 function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>): ReactElement {
-  const router = useRouter();
+  const queries = useQueryClient();
   const followAction = useAction();
   const blockAction = useAction();
-  const [followingOverride, setFollowingOverride] = useFollowingOverride();
-  const [blockedOverride, setBlockedOverride] = useBlockedOverride();
-  const following = overridden(followingOverride, member.following);
-  const blocked = overridden(blockedOverride, member.blocked);
+  const following = member.following ?? false;
+  const blocked = member.blocked ?? false;
+  const refreshMember = (): Promise<void> =>
+    queries.invalidateQueries({ queryKey: memberOptions(member.id).queryKey });
 
   const toggleFollow = (): void => {
     followAction.run(() =>
-      (following ? unfollowMember(member.id) : followMember(member.id)).then(() => {
-        setFollowingOverride(!following);
-        return router.invalidate().then(() => undefined);
-      }),
+      (following ? unfollowMember(member.id) : followMember(member.id)).then(refreshMember),
     );
   };
 
   const toggleBlock = (): void => {
     blockAction.run(() =>
-      (blocked ? unblockMember(member.id) : blockMember(member.id)).then(() => {
-        setBlockedOverride(!blocked);
-        if (!blocked) {
-          setFollowingOverride(false);
-        }
-        return router.invalidate().then(() => undefined);
-      }),
+      (blocked ? unblockMember(member.id) : blockMember(member.id)).then(refreshMember),
     );
   };
 

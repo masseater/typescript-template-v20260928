@@ -1,6 +1,8 @@
 import { useToast } from "@repo/ui";
-import { useNavigate, useRouter } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 
+import { groupsKey } from "#pages/groups/api/groups.ts";
 import { useCopyInvite, useJoinGroup, useLeaveGroup } from "#pages/groups/model/group-actions.ts";
 import { useRenameGroupForm } from "#pages/groups/model/rename-group-form.ts";
 import { GroupPanel } from "./group-panel.tsx";
@@ -19,12 +21,13 @@ function GroupPage({
   search: GroupsSearch;
 }>): ReactElement {
   const navigate = useNavigate();
-  const router = useRouter();
+  const queries = useQueryClient();
+  const refreshGroups = (): Promise<void> => queries.invalidateQueries({ queryKey: groupsKey });
   const notify = useToast();
   const join = useJoinGroup(
     group.id,
     (conversationId) =>
-      router.invalidate().then(() =>
+      refreshGroups().then(() =>
         navigate({
           params: {
             id: conversationId,
@@ -35,7 +38,7 @@ function GroupPage({
     search.invite,
   );
   const leave = useLeaveGroup(group.id, () =>
-    router.invalidate().then(() => notify("success", "グループから退席しました。")),
+    refreshGroups().then(() => notify("success", "グループから退席しました。")),
   );
   const copyInvite = useCopyInvite(group.id, (token) => {
     const link = `${globalThis.location.origin}${invitePath(group.id, token)}`;
@@ -43,7 +46,7 @@ function GroupPage({
     notify("success", "招待リンクをコピーしました。");
   });
   const rename = useRenameGroupForm(group.id, group.name, () =>
-    router.invalidate().then(() => notify("success", "グループ名を変更しました。")),
+    refreshGroups().then(() => notify("success", "グループ名を変更しました。")),
   );
   return (
     <GroupPanel

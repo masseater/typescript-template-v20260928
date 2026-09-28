@@ -1,4 +1,5 @@
 import { absent, apiData, apiDataOrNoneFor } from "@repo/runtime/client";
+import { queryOptions } from "@tanstack/react-query";
 import { notFound } from "@tanstack/react-router";
 
 import { userClient } from "#shared/api/index.ts";
@@ -48,5 +49,23 @@ function replyToThread(threadId: string, body: string): Promise<string> {
   );
 }
 
-export { loadThread, loadThreads, openThread, replyToThread };
+const boardKey = ["board"] as const;
+
+function threadsOptions(page: number) {
+  return queryOptions({
+    queryFn: () => loadThreads(page),
+    queryKey: [...boardKey, "threads", page] as const,
+    retry: false,
+  });
+}
+
+function threadOptions(id: string, page: number) {
+  return queryOptions({
+    queryFn: () => loadThread(id, page),
+    queryKey: [...boardKey, "thread", id, page] as const,
+    retry: false,
+  });
+}
+
+export { boardKey, openThread, replyToThread, threadOptions, threadsOptions };
 export type { Thread, ThreadList };

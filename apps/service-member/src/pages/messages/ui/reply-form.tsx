@@ -1,5 +1,6 @@
-import { useRouter } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 
+import { messagesKey } from "#pages/messages/api/messages.ts";
 import { useReplyForm } from "#pages/messages/model/reply-form.ts";
 import { maximumMessageBodyLength } from "#shared/contracts/index.ts";
 import { ReplyBodyForm } from "#shared/ui/index.ts";
@@ -10,9 +11,9 @@ function ReplyForm({
 }: Readonly<{
   conversationId: string;
 }>): ReactElement {
-  const router = useRouter();
+  const queries = useQueryClient();
   function showSent(): Promise<void> {
-    return router.invalidate().then(() => undefined);
+    return queries.invalidateQueries({ queryKey: messagesKey });
   }
   const form = useReplyForm(conversationId, showSent);
   return (

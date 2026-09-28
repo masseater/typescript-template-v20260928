@@ -1,3 +1,4 @@
-export { loadReport, loadReports } from "./api/load-reports.ts";
+export { reportOptions, reportsOptions } from "./api/load-reports.ts";
 export { ReportRoute } from "./ui/report-route.tsx";
 export { ReportsRoute } from "./ui/reports-route.tsx";
+export type { ReportsQuery } from "./api/load-reports.ts";

@@ -1,4 +1,5 @@
 import { absent, apiData, apiDataOrNoneFor } from "@repo/runtime/client";
+import { queryOptions } from "@tanstack/react-query";
 import { notFound } from "@tanstack/react-router";
 
 import { userClient } from "#shared/api/index.ts";
@@ -48,5 +49,15 @@ function refreshInvite(id: string): Promise<string> {
   );
 }
 
-export { joinGroup, leaveGroup, loadGroup, refreshInvite, renameGroup };
+const groupsKey = ["groups"] as const;
+
+function groupOptions(id: string, invite?: string) {
+  return queryOptions({
+    queryFn: () => loadGroup(id, invite),
+    queryKey: [...groupsKey, id, invite ?? null] as const,
+    retry: false,
+  });
+}
+
+export { groupOptions, groupsKey, joinGroup, leaveGroup, refreshInvite, renameGroup };
 export type { GroupDetail };
