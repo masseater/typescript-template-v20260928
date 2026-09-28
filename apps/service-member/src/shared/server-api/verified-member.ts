@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { ROLE } from "@repo/config";
 import { query, schema } from "@repo/db";
-import { DateTime, Effect } from "effect";
+import { Effect } from "effect";
 
 import { MessagingMemberRequired } from "./messaging-member-required.ts";
 
@@ -18,7 +18,6 @@ interface OffsetPage {
 }
 
 const verifiedMember = and(eq(user.role, ROLE.member), eq(user.emailVerified, true));
-const clockDate = Effect.map(DateTime.now, DateTime.toDate);
 
 const requireMessagingMember = Effect.fn("requireMessagingMember")(function* requireMessagingMember(
   userId: string,
@@ -36,5 +35,5 @@ const requireMessagingMember = Effect.fn("requireMessagingMember")(function* req
   return member;
 });
 
-export { clockDate, requireMessagingMember, verifiedMember };
+export { requireMessagingMember, verifiedMember };
 export type { MemberReference, OffsetPage };

@@ -1,13 +1,13 @@
 import { and, count, desc, eq } from "drizzle-orm";
 import { GROUP_JOIN_POLICY } from "@repo/config";
-import { CONVERSATION_KIND, GROUP_MEMBERSHIP_ROLE, query, schema } from "@repo/db";
+import { CONVERSATION_KIND, GROUP_MEMBERSHIP_ROLE, clockDate, query, schema } from "@repo/db";
 import { DateTime, Effect } from "effect";
 
 import { mayCreateGroup } from "#shared/messaging/index.ts";
 import { GroupInviteExpired } from "./group-invite-expired.ts";
 import { GroupLimitReached } from "./group-limit-reached.ts";
 import { GroupNotFound } from "./group-not-found.ts";
-import { clockDate, requireMessagingMember } from "./verified-member.ts";
+import { requireMessagingMember } from "./verified-member.ts";
 
 import type { MemberReference } from "./verified-member.ts";
 

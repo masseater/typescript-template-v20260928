@@ -1,11 +1,11 @@
 import { and, count, desc, eq, isNull, not, or, sql } from "drizzle-orm";
-import { blockBetween, query, schema } from "@repo/db";
+import { blockBetween, clockDate, query, schema } from "@repo/db";
 import { Effect } from "effect";
 
 import { withdrawnAuthorName } from "#shared/contracts/board.ts";
 import { BoardMemberRequired } from "./board-member-required.ts";
 import { BoardThreadNotFound } from "./board-thread-not-found.ts";
-import { clockDate, verifiedMember } from "./verified-member.ts";
+import { verifiedMember } from "./verified-member.ts";
 
 import type { DrizzleDatabase } from "@repo/db";
 import type { MemberReference, OffsetPage } from "./verified-member.ts";

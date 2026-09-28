@@ -57,6 +57,17 @@ import {
   wikiDevWorkerName,
   wikiHmrPath,
 } from "./wiki-companion.ts";
+import {
+  awaitingEffectRun,
+  checkCode,
+  effectRun,
+  intentValidation,
+  modularBoundaries,
+  toolRun,
+  toolTest,
+  workerPackage,
+  workspaceCheckImports,
+} from "./workspace-run.ts";
 
 const clientReachableModules = [
   "libs/runtime/src/features/runtime/client.ts",
@@ -135,44 +146,6 @@ const sliceBoundaries = measured({
     input: sliceBoundariesInput,
   },
 } satisfies Tasks);
-
-const intentValidation = measured({
-  check: { command: "intent validate", input: [...taskInput] },
-} satisfies Tasks);
-
-const checkCode = measured({
-  "check:code": { command: "vp check --no-error-on-unmatched-pattern", input: [...taskInput] },
-} satisfies Tasks);
-
-const workspaceCheckImports = measured({
-  "check:imports": { command: "dont-review-it-imports", input: [...taskInput] },
-} satisfies Tasks);
-
-const modularBoundaries = measured({
-  "check:modular": { command: "dont-review-it-modular", input: [...taskInput] },
-} satisfies Tasks);
-
-const effectRunTasks = measured({
-  ...checkCode,
-  ...workspaceCheckImports,
-  ...modularBoundaries,
-  ...lifecycle({
-    precommit: ["check:code"],
-    prepush: ["check:effect", "check:imports", "check:modular"],
-  }),
-} satisfies Tasks);
-
-const effectRun = (
-  packageRoot: string,
-): { tasks: typeof effectRunTasks & EffectDiagnosticsTask } => ({
-  tasks: { ...effectDiagnostics(packageRoot), ...effectRunTasks },
-});
-
-const awaitingEffectRun = (
-  packageRoot: string,
-): { tasks: typeof effectRunTasks & EffectDiagnosticsTask } => ({
-  tasks: { ...awaitingEffectDiagnostics(packageRoot), ...effectRunTasks },
-});
 
 const appChecks = measured({
   "check:client": {
@@ -261,17 +234,6 @@ const paraglideAppRun = (packageRoot: string): RunConfig => ({
     },
   },
 });
-
-const toolTest: NonNullable<UserConfig["test"]> = {
-  mockReset: true,
-  restoreMocks: true,
-  coverage: {
-    exclude: ["specs/**"],
-    thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
-  },
-  unstubEnvs: true,
-  unstubGlobals: true,
-};
 
 const appConfig = (
   app: Application,
@@ -473,7 +435,9 @@ export {
   taskInput,
   telemetryEnv,
   testRun,
+  toolRun,
   toolTest,
+  workerPackage,
   wikiCompanion,
   wikiDevServices,
   withoutEnvFileLoader,

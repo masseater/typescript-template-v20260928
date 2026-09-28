@@ -17,6 +17,7 @@ type StripeEventRecord = Readonly<{
 type SubscriptionRecord = Readonly<{
   cancelAtPeriodEnd: boolean;
   currentPeriodEnd: Date | undefined;
+  currentPeriodStart: Date | undefined;
   memberId: string;
   status: SubscriptionStatus;
   stripeCustomerId: string;
@@ -26,6 +27,7 @@ type SubscriptionRecord = Readonly<{
 const subscriptionColumns = {
   cancelAtPeriodEnd: planSubscription.cancelAtPeriodEnd,
   currentPeriodEnd: planSubscription.currentPeriodEnd,
+  currentPeriodStart: planSubscription.currentPeriodStart,
   memberId: planSubscription.memberId,
   status: planSubscription.status,
   stripeCustomerId: planSubscription.stripeCustomerId,
@@ -47,6 +49,7 @@ const findSubscription = Effect.fn("findSubscription")(function* findSubscriptio
     : ({
         ...subscriptionRow,
         currentPeriodEnd: subscriptionRow.currentPeriodEnd ?? undefined,
+        currentPeriodStart: subscriptionRow.currentPeriodStart ?? undefined,
       } satisfies SubscriptionRecord);
 });
 
@@ -131,6 +134,7 @@ const subscriptionValues = (
 ): typeof planSubscription.$inferInsert => ({
   cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
   currentPeriodEnd: subscription.currentPeriodEnd ?? null,
+  currentPeriodStart: subscription.currentPeriodStart ?? null,
   memberId: subscription.memberId,
   status: subscription.status,
   stripeCustomerId: subscription.stripeCustomerId,

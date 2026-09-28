@@ -1,11 +1,11 @@
 import { and, count, desc, eq, gt, isNull, ne, not, or } from "drizzle-orm";
-import { CONVERSATION_KIND, blockBetween, pairBlocked, query, requirePaid, schema } from "@repo/db";
+import { CONVERSATION_KIND, blockBetween, clockDate, pairBlocked, query, requirePaid, schema } from "@repo/db";
 import { DateTime, Effect } from "effect";
 
 import { maySendGroupMessage } from "#shared/messaging/index.ts";
 import { canReadGroupConversation } from "./groups.ts";
 import { MessagingConversationNotFound } from "./messaging-conversation-not-found.ts";
-import { clockDate, requireMessagingMember, verifiedMember } from "./verified-member.ts";
+import { requireMessagingMember, verifiedMember } from "./verified-member.ts";
 
 import type { OffsetPage } from "./verified-member.ts";
 
