@@ -1,5 +1,6 @@
 import { ROLE } from "@repo/config";
-import { Button, Field, FormColumn, useTextInput } from "@repo/ui";
+import { Button, Field, FormColumn } from "@repo/ui";
+import { useForm, useStore } from "@tanstack/react-form";
 import { Effect } from "effect";
 
 import { authTask } from "./browser-http.ts";
@@ -8,6 +9,7 @@ import { requireSecureContext, requireSuccess } from "./protocol";
 
 import type { ReactElement, SyntheticEvent } from "react";
 import type { SettingsContext } from "./mfa-types";
+import type { TextInput } from "./text-input.ts";
 
 const REGISTERED_NOTICE =
   "パスキーを登録しました。強認証への切り替えにはパスキーでログインし直してください。";
@@ -44,7 +46,14 @@ const PasskeyRegisterForm = ({
   readonly onRegistered: () => Promise<void>;
 }): ReactElement => {
   const { action, onNotice, onNoticeClear, recovery, session } = context;
-  const passkeyName = useTextInput();
+  const textForm = useForm({ defaultValues: { passkeyName: "" } });
+  const texts = useStore(textForm.store, (state) => state.values);
+  const passkeyName: TextInput = {
+    handleChange: (next) => {
+      textForm.setFieldValue("passkeyName", next);
+    },
+    value: texts.passkeyName,
+  };
   const submit = (submitEvent: Readonly<Pick<SyntheticEvent, "preventDefault">>): void => {
     submitEvent.preventDefault();
     action.run(() =>

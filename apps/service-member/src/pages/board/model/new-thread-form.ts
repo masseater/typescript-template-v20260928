@@ -1,4 +1,5 @@
-import { useAction, useTextInput } from "@repo/ui";
+import { useAction } from "@repo/ui";
+import { useForm, useStore } from "@tanstack/react-form";
 import { Effect } from "effect";
 
 import { openThread } from "#pages/board/api/board.ts";
@@ -30,22 +31,30 @@ interface NewThreadForm {
 }
 
 function useNewThreadForm(onCreated: (threadId: string) => Promise<void>): NewThreadForm {
-  const title = useTextInput();
-  const body = useTextInput();
   const action = useAction();
-  function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
-    event.preventDefault();
-    action.run(() => createThread(title.value, body.value, onCreated));
-  }
+  const form = useForm({
+    defaultValues: { body: "", title: "" },
+    onSubmit: ({ value }) => {
+      action.run(() => createThread(value.title, value.body, onCreated));
+    },
+  });
+  const values = useStore(form.store, (state) => state.values);
   return {
     blocked: action.blocked,
-    body: body.value,
+    body: values.body,
     error: action.error,
-    handleBodyChange: body.handleChange,
-    handleSubmit,
-    handleTitleChange: title.handleChange,
+    handleBodyChange: (value) => {
+      form.setFieldValue("body", value);
+    },
+    handleSubmit: (event) => {
+      event.preventDefault();
+      void form.handleSubmit();
+    },
+    handleTitleChange: (value) => {
+      form.setFieldValue("title", value);
+    },
     pending: action.pending,
-    title: title.value,
+    title: values.title,
   };
 }
 

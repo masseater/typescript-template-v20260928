@@ -1,11 +1,10 @@
-import { useTextSubmission } from "@repo/ui";
-
 import { replyToThread } from "#pages/board/api/board.ts";
+import { useReplyBody } from "#shared/ui/index.ts";
 
-import type { TextSubmission } from "@repo/ui";
+import type { ReplyBodyFormState } from "#shared/ui/index.ts";
 
-function useReplyForm(threadId: string, onPosted: () => Promise<void>): TextSubmission {
-  return useTextSubmission((body) => replyToThread(threadId, body), onPosted);
+function useReplyForm(threadId: string, onPosted: () => Promise<void>): ReplyBodyFormState {
+  return useReplyBody((body) => replyToThread(threadId, body), onPosted);
 }
 
 export { useReplyForm };

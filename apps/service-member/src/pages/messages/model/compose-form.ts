@@ -1,4 +1,5 @@
-import { useAction, useTextInput } from "@repo/ui";
+import { useAction } from "@repo/ui";
+import { useForm, useStore } from "@tanstack/react-form";
 
 import { openConversation } from "#pages/messages/api/messages.ts";
 
@@ -16,26 +17,33 @@ function useComposeForm(
   onOpened: (conversationId: string) => Promise<void>,
   onPaidRequired: () => Promise<void>,
 ): ComposeForm {
-  const body = useTextInput();
   const action = useAction();
-  function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
-    event.preventDefault();
-    action.run(() =>
-      openConversation(peerId, body.value).then((opened) => {
-        if (opened.paidRequired) {
-          return onPaidRequired();
-        }
-        body.handleChange("");
-        return onOpened(opened.conversationId);
-      }),
-    );
-  }
+  const form = useForm({
+    defaultValues: { body: "" },
+    onSubmit: ({ formApi, value }) => {
+      action.run(() =>
+        openConversation(peerId, value.body).then((opened) => {
+          if (opened.paidRequired) {
+            return onPaidRequired();
+          }
+          formApi.reset();
+          return onOpened(opened.conversationId);
+        }),
+      );
+    },
+  });
+  const body = useStore(form.store, (state) => state.values.body);
   return {
     blocked: action.blocked,
-    body: body.value,
+    body,
     error: action.error,
-    handleBodyChange: body.handleChange,
-    handleSubmit,
+    handleBodyChange: (value) => {
+      form.setFieldValue("body", value);
+    },
+    handleSubmit: (event) => {
+      event.preventDefault();
+      void form.handleSubmit();
+    },
     pending: action.pending,
   };
 }

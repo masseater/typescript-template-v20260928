@@ -1,10 +1,12 @@
-import { type ActionState, Button, useTextInput } from "@repo/ui";
+import { type ActionState, Button } from "@repo/ui";
+import { useForm, useStore } from "@tanstack/react-form";
 
 import { ChallengeForm } from "./challenge-form";
 import { CHALLENGE_MODE, type ChallengeMode } from "./challenge-modes.ts";
 
 import type { ReactElement } from "react";
 import type { AuthenticatedHandler } from "./authenticated-handler";
+import type { TextInput } from "./text-input.ts";
 
 const ChallengeLogin = ({
   action,
@@ -19,7 +21,14 @@ const ChallengeLogin = ({
   readonly onModeChange: (mode: ChallengeMode) => void;
   readonly onRestart: () => void;
 }): ReactElement => {
-  const code = useTextInput();
+  const textForm = useForm({ defaultValues: { code: "" } });
+  const texts = useStore(textForm.store, (state) => state.values);
+  const code: TextInput = {
+    handleChange: (next) => {
+      textForm.setFieldValue("code", next);
+    },
+    value: texts.code,
+  };
   const toggleMode = (): void => {
     onModeChange(mode === CHALLENGE_MODE.backup ? CHALLENGE_MODE.totp : CHALLENGE_MODE.backup);
     code.handleChange("");

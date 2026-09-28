@@ -1,4 +1,5 @@
-import { type ActionState, Button, FormColumn, useTextInput } from "@repo/ui";
+import { type ActionState, Button, FormColumn } from "@repo/ui";
+import { useForm, useStore } from "@tanstack/react-form";
 import { Effect } from "effect";
 
 import { authTask } from "./browser-http.ts";
@@ -7,6 +8,7 @@ import { requireSuccess } from "./protocol";
 import { TotpField } from "./totp-field";
 
 import type { ReactElement, SyntheticEvent } from "react";
+import type { TextInput } from "./text-input.ts";
 
 const verifySavedTotp = ({
   code,
@@ -40,7 +42,14 @@ const TotpVerifyForm = ({
   readonly saved: boolean;
   readonly onVerified: () => void;
 }): ReactElement => {
-  const code = useTextInput();
+  const textForm = useForm({ defaultValues: { code: "" } });
+  const texts = useStore(textForm.store, (state) => state.values);
+  const code: TextInput = {
+    handleChange: (next) => {
+      textForm.setFieldValue("code", next);
+    },
+    value: texts.code,
+  };
   const submit = (submitEvent: Readonly<Pick<SyntheticEvent, "preventDefault">>): void => {
     submitEvent.preventDefault();
     action.run(() => Effect.runPromise(verifySavedTotp({ code, onVerified, saved })));

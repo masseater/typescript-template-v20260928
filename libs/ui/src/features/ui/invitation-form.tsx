@@ -1,12 +1,12 @@
+import { useForm, useStore } from "@tanstack/react-form";
 import { Effect, Option } from "effect";
 
 import { useAction } from "./action";
 import { ActionStatus } from "./action-status";
-import { localState, useOptionalString } from "./local-state";
+import { useOptionalString } from "./local-state";
 import { Button } from "./shared/ui/button";
 import { Field } from "./shared/ui/field";
 import { SelectField } from "./shared/ui/select-field";
-import { useTextInput, type TextInput } from "./use-text-input";
 import { formatWarekiDate } from "./wareki";
 
 import type { ReactElement, SyntheticEvent } from "react";
@@ -23,22 +23,19 @@ const sendInvitation = <Permission extends string>({
   onNotice,
   permission,
 }: Readonly<{
-  email: TextInput;
+  email: string;
   invite: (address: string, permission: Permission) => Promise<Invitation>;
   onInvited: () => void;
   onNotice: (notice: string) => void;
   permission: Permission;
 }>): Effect.Effect<void> =>
   Effect.gen(function* sendInvitationMail() {
-    const invited = yield* Effect.promise(() => invite(email.value, permission));
+    const invited = yield* Effect.promise(() => invite(email, permission));
     onNotice(
       `${invited.email} に招待メールを送りました。${formatWarekiDate(invited.expiresAt)} まで有効です。`,
     );
-    email.handleChange("");
     onInvited();
   });
-
-const usePermissionChoice = localState(Option.none<string>());
 
 const InvitationForm = <Permission extends string>({
   defaultPermission,
@@ -56,22 +53,34 @@ const InvitationForm = <Permission extends string>({
   permissionOptions: readonly Readonly<{ label: string; value: Permission }>[];
 }>): ReactElement => {
   const action = useAction();
-  const email = useTextInput();
-  const [permissionChoice, setPermissionChoice] = usePermissionChoice();
   const [notice, setNotice] = useOptionalString();
-  const permission = Option.getOrElse(permissionChoice, () => defaultPermission);
+  const form = useForm({
+    defaultValues: { email: "", permission: defaultPermission },
+    onSubmit: ({ formApi, value }) => {
+      setNotice(Option.none());
+      const onNotice = (sentNotice: string): void => {
+        setNotice(Option.some(sentNotice));
+      };
+      action.run(() =>
+        Effect.runPromise(
+          sendInvitation({
+            email: value.email,
+            invite,
+            onInvited: () => {
+              formApi.setFieldValue("email", "");
+              onInvited();
+            },
+            onNotice,
+            permission: value.permission,
+          }),
+        ),
+      );
+    },
+  });
+  const values = useStore(form.store, (state) => state.values);
   const submit = (submitEvent: Readonly<Pick<SyntheticEvent, "preventDefault">>): void => {
     submitEvent.preventDefault();
-    if (!isPermission(permission)) {
-      return;
-    }
-    setNotice(Option.none());
-    const onNotice = (sentNotice: string): void => {
-      setNotice(Option.some(sentNotice));
-    };
-    action.run(() =>
-      Effect.runPromise(sendInvitation({ email, invite, onInvited, onNotice, permission })),
-    );
+    void form.handleSubmit();
   };
   return (
     <form
@@ -87,8 +96,10 @@ const InvitationForm = <Permission extends string>({
             name="email"
             type="email"
             autoComplete="off"
-            value={email.value}
-            onValueChange={email.handleChange}
+            value={values.email}
+            onValueChange={(entered) => {
+              form.setFieldValue("email", entered);
+            }}
           />
         </div>
         <div className="w-48">
@@ -96,9 +107,11 @@ const InvitationForm = <Permission extends string>({
             label="権限"
             name="permission"
             options={permissionOptions}
-            value={permission}
+            value={values.permission}
             onValueChange={(selected) => {
-              setPermissionChoice(Option.some(selected));
+              if (isPermission(selected)) {
+                form.setFieldValue("permission", selected);
+              }
             }}
           />
         </div>

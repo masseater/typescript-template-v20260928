@@ -1,6 +1,5 @@
-import { useAtom } from "@effect/atom-react";
 import { useAction } from "@repo/ui";
-import { Atom } from "effect/unstable/reactivity";
+import { useForm, useStore } from "@tanstack/react-form";
 
 import { publishVersion, reviseDraft } from "#pages/terms/api/agreement-versions.ts";
 
@@ -20,9 +19,9 @@ interface DraftForm extends DraftFields {
   readonly handleSave: () => void;
 }
 
-const draftAtom = Atom.family((initial: Readonly<VersionDetail>) =>
-  Atom.make<DraftFields>({ body: initial.body, summary: initial.summary ?? "" }),
-);
+type DraftOutcome = "publish" | "save";
+
+const savingOnly: Readonly<{ outcome: DraftOutcome }> = { outcome: "save" };
 
 function useDraftForm(
   initial: Readonly<VersionDetail>,
@@ -31,31 +30,39 @@ function useDraftForm(
     onSaved: () => void;
   }>,
 ): DraftForm {
-  const [fields, setFields] = useAtom(draftAtom(initial));
   const action = useAction();
+  const form = useForm({
+    defaultValues: { body: initial.body, summary: initial.summary ?? "" } satisfies DraftFields,
+    onSubmit: ({ meta, value }) => {
+      const revise = (): Promise<unknown> => reviseDraft({ ...value, id: initial.id });
+      action.run(() =>
+        meta.outcome === "publish"
+          ? revise()
+              .then(() => publishVersion(initial.id))
+              .then((published) => outcomes.onPublished(published.version))
+          : revise().then(() => {
+              outcomes.onSaved();
+            }),
+      );
+    },
+    onSubmitMeta: savingOnly,
+  });
+  const fields = useStore(form.store, (state) => state.values);
   return {
     ...fields,
     blocked: action.blocked || fields.body.trim() === "",
     error: action.error,
     handleBodyChange: (body): void => {
-      setFields((current) => ({ ...current, body }));
+      form.setFieldValue("body", body);
     },
     handleSummaryChange: (summary): void => {
-      setFields((current) => ({ ...current, summary }));
+      form.setFieldValue("summary", summary);
     },
     handlePublish: (): void => {
-      action.run(() =>
-        reviseDraft({ ...fields, id: initial.id })
-          .then(() => publishVersion(initial.id))
-          .then((published) => outcomes.onPublished(published.version)),
-      );
+      void form.handleSubmit({ outcome: "publish" });
     },
     handleSave: (): void => {
-      action.run(() =>
-        reviseDraft({ ...fields, id: initial.id }).then(() => {
-          outcomes.onSaved();
-        }),
-      );
+      void form.handleSubmit(savingOnly);
     },
   };
 }

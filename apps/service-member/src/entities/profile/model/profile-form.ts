@@ -2,10 +2,10 @@ import { useAction } from "@repo/ui";
 import { useForm } from "@tanstack/react-form";
 import { Schema } from "effect";
 
-import { saveProfile } from "#entities/profile/index.ts";
+import { saveProfile } from "#entities/profile/api/profile.ts";
 import { ProfileUpdate } from "#shared/contracts/index.ts";
 
-import type { Profile, ProfileDraft } from "#entities/profile/index.ts";
+import type { ProfileDraft } from "#entities/profile/api/profile.ts";
 import type { SocialLinkField } from "./social-link-field.ts";
 
 type ProfileFormValues = {
@@ -36,7 +36,7 @@ function profileDraft(values: ProfileFormValues): ProfileDraft {
   };
 }
 
-function useProfileForm(initial: Readonly<Profile>, onSaved: () => Promise<void>) {
+function useProfileForm(initial: ProfileDraft, onSaved: () => Promise<void>) {
   const action = useAction();
   const form = useForm({
     defaultValues: {

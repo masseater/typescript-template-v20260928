@@ -1,5 +1,6 @@
 import { AUTHENTICATION_METHOD, ROLE } from "@repo/config";
-import { Button, Field, FormColumn, useTextInput } from "@repo/ui";
+import { Button, Field, FormColumn } from "@repo/ui";
+import { useForm, useStore } from "@tanstack/react-form";
 import { Effect } from "effect";
 
 import { authTask } from "./browser-http.ts";
@@ -9,6 +10,7 @@ import { requireSuccess, type SessionView } from "./protocol";
 
 import type { ReactElement, SyntheticEvent } from "react";
 import type { Enrollment, SettingsContext } from "./mfa-types";
+import type { TextInput } from "./text-input.ts";
 
 const adminLocked = (session: SessionView, recovery: string | undefined): boolean => {
   return (
@@ -65,7 +67,14 @@ const TotpPasswordForm = ({
   readonly onEnroll: (enrollment: Enrollment) => void;
 }): ReactElement => {
   const { action, onNoticeClear, recovery, session } = context;
-  const password = useTextInput();
+  const textForm = useForm({ defaultValues: { password: "" } });
+  const texts = useStore(textForm.store, (state) => state.values);
+  const password: TextInput = {
+    handleChange: (next) => {
+      textForm.setFieldValue("password", next);
+    },
+    value: texts.password,
+  };
   const submit = (submitEvent: Readonly<Pick<SyntheticEvent, "preventDefault">>): void => {
     submitEvent.preventDefault();
     action.run(() =>

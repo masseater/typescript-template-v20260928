@@ -1,11 +1,10 @@
-import { useTextSubmission } from "@repo/ui";
-
 import { sendMessage } from "#pages/messages/api/messages.ts";
+import { useReplyBody } from "#shared/ui/index.ts";
 
-import type { TextSubmission } from "@repo/ui";
+import type { ReplyBodyFormState } from "#shared/ui/index.ts";
 
-function useReplyForm(conversationId: string, onSent: () => Promise<void>): TextSubmission {
-  return useTextSubmission((body) => sendMessage(conversationId, body), onSent);
+function useReplyForm(conversationId: string, onSent: () => Promise<void>): ReplyBodyFormState {
+  return useReplyBody((body) => sendMessage(conversationId, body), onSent);
 }
 
 export { useReplyForm };

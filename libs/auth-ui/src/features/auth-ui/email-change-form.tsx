@@ -1,5 +1,6 @@
 import { AUTHENTICATION_METHOD, type StrongAuthenticationMethod } from "@repo/config";
-import { ActionStatus, Field, FormColumn, useAction, useTextInput } from "@repo/ui";
+import { ActionStatus, Field, FormColumn, useAction } from "@repo/ui";
+import { useForm, useStore } from "@tanstack/react-form";
 import { Effect } from "effect";
 
 import { authTask } from "./browser-http.ts";
@@ -9,6 +10,7 @@ import { StrongAuthControls } from "./strong-auth-controls";
 import { useNotice } from "./use-notice";
 
 import type { ReactElement, SyntheticEvent } from "react";
+import type { TextInput } from "./text-input.ts";
 
 const requestedNotice =
   "新しいメールアドレスに確認メールを送りました。届いたリンクを開くと変更が確定します。いまのメールアドレスにもお知らせを送りました。";
@@ -50,8 +52,20 @@ const EmailChangeForm = ({
   securityHref,
   session,
 }: Readonly<{ securityHref: string; session: SessionView }>): ReactElement => {
-  const newEmail = useTextInput();
-  const code = useTextInput();
+  const textForm = useForm({ defaultValues: { newEmail: "", code: "" } });
+  const texts = useStore(textForm.store, (state) => state.values);
+  const newEmail: TextInput = {
+    handleChange: (next) => {
+      textForm.setFieldValue("newEmail", next);
+    },
+    value: texts.newEmail,
+  };
+  const code: TextInput = {
+    handleChange: (next) => {
+      textForm.setFieldValue("code", next);
+    },
+    value: texts.code,
+  };
   const action = useAction();
   const { clearNotice, notice, showNotice } = useNotice();
   const confirmChange = (method: StrongAuthenticationMethod): void => {
