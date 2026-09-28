@@ -131,7 +131,7 @@ layer(NodeServices.layer)("loadStyleClassIndex", (it) => {
   });
 
   describe("the index of a repository asked for twice", () => {
-    const fixture = Effect.gen(function* sameIndexOnASecondAsk() {
+    const fixture = Effect.gen(function* indexesOfTwoAsks() {
       const filesystem = yield* FileSystem.FileSystem;
       const paths = yield* Path.Path;
       const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
@@ -143,13 +143,16 @@ layer(NodeServices.layer)("loadStyleClassIndex", (it) => {
         paths.join(repositoryRoot, "src", "style.css"),
         ORPHAN_STYLE_SHEET,
       );
-      return loadStyleClassIndex({ repositoryRoot }) === loadStyleClassIndex({ repositoryRoot });
+      return {
+        firstAsk: loadStyleClassIndex({ repositoryRoot }),
+        secondAsk: loadStyleClassIndex({ repositoryRoot }),
+      };
     });
 
     it.effect("is built once and handed back on every later ask", () =>
       Effect.gen(function* program() {
-        const sameIndexOnASecondAsk = yield* fixture;
-        expect(sameIndexOnASecondAsk).toBe(true);
+        const { firstAsk, secondAsk } = yield* fixture;
+        expect(secondAsk).toBe(firstAsk);
       }),
     );
   });
