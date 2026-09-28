@@ -104,9 +104,33 @@ function runsFileWithNode(tokens: readonly string[]): boolean {
   );
 }
 
+const emptyRunPass = /^--pass-?with-?no-?tests(?:=|$)/iu;
+
+function runsTestsPassingEmptyRun(tokens: readonly string[]): boolean {
+  const index = leadingCommand(tokens);
+  if (index === -1) {
+    return false;
+  }
+  const rest = tokens.slice(index + 1);
+  const runsTests =
+    binaryName(tokens[index] ?? "") === "vitest" ||
+    rest.includes("vitest") ||
+    (binaryName(tokens[index] ?? "") === "vp" && rest[0] === "test");
+  return runsTests && rest.some((word) => emptyRunPass.test(word));
+}
+
+function vacuousTestRunViolations(name: string, command: string): string[] {
+  return words(command).some((tokens) => runsTestsPassingEmptyRun(tokens))
+    ? [
+        `${name}: --passWithNoTests で、テストファイルを 1 つも見つけなかった実行を成功にできません。フラグを消し、対象が空なら実行そのものを外してください: ${command}`,
+      ]
+    : [];
+}
+
 function commandViolations(name: string, command: string): string[] {
   const segments = words(command);
   return [
+    ...vacuousTestRunViolations(name, command),
     ...(segments.some((tokens) => runsFileWithNode(tokens))
       ? [
           `${name}: node でファイルを直接実行せず、パッケージの bin か vp run で実行してください: ${command}`,
@@ -149,5 +173,5 @@ function taskViolations(tasks: Readonly<Record<string, Task>>): string[] {
   });
 }
 
-export { scriptViolations, taskViolations };
+export { scriptViolations, taskViolations, vacuousTestRunViolations };
 export type { Command, Task };

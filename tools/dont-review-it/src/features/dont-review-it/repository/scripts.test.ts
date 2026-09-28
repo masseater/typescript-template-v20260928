@@ -1,7 +1,13 @@
+import { isPlainObject } from "es-toolkit";
 import { describe, expect, it } from "vite-plus/test";
+import { parse } from "yaml";
 
 import { field, workspaceManifests } from "./dependencies-test-fixture.ts";
-import { scriptViolations, taskViolations } from "./scripts-test-fixture.ts";
+import {
+  scriptViolations,
+  taskViolations,
+  vacuousTestRunViolations,
+} from "./scripts-test-fixture.ts";
 import { configuredDirectories, workspaceTasks } from "./tasks-test-fixture.ts";
 
 import type { WorkspaceManifest } from "./dependencies-test-fixture.ts";
@@ -24,6 +30,40 @@ function toolReferences({ file, manifest }: WorkspaceManifest, tools: readonly s
     )
     .map(([key]: readonly [string, unknown]) => `${file}: ${key}`);
 }
+
+const workflows: Readonly<Record<string, string>> = import.meta.glob(
+  "../../../../../../.github/workflows/*.yml",
+  { eager: true, import: "default", query: "?raw" },
+);
+
+const stepRuns = (workflow: unknown): readonly string[] => {
+  const jobs = isPlainObject(workflow) ? workflow["jobs"] : undefined;
+  if (!isPlainObject(jobs)) {
+    return [];
+  }
+  return Object.values(jobs).flatMap((job) => {
+    const steps = isPlainObject(job) ? job["steps"] : undefined;
+    return Array.isArray(steps)
+      ? steps.flatMap((step) =>
+          isPlainObject(step) && typeof step["run"] === "string" ? [step["run"]] : [],
+        )
+      : [];
+  });
+};
+
+const workflowTestRunViolations = Object.entries(workflows).flatMap(([file, source]) =>
+  stepRuns(parse(source)).flatMap((command) =>
+    vacuousTestRunViolations(file.replace(/^.*\//u, ""), command),
+  ),
+);
+
+const emptyRunPassingCommands = [
+  "vp test run --passWithNoTests --project dev-server",
+  "vp test run --passWithNoTests --project node --shard 1/4",
+  "vitest run --pass-with-no-tests",
+  "vp exec vitest --passWithNoTests=true",
+  "vp run build && vp test --passWithNoTests",
+];
 
 const repositoryTaskViolations = configuredDirectories.flatMap((directory) =>
   taskViolations(workspaceTasks[directory] ?? {}).map((violation) => `${directory}: ${violation}`),
@@ -141,6 +181,27 @@ describe("workspace script conventions", () => {
     const tools = packageNames(workspaceManifests.filter(({ area }) => area === "tools"));
     const consumers = workspaceManifests.filter(({ area }) => area !== "tools");
     expect(consumers.flatMap((consumer) => toolReferences(consumer, tools))).toStrictEqual([]);
+  });
+});
+
+describe("test runs that pass when they find no test file", () => {
+  it.for(emptyRunPassingCommands)("rejects %s in scripts, tasks and workflows", (command) => {
+    expect.assertions(3);
+    const message = `probe: --passWithNoTests で、テストファイルを 1 つも見つけなかった実行を成功にできません。フラグを消し、対象が空なら実行そのものを外してください: ${command}`;
+    expect(scriptViolations({ scripts: { probe: command } })).toContain(message);
+    expect(taskViolations({ probe: { command } })).toContain(message);
+    expect(vacuousTestRunViolations("probe", command)).toStrictEqual([message]);
+  });
+
+  it("leaves a test run that fails on an empty collection alone", () => {
+    expect.assertions(1);
+    expect(vacuousTestRunViolations("probe", "vp test run --project dev-server")).toStrictEqual([]);
+  });
+
+  it("finds no workflow step that passes an empty test run", () => {
+    expect.assertions(2);
+    expect(Object.keys(workflows).length).toBeGreaterThan(0);
+    expect(workflowTestRunViolations).toStrictEqual([]);
   });
 });
 
