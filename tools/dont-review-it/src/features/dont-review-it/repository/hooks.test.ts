@@ -47,6 +47,7 @@ const pnpmWorkspaces: Readonly<Record<string, string>> = import.meta.glob(
 );
 
 const gatedTask = /^(?:build|check|verify)(?::|$)/u;
+const credentialedApplies = ["deploy", "deploy:ordered"];
 const minuteLongCommands = ["vp run", "vp test", "vp build", "vp pack"];
 const lifecycleWorkflows = new Set(["check.yml", "prerelease.yml"]);
 
@@ -138,7 +139,7 @@ function scriptedGate(directory: string): string[] {
 }
 
 function ungated(directory: string): string[] {
-  const gate = new Set(reachable(directory, ["prerelease"]));
+  const gate = new Set(reachable(directory, ["prerelease", ...credentialedApplies]));
   return [...taskNames(directory), ...scriptNames(directory)]
     .filter((name) => gatedTask.test(name) && !gate.has(name))
     .map((name) => `${directory}: ${name}`)
@@ -328,6 +329,26 @@ describe("lifecycle contents", () => {
     expect(configuredDirectories.flatMap((directory) => ungated(directory))).toStrictEqual([]);
   });
 
+  it("verifies the deployment account on every credentialed apply and never on the release gate that runs without credentials", () => {
+    expect.hasAssertions();
+    const accountChecked = configuredDirectories.filter((directory) =>
+      taskNames(directory).includes("verify:account"),
+    );
+    expect(accountChecked.length).toBeGreaterThan(0);
+    expect(
+      accountChecked.flatMap((directory) =>
+        credentialedApplies
+          .filter((name) => !dependencies(directory, name).includes("verify:account"))
+          .map((name) => `${directory}: ${name}`),
+      ),
+    ).toStrictEqual([]);
+    expect(
+      accountChecked.filter((directory) =>
+        reachable(directory, ["prerelease"]).includes("verify:account"),
+      ),
+    ).toStrictEqual([]);
+  });
+
   it("runs every gated check as a task so it can be cached", () => {
     expect.hasAssertions();
     expect(configuredDirectories.flatMap((directory) => scriptedGate(directory))).toStrictEqual([]);
@@ -343,7 +364,6 @@ describe("lifecycle contents", () => {
       "apps/internal-dashboard#check:dev",
       "apps/service-admin#check:dev",
       "apps/service-member#check:dev",
-      "infra/cloudflare#verify:account",
       "tools/dev#check:exported",
       "tools/dev#setup",
       "tools/dont-review-it#check:staged",
