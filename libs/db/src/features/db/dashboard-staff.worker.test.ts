@@ -141,11 +141,11 @@ it.effect("renders every audit action literal without hard-coding the list", () 
 
 it.effect("does not return personal identifiers in overview aggregates", () =>
   Effect.gen(function* program() {
-    yield* addUser({ userId: "member-a" });
+    yield* addUser({ email: "member-a@example.test", name: "Member A", userId: "member-a" });
     const overview = yield* dashboardStaff.overviewWithoutPii();
     const serialized = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(overview);
-    assert.notInclude(serialized, "member-a@example.com");
-    assert.notInclude(serialized, '"name"');
+    assert.notInclude(serialized, "member-a@example.test");
+    assert.notInclude(serialized, "Member A");
   }).pipe(Effect.provide(TestDatabase)),
 );
 
