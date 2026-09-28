@@ -1,10 +1,10 @@
-const sandboxUnsafeTestPattern = "**/*.sandbox-unsafe.test.ts";
+import { sandboxUnsafeTests } from "./test-runtime.ts";
 
 const configuration = {
   coverageAnalysis: "perTest",
   dryRunTimeoutMinutes: 25,
   htmlReporter: { fileName: ".local/stryker-report.html" },
-  ignorePatterns: ["**/tsconfig*.json", ".local-agents", ".local/**", sandboxUnsafeTestPattern],
+  ignorePatterns: ["**/tsconfig*.json", ".local-agents", ".local/**", sandboxUnsafeTests],
   ignoreStatic: true,
   mutate: [
     "libs/config/src/features/config/index.ts",
@@ -37,5 +37,4 @@ const configuration = {
   vitest: { configFile: "vitest.mutation.config.ts" },
 };
 
-export { sandboxUnsafeTestPattern };
 export default configuration;

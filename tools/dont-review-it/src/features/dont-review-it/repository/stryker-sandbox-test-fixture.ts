@@ -1,4 +1,4 @@
-const sandboxUnsafeTests = [
+const sandboxUnsafeTestFiles = [
   "tools/dont-review-it/src/features/dont-review-it/repository/dependency-cruiser.sandbox-unsafe.test.ts",
   "tools/dont-review-it/src/features/dont-review-it/repository/effect-diagnostics.sandbox-unsafe.test.ts",
   "tools/dont-review-it/src/features/dont-review-it/repository/inspection-gaps.sandbox-unsafe.test.ts",
@@ -22,4 +22,4 @@ const sandboxUnsafeReasons = [
   '"pack"',
 ] as const;
 
-export { sandboxUnsafeReasons, sandboxUnsafeTests };
+export { sandboxUnsafeReasons, sandboxUnsafeTestFiles };
