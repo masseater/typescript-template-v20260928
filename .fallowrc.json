@@ -28,8 +28,6 @@
     }
   ],
   "rules": {
-    "boundary-violation": "off",
-    "policy-violation": "off",
     "unused-dev-dependencies": "error",
     "unused-dependency-overrides": "error"
   },
@@ -84,7 +82,67 @@
   ],
   "ignoreExports": [
     {
-      "file": "**/*",
+      "file": "**/alchemy.run.ts",
+      "exports": ["default"]
+    },
+    {
+      "file": "**/cold-start-test-fixture.ts",
+      "exports": ["default"]
+    },
+    {
+      "file": "**/doctor.config.ts",
+      "exports": ["default"]
+    },
+    {
+      "file": "**/drizzle.config.ts",
+      "exports": ["default"]
+    },
+    {
+      "file": "**/main.ts",
+      "exports": ["default"]
+    },
+    {
+      "file": "**/monitor-test-fixture.ts",
+      "exports": ["default"]
+    },
+    {
+      "file": "**/plugin.ts",
+      "exports": ["default"]
+    },
+    {
+      "file": "**/preview.tsx",
+      "exports": ["default"]
+    },
+    {
+      "file": "**/server.ts",
+      "exports": ["default"]
+    },
+    {
+      "file": "**/vite.config.ts",
+      "exports": ["default"]
+    },
+    {
+      "file": "**/vitest-sdk.ts",
+      "exports": ["default"]
+    },
+    {
+      "file": "**/vitest.config.ts",
+      "exports": ["default"]
+    },
+    {
+      "file": "**/vitest.mutation.config.ts",
+      "exports": ["default"]
+    },
+    {
+      "file": "**/vitest.workers.config.ts",
+      "exports": ["default"]
+    },
+    {
+      "file": "**/vitest.workers.main.ts",
+      "exports": ["default"]
+    },
+    {
+      "file": "**/worker.ts",
       "exports": ["default"]
     }
   ],
