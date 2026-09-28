@@ -39,8 +39,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "remark-gfm": "4.0.1",
-    "yaml": "catalog:",
-    "zod": "4.6.5"
+    "yaml": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",

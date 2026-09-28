@@ -1,4 +1,4 @@
-import { wikiBasePath } from "@repo/config";
+import { WIKI_SEARCH_MODE, wikiBasePath } from "@repo/config";
 import { createApi, jsonResponse, siteRoutes } from "@repo/runtime/http";
 import { Effect } from "effect";
 
@@ -12,7 +12,7 @@ const api = siteRoutes(runtime, reporting);
 function search(request: Request): Effect.Effect<Response, never, WikiServices> {
   const query = new URL(request.url).searchParams.get("query")?.trim() ?? "";
   if (query === "") {
-    return Effect.succeed(jsonResponse({ mode: "semantic", results: [] }));
+    return Effect.succeed(jsonResponse({ mode: WIKI_SEARCH_MODE.semantic, results: [] }));
   }
   return Effect.promise(() => import("./search.ts")).pipe(
     Effect.flatMap(({ searchWiki }) =>

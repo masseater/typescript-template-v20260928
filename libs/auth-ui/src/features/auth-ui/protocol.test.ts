@@ -270,6 +270,14 @@ describe("失敗理由の文言", () => {
       }
       throw new Error("requireSuccess accepted a message-only failure");
     })
+    .extend("theRefusalWhoseMessageMatchesAKnownCode", () => {
+      try {
+        requireSuccess({ data: undefined, error: { message: "INVALID_CODE" } });
+      } catch (refusal) {
+        return refusal;
+      }
+      throw new Error("requireSuccess accepted a failure whose message matches a known code");
+    })
     .extend("theRefusalOfAnUnknownCodeWithoutMessage", () => {
       try {
         requireSuccess({ data: undefined, error: { code: "SOMETHING_ELSE" } });
@@ -327,6 +335,12 @@ describe("失敗理由の文言", () => {
     theRefusalOfAMessageOnlyFailure,
   }) => {
     expect(theRefusalOfAMessageOnlyFailure).toStrictEqual(new Error("message only"));
+  });
+
+  it("コードが無い失敗の理由をメッセージ本文で引かない", ({
+    theRefusalWhoseMessageMatchesAKnownCode,
+  }) => {
+    expect(theRefusalWhoseMessageMatchesAKnownCode).toStrictEqual(new Error("INVALID_CODE"));
   });
 
   it("未知のコードをメッセージ欠落のまま汎用文言にしない", ({

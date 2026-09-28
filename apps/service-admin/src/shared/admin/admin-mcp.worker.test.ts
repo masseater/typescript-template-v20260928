@@ -145,7 +145,7 @@ describe("admin MCP authorization", () => {
         const { tokens } = yield* authorizedTokens(ADMIN_PERMISSION.viewer);
         const search = yield* callTool(app.fetchMcp, tokens.access_token, "search_members");
         const suspend = yield* callTool(app.fetchMcp, tokens.access_token, "suspend_member", {
-          memberId: "member",
+          id: "member",
         });
         yield* app.stop;
         return { search, suspend };
@@ -181,7 +181,7 @@ describe("admin MCP authorization", () => {
         const app = adminMcpApp(auth);
         const { tokens } = yield* authorizedTokens(ADMIN_PERMISSION.operator);
         yield* callTool(app.fetchMcp, tokens.access_token, "suspend_member", {
-          memberId: "member",
+          id: "member",
         });
         const audit = yield* auditActionsOf("member");
         yield* app.stop;

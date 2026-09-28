@@ -1,7 +1,6 @@
 import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
 import { mailInvite } from "@repo/auth";
 import { APPLICATION, ACCOUNT_STATE } from "@repo/config";
-import { accountStates, adminPermissions } from "@repo/config/identity";
 import { AUDIT_CHANNEL } from "@repo/db";
 import {
   deleteUser,
@@ -14,53 +13,27 @@ import {
   setMemberState,
 } from "@repo/db/admin";
 import { mcpEndpoint, toolRunner } from "@repo/runtime";
+import { IdentifierQuery } from "@repo/runtime/contracts";
 import { Effect, Schema } from "effect";
 
+import {
+  AdminInvitation,
+  AdminPermissionChange,
+  UserDeletion,
+  UserListQuery,
+} from "#shared/contracts/index.ts";
 import { authorizeMcpRequest } from "./authorize-mcp.ts";
 
-import type { AdminPermission } from "@repo/config/identity";
 import type { RunApp } from "@repo/runtime";
 import type { AdminMcpActor } from "./authorize-mcp.ts";
 
 const mcpVersion = "1.0.0";
-const defaultPageSize = 50;
-
-const MemberFilters = Schema.toStandardJSONSchemaV1(
-  Schema.toStandardSchemaV1(
-    Schema.Struct({
-      accountState: Schema.optionalKey(Schema.Literals(accountStates)),
-      emailVerified: Schema.optionalKey(Schema.Boolean),
-      keyword: Schema.optionalKey(Schema.String),
-      limit: Schema.optionalKey(Schema.Int),
-      offset: Schema.optionalKey(Schema.Int),
-    }),
-  ),
-);
-
-const MemberId = Schema.toStandardJSONSchemaV1(
-  Schema.toStandardSchemaV1(Schema.Struct({ memberId: Schema.String })),
-);
-
-const AdminId = Schema.toStandardJSONSchemaV1(
-  Schema.toStandardSchemaV1(Schema.Struct({ adminId: Schema.String })),
-);
-
-const AdminInvitation = Schema.toStandardJSONSchemaV1(
-  Schema.toStandardSchemaV1(
-    Schema.Struct({
-      email: Schema.String,
-      permission: Schema.Literals(adminPermissions),
-    }),
-  ),
-);
-
-const AdminPermissionChange = Schema.toStandardJSONSchemaV1(
-  Schema.toStandardSchemaV1(
-    Schema.Struct({
-      adminId: Schema.String,
-      permission: Schema.Literals(adminPermissions),
-    }),
-  ),
+const MemberFilters = Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(UserListQuery));
+const Target = Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(IdentifierQuery));
+const MemberDeletion = Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(UserDeletion));
+const Invitation = Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(AdminInvitation));
+const PermissionChange = Schema.toStandardJSONSchemaV1(
+  Schema.toStandardSchemaV1(AdminPermissionChange),
 );
 
 const failureCodes: ReadonlyMap<string, string> = new Map([
@@ -82,39 +55,30 @@ function createServer(actor: AdminMcpActor, runAdmin: RunApp): McpServer {
       description: "Search and list service members visible to the signed-in administrator.",
       inputSchema: MemberFilters,
     },
-    (filters) =>
-      run(
-        listUsers(sessionId, {
-          ...(filters.accountState === undefined ? {} : { accountState: filters.accountState }),
-          ...(filters.emailVerified === undefined ? {} : { emailVerified: filters.emailVerified }),
-          ...(filters.keyword === undefined ? {} : { keyword: filters.keyword }),
-          limit: filters.limit ?? defaultPageSize,
-          offset: filters.offset ?? 0,
-        }),
-      ),
+    (page) => run(listUsers(sessionId, page)),
   );
 
   server.registerTool(
     "get_member",
     {
       description: "Load one member record when the administrator may view that member.",
-      inputSchema: MemberId,
+      inputSchema: Target,
     },
-    ({ memberId }) => run(getMember(sessionId, memberId)),
+    ({ id }) => run(getMember(sessionId, id)),
   );
 
   server.registerTool(
     "suspend_member",
     {
       description: "Suspend a member account. Requires operator permission or higher.",
-      inputSchema: MemberId,
+      inputSchema: Target,
     },
-    ({ memberId }) =>
+    ({ id }) =>
       run(
         setMemberState({
           accountState: ACCOUNT_STATE.suspended,
           channel,
-          memberId,
+          memberId: id,
           sessionId,
         }),
       ),
@@ -124,14 +88,14 @@ function createServer(actor: AdminMcpActor, runAdmin: RunApp): McpServer {
     "unsuspend_member",
     {
       description: "Restore a suspended member account. Requires operator permission or higher.",
-      inputSchema: MemberId,
+      inputSchema: Target,
     },
-    ({ memberId }) =>
+    ({ id }) =>
       run(
         setMemberState({
           accountState: ACCOUNT_STATE.active,
           channel,
-          memberId,
+          memberId: id,
           sessionId,
         }),
       ),
@@ -141,9 +105,9 @@ function createServer(actor: AdminMcpActor, runAdmin: RunApp): McpServer {
     "delete_member",
     {
       description: "Permanently delete a member account. Requires operator permission or higher.",
-      inputSchema: MemberId,
+      inputSchema: MemberDeletion,
     },
-    ({ memberId }) => run(deleteUser({ channel, sessionId, targetId: memberId })),
+    ({ id }) => run(deleteUser({ channel, sessionId, targetId: id })),
   );
 
   server.registerTool(
@@ -158,11 +122,11 @@ function createServer(actor: AdminMcpActor, runAdmin: RunApp): McpServer {
     "invite_admin",
     {
       description: "Invite a new administrator by email. Requires owner permission.",
-      inputSchema: AdminInvitation,
+      inputSchema: Invitation,
     },
     ({ email, permission }) =>
       run(
-        inviteAdmin({ channel, email, permission: permission as AdminPermission, sessionId }).pipe(
+        inviteAdmin({ channel, email, permission, sessionId }).pipe(
           Effect.flatMap((issued) =>
             mailInvite(issued).pipe(
               Effect.as({ email: issued.email, expiresAt: issued.expiresAt }),
@@ -176,30 +140,23 @@ function createServer(actor: AdminMcpActor, runAdmin: RunApp): McpServer {
     "change_admin_permission",
     {
       description: "Change another administrator's permission tier. Requires owner permission.",
-      inputSchema: AdminPermissionChange,
+      inputSchema: PermissionChange,
     },
-    ({ adminId, permission }) =>
-      run(
-        setAdminPermission({
-          adminId,
-          channel,
-          permission: permission as AdminPermission,
-          sessionId,
-        }),
-      ),
+    ({ id, permission }) =>
+      run(setAdminPermission({ adminId: id, channel, permission, sessionId })),
   );
 
   server.registerTool(
     "disable_admin",
     {
       description: "Disable another administrator account. Requires owner permission.",
-      inputSchema: AdminId,
+      inputSchema: Target,
     },
-    ({ adminId }) =>
+    ({ id }) =>
       run(
         setAdminState({
           accountState: ACCOUNT_STATE.suspended,
-          adminId,
+          adminId: id,
           channel,
           sessionId,
         }),
@@ -210,13 +167,13 @@ function createServer(actor: AdminMcpActor, runAdmin: RunApp): McpServer {
     "enable_admin",
     {
       description: "Re-enable a disabled administrator account. Requires owner permission.",
-      inputSchema: AdminId,
+      inputSchema: Target,
     },
-    ({ adminId }) =>
+    ({ id }) =>
       run(
         setAdminState({
           accountState: ACCOUNT_STATE.active,
-          adminId,
+          adminId: id,
           channel,
           sessionId,
         }),

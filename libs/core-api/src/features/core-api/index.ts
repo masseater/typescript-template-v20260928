@@ -4,4 +4,4 @@ export { InternalRpcs } from "./internal-rpcs.ts";
 export { MemberRpcs } from "./member-rpcs.ts";
 export { createRpcFetcher } from "./serve.ts";
 export { WikiPageNotFound } from "./wiki-page-not-found.ts";
-export { WikiRpcs, WikiSearchHits } from "./wiki-rpcs.ts";
+export { WikiRpcs, readWikiPage, searchWiki } from "./wiki-rpcs.ts";

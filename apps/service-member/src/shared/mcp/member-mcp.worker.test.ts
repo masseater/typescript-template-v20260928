@@ -168,6 +168,9 @@ describe("member MCP authorization", () => {
         const searched = yield* callTool(app.fetchMcp, granted.accessToken, "search_members", {
           keyword: "peer",
         });
+        const outOfRange = yield* callTool(app.fetchMcp, granted.accessToken, "search_members", {
+          page: "0",
+        });
         const sent = yield* callTool(app.fetchMcp, granted.accessToken, "send_message", {
           body: "こんにちは",
           recipientId: peer?.id ?? "",
@@ -185,6 +188,7 @@ describe("member MCP authorization", () => {
           deniedProfile: toolText(deniedProfile),
           deniedSearch: toolText(deniedSearch),
           deniedSend: toolText(deniedSend),
+          outOfRange,
           peerId: peer?.id,
           profile: yield* Schema.decodeEffect(JsonUnknown)(profileText || "{}"),
           searched: yield* Schema.decodeEffect(JsonUnknown)(searchedText || "{}"),
@@ -202,6 +206,7 @@ describe("member MCP authorization", () => {
           (member) => member.id,
         ),
       ).toContain(result.peerId);
+      expect(result.outOfRange).toMatchObject({ result: { isError: true } });
       expect(result.sent).toMatchObject({ conversationId: expect.any(String) });
       expect(result.sentText).not.toContain(secretBody);
       expect(result.deniedProfile).toBe(`permission_required:${MEMBER_MCP_SCOPE.profileUpdate}`);

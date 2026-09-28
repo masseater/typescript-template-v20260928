@@ -46,4 +46,4 @@ function registerDashboardTools(server: McpServer, context: Context.Context<Wiki
   );
 }
 
-export { registerDashboardTools };
+export { EmptyInput, registerDashboardTools };

@@ -7,6 +7,14 @@ const forbiddenStacks = [
     "libs/shared/src/shared/probe.ts",
     'import * as v from "valibot"; export const schema = v.string();',
   ],
+  [
+    "apps/internal-dashboard/src/shared/server-api/probe.ts",
+    'import { z } from "zod"; export const schema = z.object({ query: z.string() });',
+  ],
+  [
+    "libs/shared/src/shared/probe.ts",
+    'import type { ZodType } from "zod/v4"; export type T = ZodType;',
+  ],
   ["libs/shared/src/shared/probe.ts", 'export * from "elysia";'],
   ["libs/shared/src/shared/probe.ts", 'export { t } from "elysia";'],
   [
@@ -58,6 +66,7 @@ const allowedStacks = [
   ],
   ["libs/shared/src/shared/probe.ts", 'export { helper } from "pre-elysia";'],
   ["libs/shared/src/shared/probe.ts", 'export { helper } from "my-valibot";'],
+  ["libs/shared/src/shared/probe.ts", 'export { helper } from "zod-validation-error";'],
   [
     "apps/service-member/src/app/routes/api.probe.ts",
     'import { createFileRoute } from "@tanstack/react-router"; import { elysiaServer } from "@repo/runtime/http"; import { userApi } from "../api.ts"; export const Route = createFileRoute("/api/$")({ server: elysiaServer(userApi) });',

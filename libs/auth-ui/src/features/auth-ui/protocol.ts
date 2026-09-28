@@ -30,27 +30,24 @@ const errorMessage = (failure: unknown): string => {
     : "操作に失敗しました。もう一度お試しください。";
 };
 
-const failureReasons: Readonly<Record<string, string>> = {
-  "Email is the same": "いまのメールアドレスと同じです。",
-  EMAIL_NOT_VERIFIED: "メールアドレスが未確認です。確認メールのリンクを開いてください。",
-  INVALID_BACKUP_CODE: "バックアップコードが違います。",
-  INVALID_CODE: "確認コードが違います。",
-  INVALID_EMAIL_OR_PASSWORD: "メールアドレスかパスワードが違います。",
-  STRONG_AUTH_REQUIRED: "認証アプリかパスキーで確認してから、もう一度お試しください。",
-};
+const failureReasons: ReadonlyMap<string, string> = new Map([
+  ["EMAIL_NOT_VERIFIED", "メールアドレスが未確認です。確認メールのリンクを開いてください。"],
+  ["INVALID_BACKUP_CODE", "バックアップコードが違います。"],
+  ["INVALID_CODE", "確認コードが違います。"],
+  ["INVALID_EMAIL_OR_PASSWORD", "メールアドレスかパスワードが違います。"],
+  ["STRONG_AUTH_REQUIRED", "認証アプリかパスキーで確認してから、もう一度お試しください。"],
+]);
 
 const authFailureMessage = (
   authFailure: Readonly<{ code?: string | undefined; message?: string | undefined }>,
 ): string => {
   const { code, message } = authFailure;
-  const known = failureReasons[code ?? message ?? ""];
-  if (known !== undefined) {
-    return known;
-  }
   if (code === undefined) {
     return message ?? "認証サーバーが失敗理由のコードを返しませんでした。";
   }
-  return message ?? `認証サーバーが未知の失敗コードを返しました: ${code}`;
+  return (
+    failureReasons.get(code) ?? message ?? `認証サーバーが未知の失敗コードを返しました: ${code}`
+  );
 };
 
 const requireSuccess = <TData>(

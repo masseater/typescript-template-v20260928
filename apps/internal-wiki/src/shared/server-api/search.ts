@@ -1,3 +1,4 @@
+import { WIKI_SEARCH_MODE } from "@repo/config";
 import { annotateSpan, reportFailure } from "@repo/observability";
 import { Cause, Effect } from "effect";
 import { createFromSource } from "fumadocs-core/search/server";
@@ -7,6 +8,7 @@ import { source } from "#shared/content/index.ts";
 import { Embedder } from "#shared/wiki/index.ts";
 import { createSemanticIndex, exactMatchesFirst, rankPages } from "./semantic.ts";
 
+import type { WikiSearchHits } from "@repo/config";
 import type { SortedResult } from "fumadocs-core/search";
 import type { SearchServer } from "fumadocs-core/search/server";
 import type { SemanticDocument, SemanticMatch } from "./semantic.ts";
@@ -27,13 +29,6 @@ type WikiPageView = Readonly<{
     }
   >;
 }>;
-
-type SearchMode = "semantic" | "keyword_only";
-
-interface WikiSearchResult {
-  readonly mode: SearchMode;
-  readonly results: SortedResult[];
-}
 
 const DEFAULT_PAGE_LIMIT = 5;
 const LEXICAL_HEADING_LIMIT = 2;
@@ -152,18 +147,18 @@ const semanticSearch = Effect.fn("semanticSearch")(function* semanticSearch(quer
   const { available } = yield* Embedder;
   if (!available) {
     yield* annotateSpan({
-      "wiki.search.mode": "keyword_only",
+      "wiki.search.mode": WIKI_SEARCH_MODE.keywordOnly,
       "wiki.search.reason": "embedder_unavailable",
     });
-    return { matches: [] as SemanticMatch[], mode: "keyword_only" as const };
+    return { matches: [] as SemanticMatch[], mode: WIKI_SEARCH_MODE.keywordOnly };
   }
   return yield* semantic(query).pipe(
     Effect.matchEffect({
       onFailure: (error) =>
         reportFailure(Cause.fail(error)).pipe(
-          Effect.as({ matches: [] as SemanticMatch[], mode: "keyword_only" as const }),
+          Effect.as({ matches: [] as SemanticMatch[], mode: WIKI_SEARCH_MODE.keywordOnly }),
         ),
-      onSuccess: (matches) => Effect.succeed({ matches, mode: "semantic" as const }),
+      onSuccess: (matches) => Effect.succeed({ matches, mode: WIKI_SEARCH_MODE.semantic }),
     }),
   );
 });
@@ -189,7 +184,7 @@ const searchWiki = Effect.fn("searchWiki")(function* searchWiki(
     exactMatchesFirst(query, keywordPages, (url) => texts.get(url) ?? ""),
     options?.limit ?? DEFAULT_PAGE_LIMIT,
   );
-  const results: WikiSearchResult = {
+  const results: WikiSearchHits = {
     mode: semanticResults.mode,
     results: pages.flatMap((url) => pageResults(url, keywordResults, semanticResults.matches)),
   };

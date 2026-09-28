@@ -1,7 +1,7 @@
 import { loopbackHostSet } from "@repo/config";
 import { RowCells } from "@repo/db/migrations";
 import { RequestId } from "@repo/observability";
-import { Effect, Predicate, Result, Schema } from "effect";
+import { Effect, Option, Schema } from "effect";
 import { FetchHttpClient, HttpBody, HttpClient, HttpClientResponse } from "effect/unstable/http";
 
 type Row = Record<string, unknown>;
@@ -26,6 +26,10 @@ const explorerTimeoutMilliseconds = 15_000;
 const Columns = Schema.Array(Schema.String);
 const QueryResult = Schema.Struct({ columns: Columns, rows: RowCells });
 const QueryResponse = Schema.Struct({ result: QueryResult, success: Schema.Literal(true) });
+const StructuredLine = Schema.fromJsonString(
+  Schema.Tuple([Schema.fromJsonString(Schema.Record(Schema.String, Schema.Unknown))]),
+);
+const decodeStructuredLine = Schema.decodeUnknownOption(StructuredLine);
 
 function originInvalid(): ExplorerFailure {
   return new ExplorerFailure({ reason: "origin_invalid" });
@@ -74,13 +78,11 @@ const queryExplorer = Effect.fn("queryExplorer")(function* queryExplorer(
     new URL("/cdn-cgi/local/explorer/api/local/observability/query", origin),
     { acceptJson: true, body: requestBody },
   ).pipe(
+    Effect.flatMap(HttpClientResponse.filterStatusOk),
     Effect.timeout(explorerTimeoutMilliseconds),
     Effect.provide(FetchHttpClient.layer),
     Effect.mapError(queryFailed),
   );
-  if (response.status < 200 || response.status >= 300) {
-    return yield* queryFailed();
-  }
   const { result } = yield* HttpClientResponse.schemaBodyJson(QueryResponse)(response).pipe(
     Effect.mapError(responseInvalid),
   );
@@ -89,26 +91,14 @@ const queryExplorer = Effect.fn("queryExplorer")(function* queryExplorer(
   );
 });
 
-function parseStructured(message: string): Row | undefined {
-  const args: unknown = JSON.parse(message);
-  const first: unknown = Array.isArray(args) ? args[0] : args;
-  const parsed: unknown = typeof first === "string" ? JSON.parse(first) : undefined;
-  return Predicate.isObject(parsed) && !Array.isArray(parsed)
-    ? Object.fromEntries(Object.entries(parsed))
-    : undefined;
-}
-
 function structuredMessage(message: unknown): LogEvent {
   if (typeof message !== "string") {
     return undefined;
   }
-  return Result.match(
-    Result.try(() => parseStructured(message)),
-    {
-      onFailure: () => "unparsable" as const,
-      onSuccess: (row) => row,
-    },
-  );
+  return Option.match(decodeStructuredLine(message), {
+    onNone: () => "unparsable" as const,
+    onSome: ([event]) => event,
+  });
 }
 
 function withEvent({ message, ...row }: Readonly<Row>): LogRow {

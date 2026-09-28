@@ -213,6 +213,13 @@ export {
   inquiryAuthorKinds,
 } from "./inquiry-author-kind.ts";
 export {
+  WIKI_SEARCH_MODE,
+  WikiSearchMode,
+  WikiSearchHits,
+  wikiSearchHitKinds,
+  wikiSearchModes,
+} from "./wiki-search.ts";
+export {
   INQUIRY_STATUS,
   InquiryStatus,
   inquiryStatusLabels,
