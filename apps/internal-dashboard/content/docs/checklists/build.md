@@ -8,7 +8,7 @@ description: 計画に沿って作り、最初のデプロイを経て、受け�
 
 ## 作り始めるとき
 
-- サービス名と LP の文言を決めます。書く場所: `apps/service-member/src/shared/config/service.ts` と [LP](/pages/member-lp)。手順は [使い始める手順](/getting-started/first-steps) の 1. にあります。
+- サービス名と LP の文言を決めます。書く場所: `apps/service-member/src/shared/config/product.ts` と [LP](/pages/member-lp)。手順は [使い始める手順](/getting-started/first-steps) の 1. にあります。
 - 残す概念と捨てる概念を決めます。書く場所: [データモデル](/data-model/overview)、[用語集](/glossary)、`libs/db` のスキーマ。手順は [使い始める手順](/getting-started/first-steps) の 2. にあります。
 
 ## 最初に staging へデプロイする前
