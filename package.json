@@ -8,6 +8,7 @@
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",
+    "@cloudflare/workers-types": "catalog:",
     "@effect/tsgo": "catalog:",
     "@mergifyio/vitest": "catalog:",
     "@repo/ai-native": "workspace:*",

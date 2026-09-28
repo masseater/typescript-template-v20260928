@@ -1,7 +1,8 @@
 {
   "extends": "@repo/dont-review-it/tsconfig/library.json",
   "compilerOptions": {
-    "types": ["vite-plus/client", "node"]
+    "types": ["vite-plus/client", "@cloudflare/workers-types", "node"]
   },
-  "include": ["vite.config.ts", "vitest.mutation.config.ts", "vitest.workers.config.ts"]
+  "include": ["**/*.ts"],
+  "exclude": ["apps", "libs", "infra", "tools"]
 }

@@ -5,11 +5,5 @@
     "jsx": "react-jsx",
     "noPropertyAccessFromIndexSignature": true
   },
-  "include": [
-    "storybook/**/*.ts",
-    "storybook/**/*.tsx",
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "vite.config.ts"
-  ]
+  "include": ["**/*.ts", "**/*.tsx"]
 }
