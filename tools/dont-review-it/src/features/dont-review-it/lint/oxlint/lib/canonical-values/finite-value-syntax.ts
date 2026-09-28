@@ -39,11 +39,8 @@ const scalarLiteralValue = (node: ESTree.Expression): CanonicalValue | undefined
     (expression.operator === "+" || expression.operator === "-")
   ) {
     const argument = scalarLiteralValue(expression.argument);
-    return typeof argument === "number"
-      ? expression.operator === "-"
-        ? -argument
-        : argument
-      : undefined;
+    if (typeof argument !== "number") return undefined;
+    return expression.operator === "-" ? -argument : argument;
   }
   return undefined;
 };

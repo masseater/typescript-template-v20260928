@@ -170,7 +170,9 @@ No rule of this repository declares this document as its grounds. What the off-t
 
 ## [.claude/skills/reviews/references/remove-needless-branches-wrappers-and-work.md](../.claude/skills/reviews/references/remove-needless-branches-wrappers-and-work.md)
 
-No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
+| Rule | Description |
+| --- | --- |
+| [no-conditional-in-consequent-or-test--split-with-if-or-name-the-inner-value](../tools/dont-review-it/docs/lint/no-conditional-in-consequent-or-test--split-with-if-or-name-the-inner-value.md) | Disallow a conditional expression in the test or the consequent of another conditional expression, so which combination of conditions yields which value is readable from top to bottom |
 
 ## [.claude/skills/reviews/references/report-only-defects-with-the-right-status-and-logs.md](../.claude/skills/reviews/references/report-only-defects-with-the-right-status-and-logs.md)
 

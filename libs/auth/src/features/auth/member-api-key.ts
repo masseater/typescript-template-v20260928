@@ -1,27 +1,20 @@
 import { httpStatus, memberApiKeyHeader, memberApiKeyReadPermissions } from "@repo/config";
 import { findUser } from "@repo/db";
-import { Effect } from "effect";
+import { Effect, Option } from "effect";
 
 import { ApiKeyWriteForbidden } from "./api-key-write-forbidden.ts";
 import { Auth } from "./auth.ts";
+import { bearerToken } from "./bearer-token.ts";
 import { assertEligibleUser } from "./policy.ts";
 import { SessionRequired } from "./session-required.ts";
 import { verifySession } from "./session.ts";
-
-const bearerToken = (authorization: string | null): string | undefined => {
-  if (authorization?.startsWith("Bearer ") !== true) {
-    return undefined;
-  }
-  const token = authorization.slice("Bearer ".length).trim();
-  return token === "" ? undefined : token;
-};
 
 const apiKeyFromHeaders = (headers: Headers): string | undefined => {
   const fromHeader = headers.get(memberApiKeyHeader);
   if (fromHeader !== null && fromHeader !== "") {
     return fromHeader;
   }
-  return bearerToken(headers.get("authorization"));
+  return Option.getOrUndefined(bearerToken(headers.get("authorization")));
 };
 
 const apiKeyOwnerId = Effect.fn("apiKeyOwnerId")(function* apiKeyOwnerId(presented: string) {

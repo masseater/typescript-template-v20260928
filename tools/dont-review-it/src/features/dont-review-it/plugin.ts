@@ -104,6 +104,7 @@ import { forbidUnresolvableModuleSpecifier } from "./lint/oxlint/rules/writing/f
 import { noAmbiguousVariableName } from "./lint/oxlint/rules/writing/no-ambiguous-variable-name--rename-to-concrete-noun.ts";
 import { noBehaviorSwitchEnvironmentKey } from "./lint/oxlint/rules/writing/no-behavior-switch-environment-key--decide-from-the-value-or-a-feature-flag.ts";
 import { noCittyParentRun } from "./lint/oxlint/rules/writing/no-citty-parent-run--move-run-into-a-subcommand.ts";
+import { noConditionalInConsequentOrTest } from "./lint/oxlint/rules/writing/no-conditional-in-consequent-or-test--split-with-if-or-name-the-inner-value.ts";
 import { noDefaultExport } from "./lint/oxlint/rules/writing/no-default-export--use-named-export.ts";
 import { noDetachedDeclaration } from "./lint/oxlint/rules/writing/no-detached-declaration--declare-it-next-to-its-use.ts";
 import { noDetachedRationale } from "./lint/oxlint/rules/writing/no-detached-rationale--comment-at-explained-line.ts";
@@ -181,6 +182,7 @@ const plugin: Plugin = {
     [noArrayMutation.name]: noArrayMutation,
     [noBlanketSuppression.name]: noBlanketSuppression,
     [noCittyParentRun.name]: noCittyParentRun,
+    [noConditionalInConsequentOrTest.name]: noConditionalInConsequentOrTest,
     [noClassAsMutableCell.name]: noClassAsMutableCell,
     [noComputedTestApiMember.name]: noComputedTestApiMember,
     [noCrossSpecAssetsImport.name]: noCrossSpecAssetsImport,

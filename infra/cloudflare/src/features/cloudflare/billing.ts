@@ -1,6 +1,7 @@
 import {
   aiMeterEventName,
   aiUsageUnitAmount,
+  billingCurrency,
   stripeApiVersion,
   stripeWebhookEvents,
 } from "@repo/config";
@@ -13,14 +14,18 @@ import { stripeSandboxKey } from "./settings.ts";
 
 import type { Redacted } from "effect";
 
+const subscriptionPrice = (
+  id: string,
+  props: Omit<Parameters<typeof Stripe.Price>[1], "currency">,
+) => Stripe.Price(id, { ...props, currency: billingCurrency });
+
 const billingProgram = Effect.fn("billingProgram")(function* billingProgram(
   prefix: string,
   origin: string,
 ) {
   const secretKey = yield* stripeSandboxKey;
   const product = yield* Stripe.Product("PaidPlan", { name: `${prefix} paid plan` });
-  const price = yield* Stripe.Price("PaidMonthly", {
-    currency: "jpy",
+  const price = yield* subscriptionPrice("PaidMonthly", {
     product: product.id,
     recurring: { interval: "month" },
     unitAmount: 500,
@@ -30,8 +35,7 @@ const billingProgram = Effect.fn("billingProgram")(function* billingProgram(
     displayName: `${prefix} AI usage`,
     eventName: aiMeterEventName,
   });
-  const meteredPrice = yield* Stripe.Price("AiUsageMonthly", {
-    currency: "jpy",
+  const meteredPrice = yield* subscriptionPrice("AiUsageMonthly", {
     product: product.id,
     recurring: { interval: "month", meter: meter.id, usageType: "metered" },
     unitAmount: aiUsageUnitAmount,

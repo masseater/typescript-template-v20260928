@@ -180,16 +180,18 @@ const createLogger = (run: Run): NonNullable<BetterAuthOptions["logger"]> => {
   return {
     level: "warn",
     log: (level, _description, ...details: readonly unknown[]) => {
+      if (level !== "error") {
+        const diagnosticLevel = level === "warn" ? "Warn" : "Info";
+        void run(
+          logAt(diagnosticLevel, { attributes: { level }, eventName: "authentication.diagnostic" }),
+        );
+        return;
+      }
       const cause = details.find((detail) => detail instanceof Error);
       void run(
-        level === "error"
-          ? cause === undefined
-            ? logAt("Error", { eventName: "authentication.failed" })
-            : logCause({ cause: Cause.fail(cause), eventName: "authentication.failed" })
-          : logAt(level === "warn" ? "Warn" : "Info", {
-              attributes: { level },
-              eventName: "authentication.diagnostic",
-            }),
+        cause === undefined
+          ? logAt("Error", { eventName: "authentication.failed" })
+          : logCause({ cause: Cause.fail(cause), eventName: "authentication.failed" }),
       );
     },
   };
