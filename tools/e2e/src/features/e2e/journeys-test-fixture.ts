@@ -1,7 +1,6 @@
 import { Crypto, Effect } from "effect";
 
 import { type Account, newAccount } from "./accounts.ts";
-import { agentUserAgent } from "./agent-user-agent.ts";
 import {
   answerTotpChallenge,
   confirmEmail,
@@ -140,34 +139,25 @@ const openThread = (
     return title;
   });
 
-const replyOnThread = (page: Page): Effect.Effect<boolean, JourneyFailure, Crypto.Crypto> =>
+const replyOnThread = (page: Page): Effect.Effect<void, JourneyFailure, Crypto.Crypto> =>
   Effect.gen(function* publishReply() {
     const replyBody = yield* freshLabel("reply");
     yield* readyButton(page, "投稿する");
     yield* fill(page, { fieldLabel: "返信", typed: replyBody });
     yield* press(page, "投稿する");
     yield* seeText(page, replyBody);
-    return yield* pageStep(() => page.getByText(replyBody, { exact: false }).first().isVisible());
   });
 
 const postOnBoard = (
   stage: JourneyStage,
   origin: string,
-): Effect.Effect<
-  { readonly listsTheThreadAfterwards: boolean; readonly showsTheReply: boolean },
-  JourneyFailure,
-  Crypto.Crypto
-> =>
+): Effect.Effect<void, JourneyFailure, Crypto.Crypto> =>
   Effect.gen(function* postThreadAndReply() {
     const { page } = stage;
     const title = yield* openThread(page, origin);
-    const showsTheReply = yield* replyOnThread(page);
+    yield* replyOnThread(page);
     yield* pageStep(() => page.goto(`${origin}/board`));
     yield* seeText(page, title);
-    const listsTheThreadAfterwards = yield* pageStep(() =>
-      page.getByText(title, { exact: false }).first().isVisible(),
-    );
-    return { listsTheThreadAfterwards, showsTheReply };
   });
 
 const writeBiography = (
@@ -224,26 +214,19 @@ const listedSettings = [
 const browseSettings = (
   stage: JourneyStage,
   origin: string,
-): Effect.Effect<
-  {
-    readonly opensEveryListedItem: boolean;
-    readonly reachesLeaveInOneClick: boolean;
-    readonly reachesPlanInOneClick: boolean;
-  },
-  JourneyFailure
-> =>
+): Effect.Effect<{ readonly leaveUrl: string; readonly planUrl: string }, JourneyFailure> =>
   Effect.gen(function* browseEverySetting() {
     yield* openListedSetting(stage, {
       listedSetting: { heading: "プランと解約", name: "プランと解約" },
       origin,
     });
-    const reachesPlanInOneClick = stage.page.url().startsWith(`${origin}/settings/plan`);
+    const planUrl = stage.page.url();
     yield* openListedSetting(stage, { listedSetting: { heading: "退会", name: "退会" }, origin });
-    const reachesLeaveInOneClick = stage.page.url().startsWith(`${origin}/settings/leave`);
+    const leaveUrl = stage.page.url();
     for (const listedSetting of listedSettings) {
       yield* openListedSetting(stage, { listedSetting, origin });
     }
-    return { opensEveryListedItem: true, reachesLeaveInOneClick, reachesPlanInOneClick };
+    return { leaveUrl, planUrl };
   });
 
 const signInAgainWithTotp = (
@@ -262,13 +245,10 @@ const signInAgainWithTotp = (
 const revisitProfile = (
   page: Page,
   written: { readonly biography: string; readonly profileUrl: string },
-): Effect.Effect<boolean, JourneyFailure> =>
+): Effect.Effect<void, JourneyFailure> =>
   Effect.gen(function* reopenProfile() {
     yield* pageStep(() => page.goto(written.profileUrl));
     yield* seeText(page, written.biography);
-    return yield* pageStep(() =>
-      page.getByText(written.biography, { exact: false }).first().isVisible(),
-    );
   });
 
 const runMemberJourney = (
@@ -276,13 +256,9 @@ const runMemberJourney = (
 ): Effect.Effect<
   {
     readonly backupCodeCount: number;
-    readonly landsOnTheMemberHome: boolean;
-    readonly listsTheThreadOpenedEarlier: boolean;
-    readonly opensEveryListedSettingsItem: boolean;
-    readonly reachesLeaveInOneClick: boolean;
-    readonly reachesPlanInOneClick: boolean;
-    readonly showsTheBiographyWrittenEarlier: boolean;
-    readonly showsTheReplyOnTheThread: boolean;
+    readonly homeUrlAfterTotp: string;
+    readonly leaveUrl: string;
+    readonly planUrl: string;
   },
   JourneyFailure,
   Crypto.Crypto
@@ -290,55 +266,34 @@ const runMemberJourney = (
   Effect.gen(function* walkMemberJourney() {
     const { account, origin } = yield* signUpAndConfirm(stage, "member");
     yield* browseMainScreens(stage, account);
-    const board = yield* postOnBoard(stage, origin);
-    const settings = yield* browseSettings(stage, origin);
+    yield* postOnBoard(stage, origin);
+    const { leaveUrl, planUrl } = yield* browseSettings(stage, origin);
     const { biography, profilePath } = yield* writeBiography(stage, origin);
     const enrollment = yield* enrollTotp({ account, origin, page: stage.page });
     yield* signInAgainWithTotp(stage, { account, origin, uri: enrollment.uri });
-    const landsOnTheMemberHome = stage.page.url().startsWith(`${origin}/home`);
-    const showsTheBiographyWrittenEarlier = yield* revisitProfile(stage.page, {
-      biography,
-      profileUrl: `${origin}${profilePath}`,
-    });
+    const homeUrlAfterTotp = stage.page.url();
+    yield* revisitProfile(stage.page, { biography, profileUrl: `${origin}${profilePath}` });
     return {
       backupCodeCount: enrollment.backupCodes.length,
-      landsOnTheMemberHome,
-      listsTheThreadOpenedEarlier: board.listsTheThreadAfterwards,
-      opensEveryListedSettingsItem: settings.opensEveryListedItem,
-      reachesLeaveInOneClick: settings.reachesLeaveInOneClick,
-      reachesPlanInOneClick: settings.reachesPlanInOneClick,
-      showsTheBiographyWrittenEarlier,
-      showsTheReplyOnTheThread: board.showsTheReply,
+      homeUrlAfterTotp,
+      leaveUrl,
+      planUrl,
     };
   });
 
 const operatorHome = (reported: {
   readonly email: string;
-  readonly operatorOrigin: string;
   readonly page: Page;
-}): Effect.Effect<
-  { readonly landsOnTheOperatorOrigin: boolean; readonly listsTheOperatorsOwnAddress: boolean },
-  JourneyFailure
-> =>
+}): Effect.Effect<{ readonly operatorHomeOrigin: string }, JourneyFailure> =>
   Effect.gen(function* confirmOperatorHome() {
     yield* seeHeading(reported.page, "利用者の一覧");
     yield* seeText(reported.page, reported.email);
-    const listsTheOperatorsOwnAddress = yield* pageStep(() =>
-      reported.page.getByText(reported.email, { exact: false }).first().isVisible(),
-    );
-    return {
-      landsOnTheOperatorOrigin: new URL(reported.page.url()).origin === reported.operatorOrigin,
-      listsTheOperatorsOwnAddress,
-    };
+    return { operatorHomeOrigin: new URL(reported.page.url()).origin };
   });
 
 const runOperatorJourney = (
   stage: JourneyStage,
-): Effect.Effect<
-  { readonly landsOnTheOperatorOrigin: boolean; readonly listsTheOperatorsOwnAddress: boolean },
-  JourneyFailure,
-  Crypto.Crypto
-> =>
+): Effect.Effect<{ readonly operatorHomeOrigin: string }, JourneyFailure, Crypto.Crypto> =>
   Effect.gen(function* walkOperatorJourney() {
     const { environment, page } = stage;
     const { account, origin } = yield* signUpAndConfirm(stage, "operator");
@@ -347,7 +302,7 @@ const runOperatorJourney = (
     const operatorOrigin = environment.originOf("operator");
     yield* signIn({ account, origin: operatorOrigin, page });
     yield* answerTotpChallenge(page, enrollment.uri);
-    return yield* operatorHome({ email: account.email, operatorOrigin, page });
+    return yield* operatorHome({ email: account.email, page });
   });
 
 const readDocument = (stage: JourneyStage, url: string): Effect.Effect<void, JourneyFailure> =>
@@ -359,11 +314,7 @@ const readDocument = (stage: JourneyStage, url: string): Effect.Effect<void, Jou
 const runDocumentJourney = (
   stage: JourneyStage,
 ): Effect.Effect<
-  {
-    readonly documentsRead: number;
-    readonly loginPath: string;
-    readonly showsTheAddressField: boolean;
-  },
+  { readonly documentsRead: number; readonly loginPath: string },
   JourneyFailure
 > =>
   Effect.gen(function* walkDocumentJourney() {
@@ -375,12 +326,10 @@ const runDocumentJourney = (
     yield* pageStep(() => page.goto(`${origin}/login`));
     const address = page.getByLabel("メールアドレス", { exact: true }).first();
     yield* pageStep(() => address.waitFor({ state: "visible", timeout: appearanceTimeout }));
-    const showsTheAddressField = yield* pageStep(() => address.isVisible());
     return {
       documentsRead: [firstDocument, secondDocument].filter((documentPath) => documentPath !== "")
         .length,
       loginPath: new URL(page.url()).pathname,
-      showsTheAddressField,
     };
   });
 
@@ -401,14 +350,7 @@ const assertVerifyMemberObservability = (verified: {
 const runVerifyMemberJourney = (
   stage: JourneyStage,
 ): Effect.Effect<
-  {
-    readonly browserUserAgent: string;
-    readonly enrolledTotp: true;
-    readonly observabilityRecorded: true;
-    readonly passkeyRegistered: true;
-    readonly sessionEstablished: true;
-    readonly userAgent: string;
-  },
+  { readonly browserUserAgent: string },
   JourneyFailure,
   Crypto.Crypto
 > =>
@@ -421,12 +363,7 @@ const runVerifyMemberJourney = (
     });
     yield* assertVerifyMemberObservability(verified);
     return {
-      browserUserAgent: agentUserAgent,
-      enrolledTotp: true as const,
-      observabilityRecorded: true as const,
-      passkeyRegistered: true as const,
-      sessionEstablished: true as const,
-      userAgent: agentUserAgent,
+      browserUserAgent: yield* pageStep(() => stage.page.evaluate(() => navigator.userAgent)),
     };
   });
 

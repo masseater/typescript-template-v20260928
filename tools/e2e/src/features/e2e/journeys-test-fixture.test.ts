@@ -51,24 +51,21 @@ describe("アプリ全体の導線", () => {
     );
 
   it("利用者は登録から確認メール・ログイン・掲示板・プロフィール更新・二要素まで辿れる", ({
+    environment,
     memberJourney,
   }) => {
+    const memberOrigin = environment.originOf("member");
     expect(memberJourney).toStrictEqual({
       backupCodeCount: backupCodesIssuedOnEnrollment,
-      landsOnTheMemberHome: true,
-      listsTheThreadOpenedEarlier: true,
-      opensEveryListedSettingsItem: true,
-      reachesLeaveInOneClick: true,
-      reachesPlanInOneClick: true,
-      showsTheBiographyWrittenEarlier: true,
-      showsTheReplyOnTheThread: true,
+      homeUrlAfterTotp: `${memberOrigin}/home`,
+      leaveUrl: `${memberOrigin}/settings/leave`,
+      planUrl: `${memberOrigin}/settings/plan`,
     });
   });
 
-  it("管理者は二要素を済ませた上で利用者一覧を開ける", ({ operatorJourney }) => {
+  it("管理者は二要素を済ませた上で利用者一覧を開ける", ({ environment, operatorJourney }) => {
     expect(operatorJourney).toStrictEqual({
-      landsOnTheOperatorOrigin: true,
-      listsTheOperatorsOwnAddress: true,
+      operatorHomeOrigin: environment.originOf("operator"),
     });
   });
 
@@ -76,7 +73,6 @@ describe("アプリ全体の導線", () => {
     expect(documentJourney).toStrictEqual({
       documentsRead: documentsReadByAnyone,
       loginPath: "/login",
-      showsTheAddressField: true,
     });
   });
 
@@ -87,13 +83,6 @@ describe("アプリ全体の導線", () => {
   it("AI エージェントは会員登録からパスキー・TOTP まで通し、識別可能な User-Agent を送る", ({
     verifyMemberJourney,
   }) => {
-    expect(verifyMemberJourney).toStrictEqual({
-      browserUserAgent: aiAgentUserAgent,
-      enrolledTotp: true,
-      observabilityRecorded: true,
-      passkeyRegistered: true,
-      sessionEstablished: true,
-      userAgent: aiAgentUserAgent,
-    });
+    expect(verifyMemberJourney).toStrictEqual({ browserUserAgent: aiAgentUserAgent });
   });
 });
