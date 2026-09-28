@@ -66,8 +66,9 @@ const wikiSessionCounts = Effect.fn("wikiSessionCounts")(function* wikiSessionCo
 });
 
 const currentSnapshotValues = Effect.fn("currentSnapshotValues")(function* currentSnapshotValues() {
-  const members = yield* memberCount();
-  const wikiSessions = yield* wikiSessionCounts();
+  const [members, wikiSessions] = yield* Effect.all([memberCount(), wikiSessionCounts()], {
+    concurrency: "unbounded",
+  });
   const snapshotValues: Readonly<{
     clientKind: ClientKind;
     metric: MetricKey;

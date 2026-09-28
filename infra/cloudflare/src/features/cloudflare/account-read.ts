@@ -247,13 +247,15 @@ const readPages = Effect.fn("readPages")(function* readPages<Shape, Encoded>(
   if (first.total === undefined || first.total <= first.rows) {
     return [first.value];
   }
-  const rest = yield* Effect.forEach(
+  const settled = yield* Effect.forEach(
     Array.from(
       { length: Math.ceil(first.total / collection.pageSize) - FIRST_PAGE },
       (_unused, index) => index + FIRST_PAGE + 1,
     ),
-    (page) => readPage(access, { ...collection, page }, shape),
+    (page) => Effect.result(readPage(access, { ...collection, page }, shape)),
+    { concurrency: "unbounded" },
   );
+  const rest = yield* Effect.forEach(settled, Effect.fromResult);
   const gathered = rest.reduce((rows, page) => rows + page.rows, first.rows);
   if (gathered !== first.total) {
     return yield* unreadable(collection.source, "truncated");

@@ -52,15 +52,21 @@ const emailVerdicts = Effect.fn("emailVerdicts")(function* emailVerdicts<Failure
   config: SharedConfig,
   store: Effect.Effect<StateService, Failure, Requirements>,
 ) {
-  const onboarding = yield* onboardingVerdict(access, config, store);
-  const present = yield* recordsPresent(access, config.zoneId, sendingRecordNames(config)).pipe(
-    Effect.catchTag("CloudflareFailure", unreadableVerdict),
+  const { onboarding, present, senderDomain } = yield* Effect.all(
+    {
+      onboarding: onboardingVerdict(access, config, store),
+      present: recordsPresent(access, config.zoneId, sendingRecordNames(config)).pipe(
+        Effect.catchTag("CloudflareFailure", unreadableVerdict),
+      ),
+      senderDomain: senderVerdict(access, config).pipe(
+        Effect.catchTag("CloudflareFailure", unreadableVerdict),
+      ),
+    },
+    { concurrency: "unbounded" },
   );
   return {
     emailSending: readVerdict(present, (found) => recordClaim(found, onboarding)),
-    senderDomain: yield* senderVerdict(access, config).pipe(
-      Effect.catchTag("CloudflareFailure", unreadableVerdict),
-    ),
+    senderDomain,
     sendingSubdomain: onboarding,
   };
 });

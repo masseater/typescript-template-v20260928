@@ -128,12 +128,21 @@ const metricTrend = Effect.fn("metricTrend")(function* metricTrendProgram(queryI
 });
 
 const staffOverview = Effect.fn("staffOverview")(function* staffOverviewProgram() {
-  const cards = (yield* overviewCardsFromSnapshots()) ?? (yield* overviewCardsLive());
-  const trend = yield* metricTrend({
-    days: DEFAULT_TREND_DAYS,
-    metric: METRIC_KEY.memberCount,
-    period: METRIC_PERIOD.daily,
-  });
+  const [cards, trend] = yield* Effect.all(
+    [
+      overviewCardsFromSnapshots().pipe(
+        Effect.flatMap((snapshot) =>
+          snapshot === undefined ? overviewCardsLive() : Effect.succeed(snapshot),
+        ),
+      ),
+      metricTrend({
+        days: DEFAULT_TREND_DAYS,
+        metric: METRIC_KEY.memberCount,
+        period: METRIC_PERIOD.daily,
+      }),
+    ],
+    { concurrency: "unbounded" },
+  );
   return { cards, trend } satisfies OverviewMetrics;
 });
 
@@ -155,22 +164,27 @@ const matchesAuditPage = (page: AuditPage): SQL | undefined =>
 const staffAuditEvents = Effect.fn("staffAuditEvents")(function* staffAuditEventsProgram(
   page: AuditPage,
 ) {
-  const auditEvents = yield* query((database) =>
-    database
-      .select({
-        action: auditEvent.action,
-        actorId: auditEvent.actorId,
-        createdAt: auditEvent.createdAt,
-        id: auditEvent.id,
-        targetId: auditEvent.targetId,
-      })
-      .from(auditEvent)
-      .where(matchesAuditPage(page))
-      .orderBy(desc(auditEvent.createdAt), auditEvent.id)
-      .limit(page.limit)
-      .offset(page.offset),
+  const [auditEvents, matchingCount] = yield* Effect.all(
+    [
+      query((database) =>
+        database
+          .select({
+            action: auditEvent.action,
+            actorId: auditEvent.actorId,
+            createdAt: auditEvent.createdAt,
+            id: auditEvent.id,
+            targetId: auditEvent.targetId,
+          })
+          .from(auditEvent)
+          .where(matchesAuditPage(page))
+          .orderBy(desc(auditEvent.createdAt), auditEvent.id)
+          .limit(page.limit)
+          .offset(page.offset),
+      ),
+      countRows(auditEvent, () => matchesAuditPage(page)),
+    ],
+    { concurrency: "unbounded" },
   );
-  const matchingCount = yield* countRows(auditEvent, () => matchesAuditPage(page));
   return {
     events: auditEvents satisfies readonly AuditEventView[],
     total: matchingCount,

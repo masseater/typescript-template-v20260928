@@ -210,8 +210,10 @@ const listAdminInquiries = Effect.fn("listAdminInquiries")(function* listAdminIn
 ) {
   yield* requireAdmin(sessionId);
   const where = matchesInquiryPage(page);
-  const inquiries = yield* adminInquiryRows(() => where, page);
-  const matchingCount = yield* countRows(inquiry, () => where);
+  const [inquiries, matchingCount] = yield* Effect.all(
+    [adminInquiryRows(() => where, page), countRows(inquiry, () => where)],
+    { concurrency: "unbounded" },
+  );
   return { inquiries, total: matchingCount };
 });
 

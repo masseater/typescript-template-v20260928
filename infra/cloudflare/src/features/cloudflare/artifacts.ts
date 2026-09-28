@@ -225,9 +225,17 @@ const digests = Effect.fn("digests")(function* digests(
   server: Readonly<{ code: readonly WorkerModule[]; modules: readonly WorkerModule[] }>,
 ) {
   const { code, modules } = server;
-  const client = yield* manifestDigest(output.client, clientFiles);
-  const release = yield* jsonSha256([yield* serverDigest(output.server, code), client]);
-  const uploaded = yield* jsonSha256([yield* serverDigest(output.server, modules), client]);
+  const [clientDigest, codeDigest, modulesDigest] = yield* Effect.all(
+    [
+      manifestDigest(output.client, clientFiles),
+      serverDigest(output.server, code),
+      serverDigest(output.server, modules),
+    ],
+    { concurrency: "unbounded", mode: "result" },
+  );
+  const client = yield* Effect.fromResult(clientDigest);
+  const release = yield* jsonSha256([yield* Effect.fromResult(codeDigest), client]);
+  const uploaded = yield* jsonSha256([yield* Effect.fromResult(modulesDigest), client]);
   return { release: release.slice(0, RELEASE_LENGTH), uploaded };
 });
 

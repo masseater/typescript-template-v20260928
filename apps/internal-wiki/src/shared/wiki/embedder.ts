@@ -45,7 +45,10 @@ function embedWith(ai: WorkerModel | undefined): EmbedderShape["embed"] {
   return (texts) =>
     ai === undefined
       ? Effect.fail(new EmbeddingFailed({ reason: "unavailable" }))
-      : Effect.forEach(batches(texts), (text) => embedBatch(ai, text)).pipe(
+      : Effect.forEach(batches(texts), (text) => Effect.result(embedBatch(ai, text)), {
+          concurrency: "unbounded",
+        }).pipe(
+          Effect.flatMap((settled) => Effect.forEach(settled, Effect.fromResult)),
           Effect.map((vectors) => vectors.flat()),
         );
 }

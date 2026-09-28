@@ -69,9 +69,14 @@ const domainVerdict = Effect.fn("domainVerdict")(function* domainVerdict(
   config: SharedConfig,
   recorded: readonly string[] | Unreadable,
 ) {
-  const services = yield* Effect.forEach(hostnames(config), (hostname) =>
-    attachedService(access, hostname),
-  ).pipe(Effect.catchTag("CloudflareFailure", unreadableVerdict));
+  const services = yield* Effect.forEach(
+    hostnames(config),
+    (hostname) => Effect.result(attachedService(access, hostname)),
+    { concurrency: "unbounded" },
+  ).pipe(
+    Effect.flatMap((settled) => Effect.forEach(settled, Effect.fromResult)),
+    Effect.catchTag("CloudflareFailure", unreadableVerdict),
+  );
   return readVerdict(services, (attachable): Claim | Unreadable => {
     const attached = attachable.flatMap((service) => (service === undefined ? [] : [service]));
     if (attached.length === 0) {
@@ -119,22 +124,33 @@ const inspectAccount = Effect.fn("inspectAccount")(function* inspectAccount<Fail
   const recorded = yield* recordedWorkerNames(store, config.prefix).pipe(
     Effect.catch(unreadableState),
   );
-  const email = yield* emailVerdicts(access, config, store);
-  const scripts = yield* workerNames(access).pipe(
-    Effect.catchTag("CloudflareFailure", unreadableVerdict),
+  const { alertQuota, records, scripts, stateful, stores, workerDomains } = yield* Effect.all(
+    {
+      alertQuota: alertQuotaVerdict(access, config.budget.recipients),
+      records: recordsPresent(access, config.zoneId, hostnames(config)).pipe(
+        Effect.catchTag("CloudflareFailure", unreadableVerdict),
+      ),
+      scripts: workerNames(access).pipe(Effect.catchTag("CloudflareFailure", unreadableVerdict)),
+      stateful: Effect.all(
+        {
+          email: emailVerdicts(access, config, store),
+          database: databaseVerdict(access, config, store).pipe(
+            Effect.catchTag("CloudflareFailure", unreadableVerdict),
+          ),
+        },
+        { concurrency: 1 },
+      ),
+      stores: secretsStoreCount(access).pipe(
+        Effect.catchTag("CloudflareFailure", unreadableVerdict),
+      ),
+      workerDomains: domainVerdict(access, config, recorded),
+    },
+    { concurrency: "unbounded" },
   );
-  const records = yield* recordsPresent(access, config.zoneId, hostnames(config)).pipe(
-    Effect.catchTag("CloudflareFailure", unreadableVerdict),
-  );
-  const stores = yield* secretsStoreCount(access).pipe(
-    Effect.catchTag("CloudflareFailure", unreadableVerdict),
-  );
-  const workerDomains = yield* domainVerdict(access, config, recorded);
+  const { database, email } = stateful;
   return {
-    alertQuota: yield* alertQuotaVerdict(access, config.budget.recipients),
-    database: yield* databaseVerdict(access, config, store).pipe(
-      Effect.catchTag("CloudflareFailure", unreadableVerdict),
-    ),
+    alertQuota,
+    database,
     deployToken: yield* tokenVerdict(access),
     dnsRecords: ownedRecords(records, workerDomains),
     emailSending: email.emailSending,
