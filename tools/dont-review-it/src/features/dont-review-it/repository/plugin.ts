@@ -23,6 +23,7 @@ import {
   processBoundaryVisitor,
   processMember,
 } from "./process-boundary.ts";
+import { layoutRouteLoaderVisitor, queryCacheWriteVisitor } from "./query-cache-rules.ts";
 import { effectEventDependencyVisitor, reactLegacyVisitor } from "./react-legacy.ts";
 import { propertyName, staticText, type Origin } from "./references.ts";
 import { retiredImportsVisitor } from "./retired-imports.ts";
@@ -34,7 +35,6 @@ import {
   testImportGraphVisitor,
 } from "./test-import-graph.ts";
 import { runsInWorkerRuntime } from "./test-runtime.ts";
-import { layoutRouteLoaderVisitor, queryCacheWriteVisitor } from "./query-cache-rules.ts";
 import { thinAppRoutesVisitor } from "./thin-app-routes.ts";
 import { warekiFormatVisitor } from "./wareki-format.ts";
 

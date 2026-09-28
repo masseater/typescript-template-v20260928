@@ -23,9 +23,7 @@ describe("layout route loaders", () => {
     "apps/service-member/src/pages/board/ui/board-page.tsx",
   ])("allows a loader in %s", (name) => {
     expect.hasAssertions();
-    expect(reported("layout-route-loader", { code: layoutWithLoader, filename: name })).toBe(
-      false,
-    );
+    expect(reported("layout-route-loader", { code: layoutWithLoader, filename: name })).toBe(false);
   });
 
   it("allows beforeLoad in a layout route", () => {
@@ -60,7 +58,10 @@ describe("query cache writes", () => {
   ])("allows setQueryData in %s", (name) => {
     expect.hasAssertions();
     expect(
-      reported("query-cache-write", { code: "queries.setQueryData(key, value);\n", filename: name }),
+      reported("query-cache-write", {
+        code: "queries.setQueryData(key, value);\n",
+        filename: name,
+      }),
     ).toBe(false);
   });
 

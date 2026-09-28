@@ -55,6 +55,7 @@ describe("アプリ全体の導線", () => {
   }) => {
     expect(memberJourney).toStrictEqual({
       backupCodeCount: backupCodesIssuedOnEnrollment,
+      checksAgreementsWithoutWaitingForTheStep: true,
       landsOnTheMemberHome: true,
       listsTheThreadOpenedEarlier: true,
       opensEveryListedSettingsItem: true,

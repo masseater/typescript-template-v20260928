@@ -1,6 +1,5 @@
 import { Page, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
-import type { ErrorComponentProps } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 
 function RecoveryPending(): ReactElement {
@@ -11,10 +10,12 @@ function RecoveryPending(): ReactElement {
   );
 }
 
-function RecoveryFailed({ error }: Readonly<Pick<ErrorComponentProps, "error">>): ReactElement {
+function RecoveryFailed(): ReactElement {
   return (
     <Page title="データの復旧">
-      <StatusMessage variant={STATUS_VARIANT.failure}>{error.message}</StatusMessage>
+      <StatusMessage variant={STATUS_VARIANT.failure}>
+        復旧できるデータを確認できませんでした。
+      </StatusMessage>
     </Page>
   );
 }

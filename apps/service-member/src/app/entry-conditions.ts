@@ -2,7 +2,7 @@ import { loginPath, sessionOptions } from "@repo/auth-ui";
 import { redirect } from "@tanstack/react-router";
 import { Effect } from "effect";
 
-import { blocksMember, loadAgreements } from "#entities/agreement/index.ts";
+import { agreementsOptions, blocksMember } from "#entities/agreement/index.ts";
 import { onboardingOptions } from "#pages/account/welcome/index.ts";
 import { recoveryOfferOptions } from "#pages/recovery/index.ts";
 
@@ -102,7 +102,7 @@ function enterMemberFrame(
       const session = signedIn(yield* currentSession(queries), href);
       const { agreements, step } = yield* Effect.all(
         {
-          agreements: Effect.promise(() => loadAgreements()),
+          agreements: Effect.promise(() => queries.query(agreementsOptions)),
           step: currentOnboardingStep(queries),
         },
         { concurrency: "unbounded" },
