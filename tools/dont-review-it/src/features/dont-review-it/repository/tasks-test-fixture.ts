@@ -62,6 +62,12 @@ const testProjectDirectories: readonly string[] = (workspaceConfigs["."]?.test?.
   .map((project) => project.replace(/^\.\//u, ""))
   .toSorted();
 
+const rootTestProjects = (workspaceConfigs["."]?.test?.projects ?? []).flatMap((project) =>
+  typeof project === "object" && "test" in project && project.test !== undefined
+    ? [project.test]
+    : [],
+);
+
 const workspaceDirectories: readonly string[] = Object.keys(workspaceScripts).toSorted();
 const configuredDirectories: readonly string[] = Object.keys(workspaceTasks).toSorted();
 
@@ -140,6 +146,7 @@ export {
   dependencies,
   reachable,
   reachableAcross,
+  rootTestProjects,
   uncachedGateTasks,
   scriptNames,
   taskNames,

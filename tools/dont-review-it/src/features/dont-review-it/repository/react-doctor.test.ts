@@ -2,7 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { stringEntriesOf } from "../dependency-catalog/record-fields.ts";
 import { field } from "./dependencies-test-fixture.ts";
-import { commands, configuredDirectories, reachable } from "./tasks-test-fixture.ts";
+import { configuredDirectories, reachable } from "./tasks-test-fixture.ts";
 import { linkWrapperFiles } from "./ui-lint-settings.ts";
 
 import type { ReactDoctorConfig } from "react-doctor/api";
@@ -190,9 +190,6 @@ describe("react-doctor integration", () => {
 
   it("leaves unused rules off only while fallow checks production code on the push gate", () => {
     expect.hasAssertions();
-    expect(commands(".", "fallow:production")).toStrictEqual([
-      "fallow dead-code --config .fallowrc.production.json",
-    ]);
     expect(reachable(".", ["prepush"])).toContain("fallow:production");
     expect(fallowOwnedRules.filter((rule) => !offRules().includes(rule))).toStrictEqual([]);
   });

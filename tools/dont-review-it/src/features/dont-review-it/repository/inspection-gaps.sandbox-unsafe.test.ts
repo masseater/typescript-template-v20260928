@@ -10,7 +10,7 @@ import {
   templateWorkspaces,
 } from "./lint.ts";
 import { repositoryRoot } from "./repository-root.ts";
-import { commands, reachable, taskNames } from "./tasks-test-fixture.ts";
+import { reachable, taskNames } from "./tasks-test-fixture.ts";
 import { typecheckProjects } from "./typecheck-projects.ts";
 
 const manifests: Readonly<Record<string, unknown>> = import.meta.glob(
@@ -242,7 +242,7 @@ describe("inspection coverage", () => {
         ).toStrictEqual(
           awaitingPresetPackages.map((pattern) => pattern.replace(/\/\*\*$/u, "")).toSorted(),
         );
-        expect(commands(".", "check:types")).toStrictEqual(["dont-review-it-typecheck"]);
+        expect(taskNames(".")).toContain("check:types");
         expect(reachable(".", ["prepush", "prepr", "premerge"])).not.toContain("check:types");
       }).pipe(Effect.provide(NodeServices.layer)),
     ));

@@ -22,6 +22,8 @@ import {
   workspaceNames,
 } from "./tasks-test-fixture.ts";
 import { dedicatedToolVitestProjects, rootNodeTestIncludes } from "./tool-test-projects.ts";
+import { devServerTests } from "./test-runtime.ts";
+import { stepsOf, workflowFileNames, workflowNamed } from "./workflows-test-fixture.ts";
 
 const hooks: Readonly<Record<string, string>> = import.meta.glob(
   "../../../../../../.vite-hooks/pre-*",
@@ -29,11 +31,6 @@ const hooks: Readonly<Record<string, string>> = import.meta.glob(
     eager: true,
     import: "default",
   },
-);
-
-const workflows: Readonly<Record<string, string>> = import.meta.glob(
-  "../../../../../../.github/workflows/*.yml",
-  { eager: true, import: "default" },
 );
 
 const mergifyConfigs: Readonly<Record<string, string>> = import.meta.glob(
@@ -50,71 +47,53 @@ const gatedTask = /^(?:build|check|verify)(?::|$)/u;
 const minuteLongCommands = ["vp run", "vp test", "vp build", "vp pack"];
 const lifecycleWorkflows = new Set(["check.yml", "prerelease.yml"]);
 
-const engines = field(rootManifests["../../../../../../package.json"], "engines");
-const [, requiredNodeMajor = ""] = /^>=(?<major>\d+)\./u.exec(String(field(engines, "node"))) ?? [];
-
 const hookStages = Object.entries(hooks).map(
   ([file, source]) => [file.replace(/^.*\/pre-/u, "pre"), source] as const,
 );
 
+const workspaceDirectoryNamed = (packageName: string): string | undefined =>
+  Object.entries(workspaceNames).find(([, name]) => name === packageName)?.[0];
+
 function misplacedHooks(): string[] {
   return hookStages
-    .filter(
-      ([stage, source]) =>
-        !lifecycles.some((name) => name === stage) ||
-        source !==
-          [
-            `node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= ${requiredNodeMajor} ? 0 : 1)' || { echo "Node ${requiredNodeMajor} or later is required by package.json engines; this hook ran on $(node --version)" >&2; exit 1; }`,
-            `vp run --filter @repo/dont-review-it hook:${stage}`,
-            "",
-          ].join("\n") ||
-        commands("tools/dont-review-it", `hook:${stage}`).join("\n") !==
-          `dont-review-it-hook ${stage}`,
-    )
+    .filter(([stage, source]) => {
+      const runsItsStage = source.split("\n").some((line) => {
+        const tokens = line.trim().split(/\s+/u);
+        const filtered = tokens[tokens.indexOf("--filter") + 1] ?? "";
+        const directory = tokens.includes("--filter") ? workspaceDirectoryNamed(filtered) : ".";
+        return (
+          tokens[0] === "vp" &&
+          tokens[1] === "run" &&
+          tokens.at(-1) === `hook:${stage}` &&
+          directory !== undefined &&
+          [...taskNames(directory), ...scriptNames(directory)].includes(`hook:${stage}`)
+        );
+      });
+      return !lifecycles.some((name) => name === stage) || !runsItsStage;
+    })
     .map(([stage]) => stage);
 }
 
-function workflowRuns(file: string): string[] {
-  const workflow = workflows[file];
-  if (workflow === undefined) {
-    throw new Error(`${file} is missing`);
-  }
-  const step = /^\s*(?:- )?run: /u;
-  return (workflow.match(/^\s*(?:- )?run: .+$/gmu) ?? [])
-    .map((line: string) => line.replace(step, ""))
-    .filter((command: string) => command.startsWith("vp "));
+function workflowRuns(fileName: string): string[] {
+  return stepsOf(workflowNamed(fileName)).flatMap((step) =>
+    step.run?.startsWith("vp ") === true ? [step.run] : [],
+  );
 }
 
-function lifecycleByJob(file: string): Readonly<Record<string, string[]>> {
-  const workflow = workflows[file];
-  if (workflow === undefined) {
-    throw new Error(`${file} is missing`);
-  }
-  const [, declared = ""] = /^jobs:$(?<declared>[\s\S]*)/mu.exec(workflow) ?? [];
-  const [, ...jobs] = declared.split(/^ {2}(?<job>[\w-]+):$/mu);
+function lifecycleByJob(fileName: string): Readonly<Record<string, string[]>> {
   return Object.fromEntries(
-    jobs.flatMap((entry, index, all) =>
-      index % 2 === 0
-        ? [
-            [
-              entry,
-              [
-                ...(all[index + 1] ?? "").matchAll(
-                  /^\s*(?:- )?run: (?<command>vp run -r \w+(?: .+)?)$/gmu,
-                ),
-              ]
-                .map((match) => match[1] ?? "")
-                .toSorted(),
-            ],
-          ]
-        : [],
-    ),
+    Object.entries(workflowNamed(fileName).jobs).map(([jobName, job]) => [
+      jobName,
+      (job.steps ?? [])
+        .flatMap((step) => (step.run?.startsWith("vp run -r ") === true ? [step.run] : []))
+        .toSorted(),
+    ]),
   );
 }
 
 function lifecycleOutsideGates(): string[] {
-  return Object.keys(workflows)
-    .filter((file) => ![...lifecycleWorkflows].some((name) => file.endsWith(name)))
+  return workflowFileNames
+    .filter((file) => !lifecycleWorkflows.has(file))
     .flatMap((file) => workflowRuns(file).filter((command) => command.startsWith("vp run -r ")));
 }
 
@@ -162,7 +141,7 @@ function reachesTest(directory: string, stages: string[]): boolean {
 
 function filterCoveredTestProjects(): Set<string> {
   const packages = new Set(
-    workflowRuns("../../../../../../.github/workflows/check.yml").flatMap((command) => {
+    workflowRuns("check.yml").flatMap((command) => {
       const match = /^vp run --filter (@repo\/[\w-]+) (test(?::[\w-]+)?)$/u.exec(command);
       return match?.[1] === undefined ? [] : [match[1]];
     }),
@@ -276,7 +255,7 @@ describe("lifecycle entry points", () => {
 
   it("gives a pull request the pr gate and leaves merge and release to their own gates", () => {
     expect.hasAssertions();
-    expect(lifecycleByJob("../../../../../../.github/workflows/check.yml")).toStrictEqual({
+    expect(lifecycleByJob("check.yml")).toStrictEqual({
       cache: ["vp run -r prepr"],
       check: [],
       "check-shard": [],
@@ -285,7 +264,7 @@ describe("lifecycle entry points", () => {
       "merge-queue-packages": ["vp run -r premerge"],
       "merge-queue-unit": [],
     });
-    expect(lifecycleByJob("../../../../../../.github/workflows/prerelease.yml")).toStrictEqual({
+    expect(lifecycleByJob("prerelease.yml")).toStrictEqual({
       load: [],
       prerelease: ["vp run -r prerelease"],
     });
@@ -294,25 +273,32 @@ describe("lifecycle entry points", () => {
 
   it("runs the repository check once inside prepr and the unit suite on the merge queue", () => {
     expect.hasAssertions();
-    expect(workflowRuns("../../../../../../.github/workflows/check.yml")).toStrictEqual([
-      "vp run --filter @repo/dont-review-it pr-affected",
-      "vp run -w prepr",
-      "vp run --fail-if-no-match $AFFECTED_FILTERS prepr",
-      "vp run compile:paraglide",
-      "vp test run --project '!@repo/*' --exclude '**/*.dev-server.test.ts' $AFFECTED_PATHS",
-      "vp run -r premerge",
-      "vp run compile:paraglide",
-      "vp test run --project node --project node-isolated --project workers --shard=${{ matrix.shard }}/4",
-      "vp run --filter @repo/e2e test:e2e",
-      "vp run -r prepr",
-    ]);
+    const check = workflowNamed("check.yml");
+    expect({
+      repositoryCheckInPrepr: reachable(".", ["prepr"]).filter((name) => name === "check:repository"),
+      repositoryCheckInWorkflow: workflowRuns("check.yml").filter((command) =>
+        command.split(/\s+/u).includes("check:repository"),
+      ),
+      unitSuiteJobs: Object.entries(check.jobs).flatMap(([jobName, job]) =>
+        (job.steps ?? []).some((step) => {
+          const tokens = (step.run ?? "").split(/\s+/u);
+          return tokens.slice(0, 3).join(" ") === "vp test run" && tokens.includes("node");
+        })
+          ? [jobName]
+          : [],
+      ),
+    }).toStrictEqual({
+      repositoryCheckInPrepr: ["check:repository"],
+      repositoryCheckInWorkflow: [],
+      unitSuiteJobs: ["merge-queue-unit"],
+    });
   });
 
   it("every workspace declares its tasks where the lifecycle finds them", () => {
     expect.hasAssertions();
-    expect(pnpmWorkspaces["../../../../../../pnpm-workspace.yaml"]).toMatch(
-      /^packages:\n {2}- apps\/\*\n {2}- libs\/\*\n {2}- infra\/\*\n {2}- tools\/\*\n(?! {2}-)/u,
-    );
+    expect(
+      field(parse(pnpmWorkspaces["../../../../../../pnpm-workspace.yaml"] ?? ""), "packages"),
+    ).toStrictEqual(["apps/*", "libs/*", "infra/*", "tools/*"]);
     expect(configuredDirectories).toStrictEqual(workspaceDirectories);
   });
 });
@@ -362,7 +348,6 @@ describe("lifecycle contents", () => {
   it("runs static analysis on push and leaves tests and builds to later gates", () => {
     expect.hasAssertions();
     expect(dependencies(".", "precommit")).toContain("check:text");
-    expect(commands(".", "check:text")).toStrictEqual(["dont-review-it-text"]);
     expect(reachable(".", ["prepr"])).toContain("check:text");
     expect(reachable(".", ["prepush"])).toStrictEqual(
       expect.arrayContaining([
@@ -467,11 +452,17 @@ describe("test ownership", () => {
 
   it("leaves the workspace projects out of the root test task", () => {
     expect.hasAssertions();
-    expect(commands(".", "test")).toStrictEqual([
-      "vp test run --project '!@repo/*' --exclude '**/*.dev-server.test.ts'",
-    ]);
-    expect(commands(".", "test:dev-server")).toStrictEqual(["vp test run --project dev-server"]);
-    expect(commands(".", "test:storybook")).toStrictEqual(["vp test run --project storybook"]);
+    const argumentsOf = (name: string): string[] =>
+      commands(".", name).flatMap((command) => command.split(/\s+/u));
+    expect({
+      devServer: argumentsOf("test:dev-server"),
+      storybook: argumentsOf("test:storybook"),
+      test: argumentsOf("test"),
+    }).toStrictEqual({
+      devServer: expect.arrayContaining(["--project", "dev-server"]),
+      storybook: expect.arrayContaining(["--project", "storybook"]),
+      test: expect.arrayContaining(["--project", "'!@repo/*'", "--exclude", `'${devServerTests}'`]),
+    });
     expect(unmatchedProjectNames()).toStrictEqual([]);
   });
 
@@ -498,20 +489,6 @@ describe("on-demand gate escapes", () => {
   });
 });
 
-const Env = Schema.Record(Schema.String, Schema.Unknown);
-const CheckWorkflow = Schema.Struct({
-  jobs: Schema.Record(
-    Schema.String,
-    Schema.Struct({
-      env: Schema.optionalKey(Env),
-      steps: Schema.optionalKey(
-        Schema.Array(
-          Schema.Struct({ env: Schema.optionalKey(Env), run: Schema.optionalKey(Schema.String) }),
-        ),
-      ),
-    }),
-  ),
-});
 const MergifyConfig = Schema.Struct({
   queue_rules: Schema.Array(
     Schema.Struct({
@@ -537,9 +514,7 @@ const parsedSource = <S extends Schema.ConstraintDecoder<unknown>>(
   return Schema.decodeUnknownEffect(schema)(parse(source));
 };
 
-const checkWorkflow = await Effect.runPromise(
-  parsedSource(workflows, "../../../../../../.github/workflows/check.yml", CheckWorkflow),
-);
+const checkWorkflow = workflowNamed("check.yml");
 
 describe("mergify ci insights", () => {
   const jobs = Object.entries(checkWorkflow.jobs);

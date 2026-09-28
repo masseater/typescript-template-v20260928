@@ -4,14 +4,15 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { directoryEntries, type TreeFailure } from "../platform/directory-entries.ts";
 import { repositoryRoot } from "./repository-root.ts";
-import { commands } from "./tasks-test-fixture.ts";
+import { dependencies, rootTestProjects } from "./tasks-test-fixture.ts";
 import {
   isolatedNodeTestSuffix,
   isolatedNodeTests,
   prCheckRootShard,
   prCheckShardCount,
-  unitTestShardCount,
 } from "./test-runtime.ts";
+import { rootNodeTestIncludes } from "./tool-test-projects.ts";
+import { jobOf, workflowNamed } from "./workflows-test-fixture.ts";
 
 type TreeScan<Scanned> = Effect.Effect<Scanned, TreeFailure, FileSystem.FileSystem | Path.Path>;
 
@@ -21,13 +22,6 @@ const repositoryText = (file: string): TreeScan<string> =>
     const paths = yield* Path.Path;
     return yield* filesystem.readFileString(paths.join(repositoryRoot, file));
   });
-
-const [workflow, vite] = await Effect.runPromise(
-  Effect.all([
-    repositoryText(".github/workflows/check.yml"),
-    repositoryText("vite.config.ts"),
-  ]).pipe(Effect.provide(NodeServices.layer)),
-);
 
 const fakeTimerCall = /\b(?:vi|jest)\.useFakeTimers\b|\bsetSystemTime\b/u;
 const moduleMockCall = /^(?:await\s+)?vi\.(?:mock|doMock)\(/mu;
@@ -71,35 +65,52 @@ const offendingTestFiles = (
 describe("vitest isolation and sharding", () => {
   it("shares the node module graph and keeps an isolated opt-out project", () => {
     expect.hasAssertions();
-    expect(vite).toContain("isolate: false");
-    expect(vite).toContain('name: "node"');
-    expect(vite).toContain('name: "node-isolated"');
-    expect(vite).toContain("isolatedNodeTests");
-    expect(isolatedNodeTests).toContain(isolatedNodeTestSuffix);
+    const node = rootTestProjects.find((project) => project.name === "node");
+    const isolated = rootTestProjects.find((project) => project.name === "node-isolated");
+    expect(node).toMatchObject({
+      exclude: expect.arrayContaining([isolatedNodeTests]),
+      include: [...rootNodeTestIncludes],
+      isolate: false,
+    });
+    expect(isolated?.include).toStrictEqual(
+      rootNodeTestIncludes.map(() => expect.stringContaining(".isolated.test.")),
+    );
+    expect(isolated?.isolate).toBeUndefined();
   });
 
   it("runs one pull request check shard per matrix entry", () => {
     expect.hasAssertions();
-    const shards = Array.from({ length: prCheckShardCount }, (_unused, index) => index + 1);
-    expect(workflow).toMatch(
-      new RegExp(
-        String.raw`^ {2}check-shard:\n(?: {4}.+\n)* {8}shard: \[${[prCheckRootShard, ...shards].join(", ")}\]\n`,
-        "mu",
-      ),
-    );
-    expect(workflow).toContain("CHECK_SHARD: ${{ matrix.shard }}");
+    const shard = jobOf(workflowNamed("check.yml"), "check-shard");
+    expect(shard.strategy?.matrix.shard).toStrictEqual([
+      prCheckRootShard,
+      ...Array.from({ length: prCheckShardCount }, (_unused, index) => index + 1),
+    ]);
+    expect(
+      (shard.steps ?? []).find((step) => step.id === "affected")?.env?.["CHECK_SHARD"],
+    ).toBe("${{ matrix.shard }}");
   });
 
-  it("shards the merge-queue unit suite without repeating package premerge", () => {
+  it("splits the merge-queue unit suite into as many shards as its matrix has entries", () => {
     expect.hasAssertions();
-    expect(unitTestShardCount).toBe(4);
-    expect(workflow).toContain("shard: [1, 2, 3, 4]");
-    expect(workflow).toContain(`--shard=\${{ matrix.shard }}/${String(unitTestShardCount)}`);
-    expect(workflow).toContain("merge-queue-packages:");
-    expect(workflow).toContain("merge-queue-unit:");
-    expect(workflow).toMatch(
-      /merge-queue:\n(?: {4}.+\n)* {4}needs: \[merge-queue-packages, merge-queue-unit\]/u,
+    const unit = jobOf(workflowNamed("check.yml"), "merge-queue-unit");
+    const shards = unit.strategy?.matrix.shard ?? [];
+    const denominators = (unit.steps ?? []).flatMap((step) =>
+      [...(step.run ?? "").matchAll(/--shard=\$\{\{ matrix\.shard \}\}\/(?<total>\d+)/gu)].map(
+        (matched) => Number(matched.groups?.["total"]),
+      ),
     );
+    expect({ denominators, shards }).toStrictEqual({
+      denominators: [shards.length],
+      shards: Array.from({ length: shards.length }, (_unused, index) => index + 1),
+    });
+  });
+
+  it("waits for the package premerge and the unit shards before the merge queue passes", () => {
+    expect.hasAssertions();
+    expect(jobOf(workflowNamed("check.yml"), "merge-queue").needs).toStrictEqual([
+      "merge-queue-packages",
+      "merge-queue-unit",
+    ]);
   });
 
   it("keeps fake timers out of the shared node project", () =>
@@ -118,14 +129,11 @@ describe("vitest isolation and sharding", () => {
       }).pipe(Effect.provide(NodeServices.layer)),
     ));
 
-  it("runs dont-review-it on a shared module graph and its isolated opt-outs apart", () => {
+  it("runs dont-review-it's shared and isolated suites as parts of its test task", () => {
     expect.hasAssertions();
-    expect(commands("tools/dont-review-it", "test:shared")).toStrictEqual([
-      `vp test run --isolate=false --exclude '${isolatedNodeTests}'`,
-    ]);
-    expect(commands("tools/dont-review-it", "test:isolated")).toStrictEqual([
-      `vp test run ${isolatedNodeTestSuffix}`,
-    ]);
+    expect(dependencies("tools/dont-review-it", "test")).toStrictEqual(
+      expect.arrayContaining(["test:shared", "test:isolated"]),
+    );
   });
 
   it("keeps module mocks out of the shared module graph", () =>

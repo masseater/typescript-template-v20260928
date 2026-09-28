@@ -1,92 +1,129 @@
-import { NodeServices } from "@effect/platform-node";
-import { Effect, FileSystem, Path } from "effect";
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, test } from "vite-plus/test";
 
-import { repositoryRoot } from "./repository-root.ts";
+import { isRecord } from "../dependency-catalog/record-fields.ts";
+import { dependencies } from "./tasks-test-fixture.ts";
 import { rootNodeTestIncludes } from "./tool-test-projects.ts";
+import { jobOf, stepsOf, workflowNamed } from "./workflows-test-fixture.ts";
 
-const repositoryText = (file: string) =>
-  Effect.gen(function* repositoryText() {
-    const filesystem = yield* FileSystem.FileSystem;
-    const paths = yield* Path.Path;
-    return yield* filesystem.readFileString(paths.join(repositoryRoot, file));
-  }).pipe(Effect.provide(NodeServices.layer));
+describe("the pull request check", () => {
+  const it = test.extend("checkWorkflow", () => workflowNamed("check.yml"));
 
-describe("pull request check scope", () => {
-  it("runs downstream tests and import boundaries without --changed", () =>
-    Effect.runPromise(
-      Effect.gen(function* downstreamWithoutChanged() {
-        expect.hasAssertions();
-        const workflow = yield* repositoryText(".github/workflows/check.yml");
-        const vite = yield* repositoryText("vite.config.ts");
-        expect(workflow).toContain("vp run -r prepr");
-        expect(workflow).toContain("vp run -r premerge");
-        expect(workflow).toContain("pr-affected");
-        expect(workflow).toContain("--fail-if-no-match");
-        expect(workflow).not.toContain("--changed");
-        expect(workflow).not.toContain("fetch-depth:");
-        expect(workflow).toContain(
-          "      - if: steps.affected.outputs.root == 'true'\n        run: git fetch --no-tags --depth=2 origin ${{ github.sha }}\n      - if: steps.affected.outputs.root == 'true'\n        run: vp run -w prepr\n",
-        );
-        expect(workflow).not.toContain("paths-ignore");
-        expect(workflow).not.toContain("paths:");
-        expect(workflow).not.toMatch(/^ {6}run: vp check$/mu);
-        expect(vite).toContain('premerge: ["test:dev-server", "test:storybook"]');
-        expect(vite).toContain("isolate: false");
-        expect(vite).toContain('name: "node-isolated"');
-        expect(vite).toContain("include: [...rootNodeTestIncludes]");
-        expect(rootNodeTestIncludes).toContain("apps/**/*.test.ts");
-        expect(rootNodeTestIncludes).toContain("infra/**/*.test.ts");
-        expect(rootNodeTestIncludes).toContain("libs/**/*.test.ts");
-        expect(workflow).toContain("--shard=${{ matrix.shard }}/4");
-        expect(workflow).toContain("shard: [1, 2, 3, 4]");
-        expect(workflow).toContain("merge-queue-unit:");
-        expect(workflow).toContain("merge-queue-packages:");
+  it("runs prepr at the root after fetching the head commit, and in the affected workspaces", ({
+    checkWorkflow,
+  }) => {
+    expect(
+      (jobOf(checkWorkflow, "check-shard").steps ?? []).flatMap((step) =>
+        step.if === "steps.affected.outputs.root == 'true'" ||
+        step.if === "steps.affected.outputs.filters != ''"
+          ? [{ if: step.if, run: step.run }]
+          : [],
+      ),
+    ).toStrictEqual([
+      {
+        if: "steps.affected.outputs.root == 'true'",
+        run: "git fetch --no-tags --depth=2 origin ${{ github.sha }}",
+      },
+      { if: "steps.affected.outputs.root == 'true'", run: "vp run -w prepr" },
+      {
+        if: "steps.affected.outputs.filters != ''",
+        run: "vp run --fail-if-no-match $AFFECTED_FILTERS prepr",
+      },
+    ]);
+  });
+
+  it("does not narrow what it checks by changed files, path filters or a shallow checkout", ({
+    checkWorkflow,
+  }) => {
+    const steps = stepsOf(checkWorkflow);
+    expect({
+      changedFlags: steps.flatMap((step) =>
+        (step.run ?? "").split(/\s+/u).filter((token) => token.startsWith("--changed")),
+      ),
+      fetchDepths: steps.flatMap((step) =>
+        step.with !== undefined && "fetch-depth" in step.with ? [step.with["fetch-depth"]] : [],
+      ),
+      pathFilters: Object.values(checkWorkflow.on).flatMap((trigger) =>
+        isRecord(trigger)
+          ? Object.keys(trigger).filter((key) => key === "paths" || key === "paths-ignore")
+          : [],
+      ),
+      wholeRepositoryChecks: steps.filter((step) => step.run === "vp check").length,
+    }).toStrictEqual({ changedFlags: [], fetchDepths: [], pathFilters: [], wholeRepositoryChecks: 0 });
+  });
+
+  it("records a stuck shard as a failure before the runner sits pending", ({ checkWorkflow }) => {
+    const shard = jobOf(checkWorkflow, "check-shard");
+    const check = jobOf(checkWorkflow, "check");
+    expect({
+      checkNeeds: check.needs,
+      checkRunsAlways: check.if?.startsWith("${{ always() ") ?? false,
+      shardTimeoutMinutes: shard["timeout-minutes"],
+    }).toStrictEqual({
+      checkNeeds: ["check-shard"],
+      checkRunsAlways: true,
+      shardTimeoutMinutes: 15,
+    });
+  });
+});
+
+describe("the merge queue", () => {
+  test("runs the dev-server and storybook suites through premerge", () => {
+    expect(dependencies(".", "premerge")).toStrictEqual(
+      expect.arrayContaining(["test:dev-server", "test:storybook"]),
+    );
+  });
+});
+
+describe("the root node test projects", () => {
+  test("include the tests of apps, infra and libs", () => {
+    expect(rootNodeTestIncludes).toStrictEqual(
+      expect.arrayContaining(["apps/**/*.test.ts", "infra/**/*.test.ts", "libs/**/*.test.ts"]),
+    );
+  });
+});
+
+describe("the task cache", () => {
+  const it = test.extend("workflows", () => ({
+    check: workflowNamed("check.yml"),
+    load: workflowNamed("load.yml"),
+  }));
+
+  it("is restored only from main or the pull request base", ({ workflows }) => {
+    const restoreKeys = [workflows.check, workflows.load].flatMap((workflow) =>
+      stepsOf(workflow).flatMap((step) => {
+        const keys = step.with?.["restore-keys"];
+        return typeof keys === "string" ? keys.trim().split(/\n\s*/u) : [];
       }),
-    ));
+    );
+    expect(restoreKeys.length).toBeGreaterThan(0);
+    expect(
+      restoreKeys.filter((key) => !/-main-|github\.event\.pull_request\.base\.sha/u.test(key)),
+    ).toStrictEqual([]);
+  });
 
-  it("restores the task cache from main instead of whichever cache was saved last", () =>
-    Effect.runPromise(
-      Effect.gen(function* taskCacheFromMain() {
-        expect.hasAssertions();
-        const workflows = yield* Effect.forEach(
-          [".github/workflows/check.yml", ".github/workflows/load.yml"],
-          repositoryText,
-        );
-        const restoreKeys = workflows.flatMap((workflow) =>
-          [...workflow.matchAll(/restore-keys: \|\n((?: {12}.+\n)+)/gu)].flatMap(([, keys = ""]) =>
-            keys.trim().split(/\n\s*/u),
-          ),
-        );
-        expect(restoreKeys.length).toBeGreaterThan(0);
-        for (const key of restoreKeys) {
-          expect(key).toMatch(/-main-|github\.event\.pull_request\.base\.sha/u);
-        }
-        const [check = ""] = workflows;
-        expect(check).toContain(
-          "key: vite-task-${{ runner.os }}-${{ runner.arch }}-main-${{ github.sha }}",
-        );
-        expect(check).toMatch(/cache\/save@.+\n {8}if: .*steps\.affected\.outputs\./u);
-        expect(check).toMatch(
-          /^ {2}cache:\n {4}if: .+\n {4}runs-on: .+\n {4}timeout-minutes: 30$/mu,
-        );
-        expect(check).toMatch(
-          /cache\/save@.+\n {8}if: \$\{\{ always\(\) && steps\.vite-task-cache\.outputs\.cache-hit != 'true' \}\}\n/u,
-        );
-      }),
-    ));
+  it("is saved from main under the pushed commit, only when nothing was restored exactly", ({
+    workflows,
+  }) => {
+    const cache = jobOf(workflows.check, "cache");
+    const steps = cache.steps ?? [];
+    expect({
+      hasCondition: cache.if !== undefined,
+      restoredKey: steps.find((step) => step.id === "vite-task-cache")?.with?.["key"],
+      saveCondition: steps.find((step) => step.uses?.startsWith("actions/cache/save@") === true)
+        ?.if,
+      timeoutMinutes: cache["timeout-minutes"],
+    }).toStrictEqual({
+      hasCondition: true,
+      restoredKey: "vite-task-${{ runner.os }}-${{ runner.arch }}-main-${{ github.sha }}",
+      saveCondition: "${{ always() && steps.vite-task-cache.outputs.cache-hit != 'true' }}",
+      timeoutMinutes: 30,
+    });
+  });
 
-  it("records a stuck pull-request check as a failure before the runner sits pending", () =>
-    Effect.runPromise(
-      Effect.gen(function* stuckCheckRecorded() {
-        expect.hasAssertions();
-        const workflow = yield* repositoryText(".github/workflows/check.yml");
-        expect(workflow).toMatch(
-          /^ {2}check-shard:\n {4}if: .+\n {4}runs-on: .+\n {4}timeout-minutes: 15$/mu,
-        );
-        expect(workflow).toMatch(
-          /^ {2}check:\n {4}if: \$\{\{ always\(\) .+\n {4}needs: \[check-shard\]\n/mu,
-        );
-      }),
-    ));
+  it("is saved from a pull request shard only when that shard ran a task", ({ workflows }) => {
+    const saveConditions = (jobOf(workflows.check, "check-shard").steps ?? []).flatMap((step) =>
+      step.uses?.startsWith("actions/cache/save@") === true ? [step.if ?? ""] : [],
+    );
+    expect(saveConditions).toStrictEqual([expect.stringContaining("steps.affected.outputs.")]);
+  });
 });
