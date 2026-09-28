@@ -54,17 +54,13 @@ type MemberNavItem = Readonly<
       icon: LucideIcon;
       id: "search";
       label: string;
-      paid: true;
-      to: "/search" | "/upgrade";
+      to: "/search";
     }
 >;
-
-const memberHasPaidPlan = false;
 
 const emptyNavBadges: NavBadges = { notifications: 0 };
 
 function memberNavItems(
-  paid: boolean,
   profileId: string,
   badges: NavBadges = emptyNavBadges,
 ): readonly MemberNavItem[] {
@@ -81,8 +77,7 @@ function memberNavItems(
       icon: SearchIcon,
       id: "search",
       label: m.title_search(),
-      paid: true,
-      to: paid ? "/search" : "/upgrade",
+      to: "/search",
     },
     { icon: SquareStackIcon, id: "board", label: m.nav_board(), to: "/board" },
     {
@@ -139,5 +134,5 @@ function titleForPath(pathname: string): string {
   return m.title_member();
 }
 
-export { memberHasPaidPlan, memberNavItems, titleForPath };
+export { memberNavItems, titleForPath };
 export type { MemberNavItem };

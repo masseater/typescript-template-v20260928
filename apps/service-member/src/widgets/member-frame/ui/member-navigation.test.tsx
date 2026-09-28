@@ -29,7 +29,7 @@ const member = {
 const destinations = [
   { label: "ホーム", path: "/home" },
   { label: "プロフィール", path: "/users/member-1" },
-  { label: "探す", path: "/upgrade" },
+  { label: "探す", path: "/search" },
   { label: "掲示板", path: "/board" },
   { label: "メッセージ", path: "/messages" },
   { label: "通知", path: "/notifications" },
@@ -92,7 +92,7 @@ function markup(locale: Locale, path: string): Promise<string> {
           createRoute({
             component: () => createElement("span"),
             getParentRoute: () => rootRoute,
-            path: "/upgrade",
+            path: "/search",
           }),
           createRoute({
             component: () => createElement("span"),

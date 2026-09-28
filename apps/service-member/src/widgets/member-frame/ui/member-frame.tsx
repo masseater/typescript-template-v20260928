@@ -2,7 +2,7 @@ import { AppFrame, Icon } from "@repo/ui";
 import { useLocation } from "@tanstack/react-router";
 
 import { serviceName } from "#shared/config/index.ts";
-import { memberHasPaidPlan, memberNavItems, titleForPath } from "../model/navigation.ts";
+import { memberNavItems, titleForPath } from "../model/navigation.ts";
 import { AccountMenu } from "./account-menu.tsx";
 
 import type { NavBadges } from "#shared/contracts/index.ts";
@@ -28,7 +28,7 @@ function MemberFrame({
   user: SessionView["user"];
 }>): ReactElement {
   const { pathname } = useLocation();
-  const destinations = memberNavItems(memberHasPaidPlan, user.id, navBadges).map((item) => ({
+  const destinations = memberNavItems(user.id, navBadges).map((item) => ({
     ...(item.badge === undefined ? {} : { badge: item.badge }),
     exact: item.id === "home",
     icon: <Icon icon={item.icon} />,
