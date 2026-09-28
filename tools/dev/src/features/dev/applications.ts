@@ -60,7 +60,10 @@ function appStatus(
   ChildProcessSpawner.ChildProcessSpawner | Path.Path
 > {
   const origin = appOrigin(app, origins);
-  return Effect.all({ httpStatus: httpStatus(app, origin), processRunning: running(app) }).pipe(
+  return Effect.all(
+    { httpStatus: httpStatus(app, origin), processRunning: running(app) },
+    { concurrency: "unbounded" },
+  ).pipe(
     Effect.flatMap((observed) =>
       urlPath(logFileUrl(app)).pipe(
         Effect.map((logFile) => ({
