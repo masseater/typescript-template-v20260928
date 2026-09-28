@@ -3,6 +3,7 @@ export { generatedFiles, lintOptions } from "./repository/lint.ts";
 export {
   devServerTests,
   isolatedNodeTests,
+  sandboxUnsafeTests,
   unitTestShardCount,
   workerTests,
 } from "./repository/test-runtime.ts";

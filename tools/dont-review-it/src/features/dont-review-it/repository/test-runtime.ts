@@ -3,6 +3,8 @@ const workerTests = `**/*${workerTestSuffix}`;
 const isolatedNodeTestSuffix = ".isolated.test.ts";
 const isolatedNodeTests = `**/*${isolatedNodeTestSuffix}`;
 const devServerTests = "**/*.dev-server.test.ts";
+const sandboxUnsafeTestSuffix = ".sandbox-unsafe.test.ts";
+const sandboxUnsafeTests = `**/*${sandboxUnsafeTestSuffix}`;
 const workerTestPattern = String.raw`\.worker\.test\.[cm]?[jt]sx?$`;
 const testPattern = String.raw`\.(?:test|spec)\.[cm]?[jt]sx?$`;
 const unitTestShardCount = 4;
@@ -42,6 +44,8 @@ export {
   prCheckRootShard,
   prCheckShardCount,
   runsInWorkerRuntime,
+  sandboxUnsafeTestSuffix,
+  sandboxUnsafeTests,
   testPattern,
   unitTestShardCount,
   workerRuntimeModules,
