@@ -274,16 +274,9 @@ describe("cli", () => {
             yield* untilEnqueued();
             yield* child.kill({ killSignal: "SIGTERM" });
             yield* childEndOf(child);
-            const untilDrained = (): Effect.Effect<void, Error> =>
-              Effect.gen(function* () {
-                if ((yield* ownEntries).length === 0) return;
-                yield* Effect.sleep("100 millis");
-                return yield* untilDrained();
-              });
-            yield* untilDrained();
-            const drained = yield* ownEntries;
+            const leftAfterExit = yield* ownEntries;
             yield* Effect.promise(() => release());
-            return drained;
+            return leftAfterExit;
           }).pipe(Effect.scoped, Effect.orDie),
         ));
 
