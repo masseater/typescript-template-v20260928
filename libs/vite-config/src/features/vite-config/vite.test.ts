@@ -295,24 +295,6 @@ describe("appConfig", () => {
         });
       return applications.map((app) => pluginNamesOf(appConfig(app)(serve).plugins ?? [], app));
     })
-    .extend("adminPlugins", () => {
-      const pluginNamesOf = (plugins: readonly PluginOption[]): readonly string[] =>
-        plugins.flatMap((plugin): readonly string[] => {
-          if (Array.isArray(plugin)) {
-            return pluginNamesOf(plugin);
-          }
-          if (
-            typeof plugin === "object" &&
-            plugin !== null &&
-            "name" in plugin &&
-            typeof plugin.name === "string"
-          ) {
-            return [plugin.name];
-          }
-          return [];
-        });
-      return pluginNamesOf(appConfig("service-admin")(serve).plugins ?? []);
-    })
     .extend("adminElysiaAotPlugins", () => {
       const pluginRecordsOf = (
         plugins: readonly PluginOption[],
@@ -351,25 +333,25 @@ describe("appConfig", () => {
           }
           return [];
         });
-      const withMarker = pluginNamesOf(
+      return pluginNamesOf(
         appConfig("service-admin", { plugins: [marker] })(serve).plugins ?? [],
+      ).filter(
+        (pluginName) =>
+          pluginName === marker.name || pluginName === "template-service-admin-dev-boundary",
       );
-      return withMarker.toSpliced(withMarker.indexOf(marker.name), 1);
     });
 
   it("gives every application the same plugin wiring", ({ pluginNamesByApplication }) => {
-    expect(pluginNamesByApplication).toStrictEqual([
-      pluginNamesByApplication[0],
-      pluginNamesByApplication[0],
-      pluginNamesByApplication[0],
-    ]);
+    expect(pluginNamesByApplication).toStrictEqual(
+      pluginNamesByApplication.map(() => pluginNamesByApplication[0]),
+    );
   });
 
-  it("inserts application plugins after the dev boundary", ({
-    adminPlugins,
-    adminPluginsWithMarker,
-  }) => {
-    expect(adminPluginsWithMarker).toStrictEqual(adminPlugins);
+  it("inserts application plugins after the dev boundary", ({ adminPluginsWithMarker }) => {
+    expect(adminPluginsWithMarker).toStrictEqual([
+      "template-service-admin-dev-boundary",
+      "app-specific",
+    ]);
   });
 
   it("runs Elysia AOT on the admin worker while Vite is serving", ({ adminElysiaAotPlugins }) => {
