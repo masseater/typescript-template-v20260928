@@ -6,6 +6,7 @@ import { Console, Effect, FileSystem, Path, Schema } from "effect";
 import { directoryEntries } from "../platform/directory-entries.ts";
 import { pathExists } from "../platform/file-system.ts";
 import {
+  emptyLayerFindings,
   featureFindings,
   isModularWorkspace,
   isPublicApiIndex,
@@ -40,6 +41,9 @@ const directoryLines = (directory: string): TreeScan<number> =>
     return counts.reduce((total, count) => total + count, 0);
   });
 
+const sourceFileCount = (directory: string): TreeScan<number | undefined> =>
+  Effect.map(collectSourceFiles(directory), (files) => files.length);
+
 const whenPresent = <Scanned>(
   directory: string,
   absent: Scanned,
@@ -71,7 +75,17 @@ const budgetFindings = (srcRoot: string): TreeScan<readonly string[]> =>
     const featuresRoot = paths.join(srcRoot, "features");
     const entries = yield* whenPresent(featuresRoot, [], directoryEntries);
     const features = yield* Effect.forEach(entries, (entry) => featureEntry(featuresRoot, entry));
-    return [...layerBudgetFindings({ app, shared }), ...featureFindings(features)].toSorted();
+    const layers = yield* Effect.forEach(["app", "features", "shared"] as const, (layer) =>
+      Effect.map(
+        whenPresent(paths.join(srcRoot, layer), undefined, sourceFileCount),
+        (sourceFiles) => ({ layer, sourceFiles }),
+      ),
+    );
+    return [
+      ...layerBudgetFindings({ app, shared }),
+      ...featureFindings(features),
+      ...emptyLayerFindings(layers),
+    ].toSorted();
   });
 
 const modularPackage = Effect.gen(function* modularPackage() {
