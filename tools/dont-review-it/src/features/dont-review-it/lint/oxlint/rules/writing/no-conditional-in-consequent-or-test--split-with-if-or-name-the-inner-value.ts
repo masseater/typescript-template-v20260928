@@ -9,7 +9,7 @@ export const noConditionalInConsequentOrTest = createDontReviewItRule({
     docs: {
       description:
         "Disallow a conditional expression in the test or the consequent of another conditional expression, so which combination of conditions yields which value is readable from top to bottom",
-      relatedGuidelines: [".claude/skills/reviews/references/simplify.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/remove-needless-branches-wrappers-and-work.md"],
     },
     messages: {
       nestedConditional:
