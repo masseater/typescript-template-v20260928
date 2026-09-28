@@ -3,6 +3,7 @@ import {
   lifecycle,
   checkCode,
   modularBoundaries,
+  taskInput,
   workspaceCheckImports,
   telemetryEnv,
 } from "@repo/vite-config";
@@ -18,7 +19,7 @@ export default defineConfig({
       check: {
         command: "drizzle-kit check",
         env: [...telemetryEnv],
-        input: [{ auto: true }, "!node_modules/.cache/**"],
+        input: [...taskInput],
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },
       "db:generate": {

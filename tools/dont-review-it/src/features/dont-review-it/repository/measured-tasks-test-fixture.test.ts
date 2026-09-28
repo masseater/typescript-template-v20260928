@@ -1,7 +1,11 @@
-import { measured } from "@repo/vite-config";
+import { measured, taskInput } from "@repo/vite-config";
 import { describe, expect, it } from "vite-plus/test";
 
-import { unmeasuredTasks, wildcardEnvTasks } from "./measured-tasks-test-fixture.ts";
+import {
+  partialTaskInputTasks,
+  unmeasuredTasks,
+  wildcardEnvTasks,
+} from "./measured-tasks-test-fixture.ts";
 import { configuredDirectories, workspaceTasks } from "./tasks-test-fixture.ts";
 
 describe("cached tasks", () => {
@@ -58,6 +62,30 @@ describe("cached task environment", () => {
     expect(
       configuredDirectories.flatMap((directory) =>
         wildcardEnvTasks(workspaceTasks[directory] ?? {}).map((entry) => `${directory}#${entry}`),
+      ),
+    ).toStrictEqual([]);
+  });
+});
+
+describe("automatically tracked task input", () => {
+  it("is reported when it drops the shared exclusions", () => {
+    expect(
+      partialTaskInputTasks({
+        bare: "vp test run",
+        own: { command: "drizzle-kit check", input: [{ auto: true }, "!node_modules/.cache/**"] },
+        shared: { command: "vp test run", input: [...taskInput, "!coverage/**"] },
+        listed: { command: "vp test run", input: ["src/**"] },
+        untracked: { command: "vp test run" },
+      }),
+    ).toStrictEqual(["own"]);
+  });
+
+  it("spreads the shared input in every repository task that tracks automatically", () => {
+    expect(
+      configuredDirectories.flatMap((directory) =>
+        partialTaskInputTasks(workspaceTasks[directory] ?? {}).map(
+          (name) => `${directory}#${name}`,
+        ),
       ),
     ).toStrictEqual([]);
   });
