@@ -10,10 +10,8 @@ const Route = createFileRoute("/_welcome/welcome/recovery")({
   loader: ({
     context,
   }: Readonly<{
-    context: Readonly<{ step: OnboardingStep }>;
-  }>) => ({
-    nextPath: context.step === "done" ? ("/home" as const) : welcomePath[context.step],
-  }),
+    context: Readonly<{ step: Exclude<OnboardingStep, "done"> }>;
+  }>) => ({ nextPath: welcomePath[context.step] }),
 });
 
 export { Route };

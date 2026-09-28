@@ -8,12 +8,13 @@ import {
   formatWarekiDate,
   useAction,
 } from "@repo/ui";
-import { useRouter } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { DateTime } from "effect";
 
 import {
   PendingAgreementList,
   agreementKindLabels,
+  agreementsOptions,
   withdrawAgreement,
 } from "#entities/agreement/index.ts";
 
@@ -24,14 +25,18 @@ function AgreementsPage({
 }: Readonly<{
   agreements: Agreements;
 }>): ReactElement {
-  const router = useRouter();
+  const queryClient = useQueryClient();
   const action = useAction();
   const { accepted, pending } = agreements;
   const signupPending = pending.filter(
     (agreement) => agreement.kind !== AGREEMENT_KIND.interview_history,
   );
   const withdraw = (kind: typeof AGREEMENT_KIND.interview_history): void => {
-    action.run(() => withdrawAgreement(kind).then(() => router.invalidate().then(() => undefined)));
+    action.run(() =>
+      withdrawAgreement(kind).then(() =>
+        queryClient.invalidateQueries({ queryKey: agreementsOptions.queryKey }),
+      ),
+    );
   };
   return (
     <Page title="規約への同意">

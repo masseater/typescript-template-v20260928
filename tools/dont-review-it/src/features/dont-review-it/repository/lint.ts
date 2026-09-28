@@ -300,6 +300,8 @@ const lintOptions = {
         "project/modular-imports": LINT_SEVERITY.ERROR,
         "project/modular-layers": LINT_SEVERITY.ERROR,
         "project/thin-app-routes": LINT_SEVERITY.ERROR,
+        "project/layout-route-loader": LINT_SEVERITY.ERROR,
+        "project/query-cache-write": LINT_SEVERITY.ERROR,
         "project/logs": LINT_SEVERITY.ERROR,
         "project/no-internal-mocks": LINT_SEVERITY.ERROR,
         "project/no-manual-memoization": LINT_SEVERITY.ERROR,

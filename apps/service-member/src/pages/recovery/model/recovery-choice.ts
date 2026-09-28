@@ -1,6 +1,11 @@
 import { useAction } from "@repo/ui";
+import { useQueryClient } from "@tanstack/react-query";
 
-import { acceptRecovery, declineRecovery } from "#pages/recovery/api/recovery.ts";
+import {
+  acceptRecovery,
+  declineRecovery,
+  recoveryOfferOptions,
+} from "#pages/recovery/api/recovery.ts";
 interface RecoveryChoiceState {
   readonly blocked: boolean;
   readonly error: string;
@@ -10,11 +15,17 @@ interface RecoveryChoiceState {
 }
 function useRecoveryChoice(onDecided: () => void): RecoveryChoiceState {
   const action = useAction();
+  const queries = useQueryClient();
+  function settle(decide: () => Promise<unknown>): Promise<void> {
+    return decide()
+      .then(() => queries.invalidateQueries({ queryKey: recoveryOfferOptions.queryKey }))
+      .then(() => onDecided());
+  }
   function handleAccept(): void {
-    action.run(() => acceptRecovery().then(() => onDecided()));
+    action.run(() => settle(acceptRecovery));
   }
   function handleDecline(): void {
-    action.run(() => declineRecovery().then(() => onDecided()));
+    action.run(() => settle(declineRecovery));
   }
   return {
     blocked: action.blocked,

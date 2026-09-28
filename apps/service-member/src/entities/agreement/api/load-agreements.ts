@@ -1,4 +1,5 @@
 import { apiData } from "@repo/runtime/client";
+import { queryOptions } from "@tanstack/react-query";
 
 import { userClient } from "#shared/api/index.ts";
 import { AgreementsView } from "#shared/contracts/index.ts";
@@ -26,4 +27,10 @@ function withdrawAgreement(kind: AgreementKind): Promise<Agreements> {
   );
 }
 
-export { acceptAgreements, loadAgreements, withdrawAgreement };
+const agreementsOptions = queryOptions({
+  queryFn: loadAgreements,
+  queryKey: ["agreements"],
+  retry: false,
+});
+
+export { acceptAgreements, agreementsOptions, withdrawAgreement };

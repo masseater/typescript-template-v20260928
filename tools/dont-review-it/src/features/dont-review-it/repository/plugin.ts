@@ -23,6 +23,7 @@ import {
   processBoundaryVisitor,
   processMember,
 } from "./process-boundary.ts";
+import { layoutRouteLoaderVisitor, queryCacheWriteVisitor } from "./query-cache-rules.ts";
 import { effectEventDependencyVisitor, reactLegacyVisitor } from "./react-legacy.ts";
 import { propertyName, staticText, type Origin } from "./references.ts";
 import { retiredImportsVisitor } from "./retired-imports.ts";
@@ -348,6 +349,18 @@ const projectPlugin = definePlugin({
       create: thinAppRoutesVisitor,
       meta: metadata(
         "TanStack Start のルートファイルに JSX を書けません。画面とレイアウトは pages か widgets に移し、createFileRoute には import した component だけを渡してください。",
+      ),
+    },
+    "layout-route-loader": {
+      create: layoutRouteLoaderVisitor,
+      meta: metadata(
+        "レイアウトのルート（_*.tsx と __root.tsx）に loader を書けません。loader を待つあいだ枠ごと描画が止まり、失敗すると配下の画面がすべてエラー表示になります。枠で使うサーバーデータは queryOptions を useQuery で読み、レイアウトの分岐に要る値だけ beforeLoad で待ってください。",
+      ),
+    },
+    "query-cache-write": {
+      create: queryCacheWriteVisitor,
+      meta: metadata(
+        "アプリのコードで setQueryData / setQueriesData を呼べません。取得は queryOptions の queryFn を queryClient.query で通し、書き込みのあとは該当するキーを invalidateQueries で無効化してください。",
       ),
     },
     logs: {

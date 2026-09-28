@@ -12,6 +12,7 @@ import {
   signUp,
 } from "./flows.ts";
 import { failed, type JourneyFailure } from "./journey-failure.ts";
+import { firstOfRequestAndAnswer } from "./request-order.ts";
 import {
   appearanceTimeout,
   fill,
@@ -90,21 +91,33 @@ const openMainNav = (
     yield* seeHeading(stage.page, destination.heading);
   });
 
+const openBoardWatchingFrameEntry = (stage: JourneyStage): Effect.Effect<boolean, JourneyFailure> =>
+  Effect.gen(function* openBoardWatchingFrameEntry() {
+    const firstSeen = firstOfRequestAndAnswer(stage.page, {
+      answered: "/api/onboarding",
+      started: "/api/agreements",
+      timeout: appearanceTimeout,
+    });
+    yield* openMainNav(stage, { heading: "掲示板", linkName: "掲示板" });
+    return (yield* pageStep(() => firstSeen)).seen === "started";
+  });
+
 const browseMainScreens = (
   stage: JourneyStage,
   account: Account,
-): Effect.Effect<void, JourneyFailure> =>
+): Effect.Effect<{ readonly checksAgreementsWithoutWaitingForTheStep: boolean }, JourneyFailure> =>
   Effect.gen(function* browseMemberScreens() {
     const origin = stage.environment.originOf("member");
     yield* seeHeading(stage.page, "ホーム");
     yield* openMainNav(stage, { heading: account.name, linkName: "プロフィール" });
-    yield* openMainNav(stage, { heading: "掲示板", linkName: "掲示板" });
+    const checksAgreementsWithoutWaitingForTheStep = yield* openBoardWatchingFrameEntry(stage);
     yield* openMainNav(stage, { heading: "ホーム", linkName: "ホーム" });
     yield* pageStep(() => stage.page.goto(`${origin}/users`));
     yield* pageStep(() =>
       stage.page.waitForURL(`${origin}/upgrade`, { timeout: appearanceTimeout }),
     );
     yield* seeHeading(stage.page, "有料プラン");
+    return { checksAgreementsWithoutWaitingForTheStep };
   });
 
 const openNewThreadForm = (page: Page, origin: string): Effect.Effect<void, JourneyFailure> =>
@@ -276,6 +289,7 @@ const runMemberJourney = (
 ): Effect.Effect<
   {
     readonly backupCodeCount: number;
+    readonly checksAgreementsWithoutWaitingForTheStep: boolean;
     readonly landsOnTheMemberHome: boolean;
     readonly listsTheThreadOpenedEarlier: boolean;
     readonly opensEveryListedSettingsItem: boolean;
@@ -289,7 +303,7 @@ const runMemberJourney = (
 > =>
   Effect.gen(function* walkMemberJourney() {
     const { account, origin } = yield* signUpAndConfirm(stage, "member");
-    yield* browseMainScreens(stage, account);
+    const { checksAgreementsWithoutWaitingForTheStep } = yield* browseMainScreens(stage, account);
     const board = yield* postOnBoard(stage, origin);
     const settings = yield* browseSettings(stage, origin);
     const { biography, profilePath } = yield* writeBiography(stage, origin);
@@ -302,6 +316,7 @@ const runMemberJourney = (
     });
     return {
       backupCodeCount: enrollment.backupCodes.length,
+      checksAgreementsWithoutWaitingForTheStep,
       landsOnTheMemberHome,
       listsTheThreadOpenedEarlier: board.listsTheThreadAfterwards,
       opensEveryListedSettingsItem: settings.opensEveryListedItem,

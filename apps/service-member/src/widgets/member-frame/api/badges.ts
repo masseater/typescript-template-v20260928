@@ -1,4 +1,5 @@
 import { apiData } from "@repo/runtime/client";
+import { queryOptions } from "@tanstack/react-query";
 
 import { userClient } from "#shared/api/index.ts";
 import { NavBadges } from "#shared/contracts/index.ts";
@@ -11,4 +12,10 @@ function loadNavBadges(): Promise<NavBadgesView> {
   );
 }
 
-export { loadNavBadges };
+const navBadgesOptions = queryOptions({
+  queryFn: loadNavBadges,
+  queryKey: ["nav-badges"],
+  retry: false,
+});
+
+export { navBadgesOptions };

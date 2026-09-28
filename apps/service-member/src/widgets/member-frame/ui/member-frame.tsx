@@ -1,11 +1,12 @@
 import { AppFrame, Icon } from "@repo/ui";
+import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "@tanstack/react-router";
 
 import { serviceName } from "#shared/config/index.ts";
+import { navBadgesOptions } from "../api/badges.ts";
 import { memberHasPaidPlan, memberNavItems, titleForPath } from "../model/navigation.ts";
 import { AccountMenu } from "./account-menu.tsx";
 
-import type { NavBadges } from "#shared/contracts/index.ts";
 import type { SessionView } from "@repo/auth-ui";
 import type { ReactElement, ReactNode, ReactPortal } from "react";
 
@@ -20,15 +21,15 @@ function memberDestinationTo(item: ReturnType<typeof memberNavItems>[number]): s
 
 function MemberFrame({
   children,
-  navBadges,
   user,
 }: Readonly<{
   children: Readonly<Exclude<ReactNode, ReactPortal>>;
-  navBadges: NavBadges;
   user: SessionView["user"];
 }>): ReactElement {
   const { pathname } = useLocation();
-  const destinations = memberNavItems(memberHasPaidPlan, user.id, navBadges).map((item) => ({
+  const navBadges = useQuery(navBadgesOptions);
+  const badges = navBadges.isError ? "failed" : navBadges.data;
+  const destinations = memberNavItems(memberHasPaidPlan, user.id, badges).map((item) => ({
     ...(item.badge === undefined ? {} : { badge: item.badge }),
     exact: item.id === "home",
     icon: <Icon icon={item.icon} />,

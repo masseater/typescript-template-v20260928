@@ -2,15 +2,16 @@ import { loginPath, sessionOptions } from "@repo/auth-ui";
 import { redirect } from "@tanstack/react-router";
 import { Effect } from "effect";
 
-import { blocksMember, loadAgreements } from "#entities/agreement/index.ts";
-import { loadSession } from "#entities/session/index.ts";
-import { loadOnboardingStep, onboardingOptions } from "#pages/account/welcome/index.ts";
-import { loadRecoveryOffer } from "#pages/recovery/index.ts";
+import { agreementsOptions, blocksMember } from "#entities/agreement/index.ts";
+import { onboardingOptions } from "#pages/account/welcome/index.ts";
+import { recoveryOfferOptions } from "#pages/recovery/index.ts";
 
 import type { Agreements } from "#entities/agreement/index.ts";
 import type { Session } from "#entities/session/index.ts";
-import type { OnboardingStep } from "#shared/contracts/index.ts";
+import type { OnboardingStep, RecoveryOfferView } from "#shared/contracts/index.ts";
 import type { QueryClient } from "@tanstack/react-query";
+
+type RecoveryOffer = typeof RecoveryOfferView.Type;
 
 const entrances: ReadonlySet<string> = new Set(["/", "/login", "/signup"]);
 
@@ -25,17 +26,14 @@ const welcomePath = {
 
 const recoveryPath = "/welcome/recovery";
 
-const currentSession = (queries: QueryClient): Effect.Effect<Session | undefined> =>
-  Effect.promise(() => loadSession()).pipe(
-    Effect.tap((session) =>
-      Effect.sync(() => queries.setQueryData(sessionOptions.queryKey, session)),
-    ),
-  );
+const currentSession = (queries: QueryClient): Effect.Effect<Session | null> =>
+  Effect.promise(() => queries.query(sessionOptions));
 
 const currentOnboardingStep = (queries: QueryClient): Effect.Effect<OnboardingStep> =>
-  Effect.promise(() => loadOnboardingStep()).pipe(
-    Effect.tap((step) => Effect.sync(() => queries.setQueryData(onboardingOptions.queryKey, step))),
-  );
+  Effect.promise(() => queries.query(onboardingOptions));
+
+const currentRecoveryOffer = (queries: QueryClient): Effect.Effect<RecoveryOffer> =>
+  Effect.promise(() => queries.query(recoveryOfferOptions));
 
 function enterPublicFrame(queries: QueryClient, pathname: string): Promise<void> {
   return Effect.runPromise(
@@ -44,7 +42,7 @@ function enterPublicFrame(queries: QueryClient, pathname: string): Promise<void>
         return;
       }
       const session = yield* currentSession(queries);
-      if (session !== undefined) {
+      if (session !== null) {
         throw redirect({ to: "/home" });
       }
     }),
@@ -53,8 +51,8 @@ function enterPublicFrame(queries: QueryClient, pathname: string): Promise<void>
 
 type PendingStep = Exclude<OnboardingStep, "done">;
 
-const signedIn = (session: Session | undefined, href: string): Session => {
-  if (session === undefined) {
+const signedIn = (session: Session | null, href: string): Session => {
+  if (session === null) {
     throw redirect({ href: loginPath(href) });
   }
   return session;
@@ -67,13 +65,12 @@ const pendingStep = (step: OnboardingStep): PendingStep => {
   return step;
 };
 
-const requireOnboarded = (queries: QueryClient): Effect.Effect<void> =>
+const requireOnboarded = (queries: QueryClient, step: OnboardingStep): Effect.Effect<void> =>
   Effect.gen(function* requireOnboarded() {
-    const step = yield* currentOnboardingStep(queries);
     if (step === "done") {
       return;
     }
-    const offer = yield* Effect.promise(() => loadRecoveryOffer());
+    const offer = yield* currentRecoveryOffer(queries);
     throw redirect({ to: offer.available ? recoveryPath : welcomePath[step] });
   });
 
@@ -103,9 +100,15 @@ function enterMemberFrame(
   return Effect.runPromise(
     Effect.gen(function* enterMember() {
       const session = signedIn(yield* currentSession(queries), href);
-      yield* requireOnboarded(queries);
+      const { agreements, step } = yield* Effect.all(
+        {
+          agreements: Effect.promise(() => queries.query(agreementsOptions)),
+          step: currentOnboardingStep(queries),
+        },
+        { concurrency: "unbounded" },
+      );
+      yield* requireOnboarded(queries, step);
       leaveWelcome(pathname);
-      const agreements = yield* Effect.promise(() => loadAgreements());
       requireAgreed(agreements, href, pathname);
       return { agreements, session };
     }),
@@ -116,13 +119,16 @@ function enterWelcomeFrame(
   queries: QueryClient,
   href: string,
   pathname: string,
-): Promise<{ session: Session; step: OnboardingStep }> {
+): Promise<{ session: Session; step: PendingStep }> {
   return Effect.runPromise(
     Effect.gen(function* enterWelcome() {
       const session = signedIn(yield* currentSession(queries), href);
-      const step = pendingStep(yield* currentOnboardingStep(queries));
-      const offer = yield* Effect.promise(() => loadRecoveryOffer());
-      settleRecovery(offer.available, pathname, step);
+      const fetched = yield* Effect.all(
+        { offer: currentRecoveryOffer(queries), step: currentOnboardingStep(queries) },
+        { concurrency: "unbounded" },
+      );
+      const step = pendingStep(fetched.step);
+      settleRecovery(fetched.offer.available, pathname, step);
       return { session, step };
     }),
   );
