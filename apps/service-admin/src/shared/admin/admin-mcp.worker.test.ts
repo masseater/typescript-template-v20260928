@@ -3,6 +3,7 @@ import {
   AuthApps,
   adminOperator,
   authTest,
+  authTestSecret,
   callMcpTool,
   exchangeOAuthCode,
   grantOAuthAuthorization,
@@ -28,7 +29,6 @@ import { mcpChallenge } from "./admin-oauth-test-fixture.ts";
 import { serveMcp } from "./mcp.ts";
 
 const adminOrigin = "http://127.0.0.1:3002";
-const authSecret = "integration-test-secret-at-least-32-characters-long";
 const reporting = { service: APPLICATION.admin } as const;
 const JsonUnknown = Schema.fromJsonString(Schema.Unknown);
 
@@ -60,7 +60,7 @@ function adminMcpApp(auth: Parameters<typeof runWith>[0]): {
         Layer.succeed(Auth, adminAuth),
         appLayer({
           audience: APPLICATION.admin,
-          env: appEnvironment({ APP_ORIGIN: adminOrigin, AUTH_SECRET: authSecret }),
+          env: appEnvironment({ APP_ORIGIN: adminOrigin, AUTH_SECRET: authTestSecret }),
           routes,
         }),
       ),

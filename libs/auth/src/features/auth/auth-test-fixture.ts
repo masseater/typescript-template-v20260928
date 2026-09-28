@@ -34,7 +34,7 @@ import type { Database } from "@repo/db";
 import type { AuthFailure } from "./auth-failure.ts";
 
 const PASSWORD = "test-password-safe-123";
-const authTestSecret = "integration-test-secret-at-least-32-characters-long";
+const authTestSecret = "integration-test-secret-of-at-least-32-characters-0123456789";
 
 class AuthApps extends Context.Service<AuthApps, Readonly<Record<Application, Auth["Service"]>>>()(
   "@repo/auth/AuthApps",
@@ -72,7 +72,7 @@ const authApps = Layer.effect(
   Effect.all({
     [APPLICATION.admin]: authFor(APPLICATION.admin),
     [APPLICATION.user]: authFor(APPLICATION.user),
-    [APPLICATION.wiki]: authFor(APPLICATION.wiki),
+    [APPLICATION.dashboard]: authFor(APPLICATION.dashboard),
   }),
 ).pipe(Layer.provide(sequentialIdentifiers));
 

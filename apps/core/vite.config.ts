@@ -7,6 +7,7 @@ export default defineConfig(
     "better-call",
     "drizzle-orm",
     "effect",
+    "es-toolkit",
     "msgpackr",
   ]),
 );

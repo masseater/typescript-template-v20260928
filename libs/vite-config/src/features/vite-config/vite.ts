@@ -1,5 +1,6 @@
 import { cloudflare } from "@cloudflare/vite-plugin";
 import {
+  APPLICATION,
   applicationPorts,
   coreEntrypoints,
   grants,
@@ -10,7 +11,6 @@ import {
   jobsWorkflowName,
   loopbackAddress,
   wikiBasePath,
-  wikiHost,
   wikiPort,
   wikiServerFnBase,
   wikiWorker,
@@ -332,7 +332,7 @@ const wikiStartOptions = {
 
 const wikiContentInput = {
   base: "workspace",
-  pattern: `apps/${wikiHost}/content/docs/**`,
+  pattern: `apps/${APPLICATION.dashboard}/content/docs/**`,
 } as const;
 
 const wikiTasks = measured({
