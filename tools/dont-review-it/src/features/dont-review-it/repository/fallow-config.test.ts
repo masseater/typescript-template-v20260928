@@ -78,7 +78,6 @@ const grantedExclusions: Readonly<Record<string, readonly string[]>> = {
     "zod-validation-error",
     "**/*",
     "default",
-    "**/vite.config.ts",
   ],
   ".fallowrc.production.json": ["**", "!**/src/**"],
 };

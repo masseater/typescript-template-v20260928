@@ -1,4 +1,3 @@
-import { vitestOpenTelemetry } from "@repo/telemetry/vitest-sdk-path";
 import {
   awaitingEffectDiagnostics,
   lifecycle,
@@ -32,14 +31,5 @@ export default defineConfig({
         prepush: ["check:effect", "check:imports", "check", "check:modular"],
       }),
     },
-  },
-  test: {
-    experimental: { openTelemetry: vitestOpenTelemetry },
-    coverage: {
-      exclude: ["specs/**"],
-      thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
-    },
-    mockReset: true,
-    restoreMocks: true,
   },
 });

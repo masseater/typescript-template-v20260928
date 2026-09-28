@@ -1,4 +1,3 @@
-import { vitestOpenTelemetry } from "@repo/telemetry/vitest-sdk-path";
 import { effectRun } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
@@ -9,11 +8,5 @@ export default defineConfig({
       deploy: { cache: false, command: "repo-github deploy wiki-publisher" },
       plan: { cache: false, command: "repo-github plan wiki-publisher" },
     },
-  },
-  test: {
-    experimental: { openTelemetry: vitestOpenTelemetry },
-    coverage: { exclude: ["specs/**"], thresholds: { 100: true, perFile: true } },
-    mockReset: true,
-    restoreMocks: true,
   },
 });

@@ -1,9 +1,11 @@
-import { vitestOpenTelemetry } from "@repo/ai-native-telemetry/vitest-sdk-path";
+import { telemetryAsked } from "@repo/ai-native-telemetry/optional-setting";
+import { sdkFilePath } from "@repo/ai-native-telemetry/vitest-sdk-path";
 import {
   effectDiagnostics,
   intentValidation,
   lifecycle,
   testRun,
+  toolTest,
   checkCode,
   modularBoundaries,
   workspaceCheckImports,
@@ -64,17 +66,19 @@ export default defineConfig({
     },
   },
   test: {
-    experimental: { openTelemetry: vitestOpenTelemetry },
+    ...toolTest,
+    experimental: {
+      openTelemetry: {
+        enabled: telemetryAsked,
+        sdkPath: sdkFilePath(import.meta.resolve("@repo/ai-native-telemetry/vitest-sdk")),
+      },
+    },
     testTimeout: 60_000,
-    mockReset: true,
-    restoreMocks: true,
     coverage: {
-      exclude: ["specs/**", "src/features/dont-review-it/repository/**"],
-      thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
+      ...toolTest.coverage,
+      exclude: [...toolTest.coverage.exclude, "src/features/dont-review-it/repository/**"],
     },
     exclude: ["**/node_modules/**", "**/dist/**", "src/features/dont-review-it/repository/**"],
-    unstubEnvs: true,
-    unstubGlobals: true,
   },
   pack: {
     entry: [

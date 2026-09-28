@@ -10,7 +10,8 @@ import {
   rootOnDemandChecks,
   workerTests,
 } from "@repo/dont-review-it";
-import { vitestOpenTelemetry } from "@repo/telemetry/vitest-sdk-path";
+import { telemetryAsked } from "@repo/telemetry/optional-setting";
+import { sdkFilePath } from "@repo/telemetry/vitest-sdk-path";
 import {
   effectDiagnostics,
   lifecycle,
@@ -51,7 +52,6 @@ const rootOwnedPaths = [
   "pnpm-lock.yaml",
   "pnpm-workspace.yaml",
   "renovate.json",
-  "tsconfig.base.json",
   "tsconfig.json",
   "vite.config.ts",
   "vitest.mutation.config.ts",
@@ -145,7 +145,12 @@ export default defineConfig({
     },
   },
   test: {
-    experimental: { openTelemetry: vitestOpenTelemetry },
+    experimental: {
+      openTelemetry: {
+        enabled: telemetryAsked,
+        sdkPath: sdkFilePath(import.meta.resolve("@repo/telemetry/vitest-sdk")),
+      },
+    },
     coverage: {
       exclude: ["specs/**"],
       thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
