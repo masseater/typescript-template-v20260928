@@ -6,6 +6,7 @@ export { Card } from "./shared/ui/card";
 export { CardLink } from "./shared/ui/card-link";
 export { CheckboxField } from "./shared/ui/checkbox-field";
 export { ConfirmDialog } from "./shared/ui/confirm-dialog";
+export { CountBadge } from "./shared/ui/count-badge";
 export { DropdownMenu } from "./shared/ui/dropdown-menu";
 export { DropdownMenuContent } from "./shared/ui/dropdown-menu-content";
 export { DropdownMenuItem } from "./shared/ui/dropdown-menu-item";

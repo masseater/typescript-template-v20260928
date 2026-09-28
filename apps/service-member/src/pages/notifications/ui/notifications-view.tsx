@@ -17,11 +17,12 @@ function NotificationRow({
   return (
     <li>
       <button
-        className={`block w-full rounded-lg border p-3 text-left ${item.read ? "border-border" : "border-primary bg-muted/40"}`}
+        className="block w-full rounded-lg border border-border p-3 text-left"
         disabled={disabled}
         onClick={() => onOpen(item)}
         type="button"
       >
+        {!item.read && <p className="text-xs leading-normal font-bold">未読</p>}
         <p className="text-sm leading-normal">{item.label}</p>
         <p className="text-xs leading-normal text-muted-foreground">
           {formatWarekiDateTime(item.createdAt)}

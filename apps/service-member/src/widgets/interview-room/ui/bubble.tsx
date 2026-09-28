@@ -6,7 +6,7 @@ import type { FieldView } from "./sheet.tsx";
 const bubbleClassName = "max-w-bubble rounded-lg px-3 py-2 text-base leading-normal";
 const sides = {
   interviewer: `${bubbleClassName} self-start border border-border bg-card text-card-foreground`,
-  member: `${bubbleClassName} self-end bg-primary text-primary-foreground`,
+  member: `${bubbleClassName} self-end bg-secondary text-secondary-foreground`,
 } as const;
 
 function InterviewBubble({

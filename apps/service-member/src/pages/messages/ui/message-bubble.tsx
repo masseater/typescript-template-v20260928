@@ -10,7 +10,7 @@ type Message = ConversationThread["messages"][number];
 
 type ConversationKind = "direct" | "group";
 
-const ownBubble = { alignment: "justify-end", tone: "bg-primary text-primary-foreground" };
+const ownBubble = { alignment: "justify-end", tone: "bg-secondary text-secondary-foreground" };
 
 const peerBubble = {
   alignment: "justify-start",

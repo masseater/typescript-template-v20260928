@@ -48,7 +48,7 @@ function InquiriesView({
             onClick={() => {
               onToggle(value);
             }}
-            className={`rounded-md border px-3 py-1 text-sm ${status === value ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}
+            className={`rounded-md border px-3 py-1 text-sm ${status === value ? "border-foreground bg-secondary font-bold text-secondary-foreground" : "border-border"}`}
           >
             {inquiryStatusLabel(value)}
           </button>

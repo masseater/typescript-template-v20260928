@@ -39,19 +39,19 @@ describe("notifications view", () => {
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*>すべて既読にする/u);
   });
 
-  it("highlights an unread notification and offers to mark all read", () => {
+  it("labels an unread notification and offers to mark all read", () => {
     expect.hasAssertions();
     const html = rendered([unread]);
     expect(html).toContain(unread.label);
-    expect(html).toContain("border-primary");
+    expect(html).toContain("未読");
     expect(html).not.toMatch(/<button[^>]*disabled=""[^>]*>すべて既読にする/u);
     expect(html).not.toContain("通知はまだありません。");
   });
 
-  it("dims a read notification and shows a failure", () => {
+  it("leaves a read notification unlabelled and shows a failure", () => {
     expect.hasAssertions();
     const html = rendered([{ ...unread, read: true }], "既読にできませんでした。");
-    expect(html).not.toContain("border-primary");
+    expect(html).not.toContain("未読");
     expect(html).toContain("既読にできませんでした。");
   });
 });

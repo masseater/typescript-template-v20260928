@@ -22,7 +22,7 @@ function LeavePage(): ReactElement {
         />
         <Button
           type="button"
-          variant="primary"
+          variant="danger"
           disabled={form.blocked}
           onClick={() => form.handleOpenChange(true)}
         >
@@ -37,6 +37,7 @@ function LeavePage(): ReactElement {
         confirmLabel="退会する"
         onConfirm={form.handleConfirm}
         onOpenChange={form.handleOpenChange}
+        variant="danger"
       />
     </Page>
   );

@@ -50,14 +50,14 @@ describe("inquiry list", () => {
   });
 
   it("presses the selected status filter", () => {
-    expect(rendered({ status: INQUIRY_STATUS.open })).toContain(
-      '<button type="button" aria-pressed="true" class="rounded-md border px-3 py-1 text-sm border-primary bg-primary text-primary-foreground">受付</button>',
+    expect(rendered({ status: INQUIRY_STATUS.open })).toMatch(
+      /<button[^>]*aria-pressed="true"[^>]*>受付<\/button>/u,
     );
   });
 
   it("leaves the other status filters unpressed", () => {
-    expect(rendered({ status: INQUIRY_STATUS.open })).toContain(
-      'aria-pressed="false" class="rounded-md border px-3 py-1 text-sm border-border">完了</button>',
+    expect(rendered({ status: INQUIRY_STATUS.open })).toMatch(
+      /<button[^>]*aria-pressed="false"[^>]*>完了<\/button>/u,
     );
   });
 

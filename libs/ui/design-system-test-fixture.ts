@@ -507,6 +507,27 @@ const appStylesheetViolations = (apps: readonly string[]): HostRead<string[]> =>
     (found) => found.flat(),
   );
 
+type SourceFile = Readonly<{ file: string; source: string }>;
+
+const productionSource = /(?<!\.test|\.stories|-test-fixture)\.tsx?$/u;
+
+const appSources = (apps: readonly string[]): HostRead<SourceFile[]> =>
+  Effect.forEach(
+    apps.flatMap((app) => appFiles(appModules, app)).filter((file) => productionSource.test(file)),
+    (file) => Effect.map(read(file), (source) => ({ file, source })),
+  );
+
+const appStylesheetSources = (apps: readonly string[]): HostRead<SourceFile[]> =>
+  Effect.forEach(
+    apps.flatMap((app) => appFiles(appStylesheets, app)),
+    (file) => Effect.map(read(file), (source) => ({ file, source })),
+  );
+
+const sourceMatches = (files: readonly SourceFile[], pattern: RegExp): string[] =>
+  files.flatMap(({ file, source }) =>
+    [...source.matchAll(pattern)].map((match) => `${file}: ${match[0]}`),
+  );
+
 const tokenViolations = (css: string): string[] => {
   const declared = declarations(css);
   const drifted = Object.keys(designTokens).flatMap((name) =>
@@ -525,8 +546,12 @@ const tokenViolations = (css: string): string[] => {
 };
 
 export type { HostRead };
+export type { SourceFile };
 export {
+  appSources,
+  appStylesheetSources,
   appStylesheetViolations,
+  sourceMatches,
   colorSchemeProbe,
   indexedComponents,
   coverageViolations,

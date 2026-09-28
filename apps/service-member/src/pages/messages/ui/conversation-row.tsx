@@ -1,4 +1,4 @@
-import { Avatar, CardLink } from "@repo/ui";
+import { Avatar, CardLink, CountBadge } from "@repo/ui";
 
 import type { ConversationListView } from "#pages/messages/api/messages.ts";
 import type { ReactElement } from "react";
@@ -19,14 +19,10 @@ function ConversationRow({
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <div className="flex items-center gap-2">
             <span className="truncate text-base leading-tight font-bold">{title}</span>
-            {conversation.unreadCount > 0 && (
-              <span
-                aria-label={`未読 ${conversation.unreadCount} 件`}
-                className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs leading-tight font-bold text-primary-foreground"
-              >
-                {conversation.unreadCount}
-              </span>
-            )}
+            <CountBadge
+              count={conversation.unreadCount}
+              label={`未読 ${conversation.unreadCount} 件`}
+            />
           </div>
           <span className="truncate text-sm leading-normal text-muted-foreground">
             {preview(conversation.lastMessagePreview)}

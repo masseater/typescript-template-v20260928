@@ -19,7 +19,7 @@ function SocialLinks({ urls }: Readonly<{ urls: readonly string[] }>): ReactElem
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-foreground hover:text-primary"
+            className="text-link hover:text-link-hover"
             aria-label={url}
           >
             <SocialLinkGlyph classified={classified} />

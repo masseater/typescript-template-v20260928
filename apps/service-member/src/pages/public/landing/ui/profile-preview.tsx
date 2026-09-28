@@ -28,9 +28,7 @@ function ProfilePreview(): ReactElement {
           }
           actions={
             <div className="flex flex-wrap gap-2">
-              <span
-                className={`${illustratedAction} border-primary bg-primary text-primary-foreground`}
-              >
+              <span className={`${illustratedAction} border-border bg-card text-foreground`}>
                 フォロー
               </span>
               <span className={`${illustratedAction} border-border bg-card text-foreground`}>

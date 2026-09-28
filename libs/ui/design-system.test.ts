@@ -12,6 +12,7 @@ import {
   uiA11yComponents,
 } from "../../tools/dont-review-it/src/features/dont-review-it/repository/ui-lint-settings.ts";
 import {
+  appSources,
   appStylesheetViolations,
   colorSchemeProbe,
   coverageViolations,
@@ -24,6 +25,7 @@ import {
   indexedComponents,
   linkParts,
   linkViolations,
+  sourceMatches,
   sourceViolations,
   stylesheetPath,
   stylesheetSource,
@@ -33,6 +35,8 @@ import {
 import { hoverViolations, relativeLuminance } from "./hover-colors-test-fixture.ts";
 import { field } from "./record-field-test-fixture.ts";
 import { Heading } from "./src/features/ui/shared/ui/heading.tsx";
+
+import type { SourceFile } from "./design-system-test-fixture.ts";
 
 const appManifests: Readonly<Record<string, unknown>> = import.meta.glob(
   "../../apps/*/package.json",
@@ -508,5 +512,33 @@ describe("router link parts owned by ui", () => {
   it.for(routerLinkParts)("lists %s among the discovered createLink parts", (name) => {
     expect.hasAssertions();
     expect(routerLinkParts).toContain(name);
+  });
+});
+
+const appSourceFiles = await Effect.runPromise(
+  appSources(designSystemApps).pipe(Effect.provide(NodeServices.layer)),
+);
+
+const primaryUtility =
+  /(?<![\w-])(?:bg|text|border|ring|outline|fill|stroke|decoration|divide|accent|caret|shadow|from|via|to)-primary(?!\w)/gu;
+
+const probe = (source: string): SourceFile[] => [{ file: "apps/probe/src/probe.tsx", source }];
+
+describe("app sources keep to the design system", () => {
+  it("reads the sources of every app that depends on the parts", () => {
+    expect.hasAssertions();
+    expect(appSourceFiles.length).toBeGreaterThan(designSystemApps.length);
+  });
+
+  it("keeps primary colour utilities out of app sources", () => {
+    expect.hasAssertions();
+    expect(sourceMatches(appSourceFiles, primaryUtility)).toStrictEqual([]);
+  });
+
+  it("reports a primary colour utility in an app source", () => {
+    expect.hasAssertions();
+    expect(
+      sourceMatches(probe('<a className="text-link hover:text-primary" />'), primaryUtility),
+    ).toStrictEqual(["apps/probe/src/probe.tsx: text-primary"]);
   });
 });
