@@ -1,8 +1,8 @@
-import { AUTHENTICATION_METHOD } from "@repo/config";
 import { useAction, ActionStatus, Heading } from "@repo/ui";
 
 import { PasskeySettings } from "./passkey-settings";
 import { RecoveryNotice } from "./recovery-notice";
+import { recoveryStateOf, type RecoveryState } from "./recovery-state.ts";
 import { TotpSettings } from "./totp-settings";
 import { useNotice } from "./use-notice";
 
@@ -10,13 +10,11 @@ import type { ReactElement } from "react";
 import type { SettingsContext } from "./mfa-types";
 import type { SessionView } from "./protocol";
 
-const readRecovery = (): string | undefined => {
+const readRecovery = (): RecoveryState | undefined => {
   if (!("location" in globalThis)) {
     return undefined;
   }
-  return (
-    new URLSearchParams(globalThis.location.search).get(AUTHENTICATION_METHOD.recovery) ?? undefined
-  );
+  return recoveryStateOf(globalThis.location.search);
 };
 
 const MFASettings = ({ session }: Readonly<{ session: SessionView }>): ReactElement => {

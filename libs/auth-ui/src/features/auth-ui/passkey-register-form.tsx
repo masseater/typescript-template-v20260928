@@ -5,6 +5,7 @@ import { Effect } from "effect";
 import { authTask } from "./browser-http.ts";
 import { authClient } from "./client";
 import { requireSecureContext, requireSuccess } from "./protocol";
+import { RECOVERY_STATE } from "./recovery-state.ts";
 
 import type { ReactElement, SyntheticEvent } from "react";
 import type { SettingsContext } from "./mfa-types";
@@ -58,7 +59,8 @@ const PasskeyRegisterForm = ({
       ),
     );
   };
-  const recoveringAdmin = session.user.role !== ROLE.member && !session.strong && recovery === "1";
+  const recoveringAdmin =
+    session.user.role !== ROLE.member && !session.strong && recovery === RECOVERY_STATE.recovered;
   return (
     <form onSubmit={submit}>
       <FormColumn>

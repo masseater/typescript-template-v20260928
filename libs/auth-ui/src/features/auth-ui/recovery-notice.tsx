@@ -1,6 +1,8 @@
 import { ROLE } from "@repo/config";
 import { StatusMessage } from "@repo/ui";
 
+import { RECOVERY_STATE, type RecoveryState } from "./recovery-state.ts";
+
 import type { ReactElement } from "react";
 import type { SessionView } from "./protocol";
 
@@ -8,13 +10,13 @@ const RecoveryNotice = ({
   recovery,
   role,
 }: {
-  readonly recovery: string | undefined;
+  readonly recovery: RecoveryState | undefined;
   readonly role: SessionView["user"]["role"];
 }): ReactElement | undefined => {
-  if (recovery === "setup") {
+  if (recovery === RECOVERY_STATE.setup) {
     return <StatusMessage>{"新しい認証アプリを登録してください。"}</StatusMessage>;
   }
-  if (recovery !== "1") {
+  if (recovery !== RECOVERY_STATE.recovered) {
     return undefined;
   }
   return (

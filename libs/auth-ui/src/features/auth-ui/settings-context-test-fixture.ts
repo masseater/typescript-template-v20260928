@@ -2,6 +2,7 @@ import { ROLE } from "@repo/config";
 
 import type { SettingsContext } from "./mfa-types";
 import type { SessionView } from "./protocol";
+import type { RecoveryState } from "./recovery-state.ts";
 
 const memberUser: SessionView["user"] = {
   email: "taro@example.com",
@@ -17,7 +18,7 @@ const settingsContext = ({
   strong = true,
   user,
 }: Readonly<{
-  recovery?: string;
+  recovery?: RecoveryState;
   strong?: boolean;
   user?: Partial<SessionView["user"]>;
 }> = {}): SettingsContext => ({
