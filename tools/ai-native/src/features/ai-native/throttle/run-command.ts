@@ -19,6 +19,7 @@ import type { Invocation } from "./usage.ts";
 
 const KILL_GRACE_MS = 5_000;
 
+
 type ChildExit = {
   kind: "exit";
   exitCode: number | null;
@@ -36,6 +37,7 @@ type RunCommandDependencies = {
   spawnChild: (input: {
     executable: string;
     args: readonly string[];
+    heldSlotDir: string | undefined;
     killGraceMs: number;
   }) => Effect.Effect<CommandChild, Error, Scope.Scope>;
   killGraceMs: number;
@@ -174,11 +176,16 @@ const reportRunEnd = (input: {
   return input.releaseFailure === null ? verdictCode : reportReleaseFailure(input.releaseFailure);
 };
 
+export const HELD_MARKER = "MST_THROTTLE_HELD";
+
 const spawnDetached: RunCommandDependencies["spawnChild"] = (invocation) =>
   spawner
     .spawn(
       ChildProcess.make(invocation.executable, [...invocation.args], {
         detached: true,
+        ...(invocation.heldSlotDir === undefined
+          ? {}
+          : { env: { [HELD_MARKER]: invocation.heldSlotDir }, extendEnv: true }),
         stdin: "inherit",
         stdout: "inherit",
         stderr: "inherit",
@@ -208,6 +215,7 @@ type Started = { kind: "running"; child: CommandChild } | { kind: "start-failure
 const spawnUnderHeldInterrupt = (input: {
   invocation: Invocation;
   hold: SlotHold;
+  heldSlotDir: string | undefined;
   dependencies: RunCommandDependencies;
 }): Effect.Effect<Started, never, Scope.Scope> =>
   Effect.gen(function* spawnHeld() {
@@ -221,6 +229,7 @@ const spawnUnderHeldInterrupt = (input: {
       .spawnChild({
         executable: input.invocation.executable,
         args: input.invocation.args,
+        heldSlotDir: input.heldSlotDir,
         killGraceMs: input.dependencies.killGraceMs,
       })
       .pipe(
@@ -238,6 +247,7 @@ const spawnUnderHeldInterrupt = (input: {
 export const runWithSlot = (input: {
   invocation: Invocation;
   hold: SlotHold;
+  heldSlotDir?: string;
   dependencies?: Partial<RunCommandDependencies>;
 }): Promise<number> =>
   Effect.runPromise(
@@ -253,6 +263,7 @@ export const runWithSlot = (input: {
           const started = yield* spawnUnderHeldInterrupt({
             invocation: input.invocation,
             hold: input.hold,
+            heldSlotDir: input.heldSlotDir,
             dependencies,
           });
           return started.kind === "start-failure"

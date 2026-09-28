@@ -134,9 +134,9 @@ describe("runThrottle", () => {
         share this host and namespace at or below the limit. When every slot is held
         the wrapper joins a wait queue, reports its position on stderr, and retries
         every slot on each poll, for at most the wait budget. The operating system
-        releases a slot when its holder exits, including an abrupt termination. Do
-        not nest throttle inside a command it wraps: the inner call counts
-        as one more competitor and consumes a second slot.
+        releases a slot when its holder exits, including an abrupt termination. A
+        throttle started inside a command another throttle wraps on the same slots
+        exits with 2 at once, because it would wait for the slot the outer one holds.
 
         When the command exits, throttle ends the rest of its process group before
         it gives the slot back: SIGTERM first, then SIGKILL after the grace period.
@@ -478,6 +478,124 @@ describe("runThrottle", () => {
       { timeout: 30_000 },
       ({ theWaitingNamedWhileTakingAFreeSlot }) => {
         expect(theWaitingNamedWhileTakingAFreeSlot).toBe(false);
+      },
+    );
+  });
+
+  describe("a run inside another throttle on the same slots", () => {
+    const it = throttleTest
+      .extend("theCodeOfANestedRun", ({ slotDirectory }) => {
+        vi.stubEnv("MST_THROTTLE_HELD", slotDirectory);
+        return runThrottle(TRIVIAL_COMMAND, {
+          slotDir: slotDirectory,
+          limit: 1,
+          waitBudgetMs: 60_000,
+          pollMs: 1_000,
+          isInteractive: false,
+        });
+      })
+      .extend("theSlotsLeftByANestedRun", ({ slotDirectory }) =>
+        Effect.runPromise(
+          Effect.gen(function* () {
+            vi.stubEnv("MST_THROTTLE_HELD", slotDirectory);
+            yield* Effect.promise(() =>
+              runThrottle(TRIVIAL_COMMAND, {
+                slotDir: slotDirectory,
+                limit: 1,
+                waitBudgetMs: 60_000,
+                pollMs: 1_000,
+                isInteractive: false,
+              }),
+            );
+            return yield* readDirectory(slotDirectory);
+          }),
+        ),
+      )
+      .extend("theRefusalOfANestedRun", ({ slotDirectory, stderr }) =>
+        Effect.runPromise(
+          Effect.gen(function* () {
+            vi.stubEnv("MST_THROTTLE_HELD", slotDirectory);
+            yield* Effect.promise(() =>
+              runThrottle(TRIVIAL_COMMAND, {
+                slotDir: slotDirectory,
+                limit: 1,
+                waitBudgetMs: 60_000,
+                pollMs: 1_000,
+                isInteractive: false,
+              }),
+            );
+            return stderr
+              .text()
+              .startsWith("throttle: refusing to run inside another throttle on ");
+          }),
+        ),
+      );
+
+    it("ends with 2 at once", { timeout: 30_000 }, ({ theCodeOfANestedRun }) => {
+      expect(theCodeOfANestedRun).toBe(2);
+    });
+
+    it("takes no slot", { timeout: 30_000 }, ({ theSlotsLeftByANestedRun }) => {
+      expect(theSlotsLeftByANestedRun).toStrictEqual([]);
+    });
+
+    it("says why on stderr", { timeout: 30_000 }, ({ theRefusalOfANestedRun }) => {
+      expect(theRefusalOfANestedRun).toBe(true);
+    });
+  });
+
+  describe("a run inside a throttle on other slots", () => {
+    const it = throttleTest.extend("theCodeOfARunBesideOtherSlots", ({ slotDirectory }) => {
+      vi.stubEnv("MST_THROTTLE_HELD", joinPath(slotDirectory, "other"));
+      return runThrottle(TRIVIAL_COMMAND, {
+        slotDir: slotDirectory,
+        limit: 1,
+        waitBudgetMs: 15_000,
+        pollMs: 1_000,
+        isInteractive: false,
+      });
+    });
+
+    it("runs the command", { timeout: 30_000 }, ({ theCodeOfARunBesideOtherSlots }) => {
+      expect(theCodeOfARunBesideOtherSlots).toBe(0);
+    });
+  });
+
+  describe("the command a throttle runs", () => {
+    const it = throttleTest.extend(
+      "theMarkerSeenByTheCommand",
+      ({ slotDirectory, stampsDirectory }) =>
+        Effect.runPromise(
+          Effect.gen(function* () {
+            vi.stubEnv("MST_THROTTLE_HELD", undefined);
+            const stamp = joinPath(stampsDirectory, "held");
+            yield* Effect.promise(() =>
+              runThrottle(
+                [
+                  "--",
+                  process.execPath,
+                  "-e",
+                  `require("node:fs").writeFileSync(${JSON.stringify(stamp)}, process.env.MST_THROTTLE_HELD ?? "")`,
+                ],
+                {
+                  slotDir: slotDirectory,
+                  limit: 1,
+                  waitBudgetMs: 15_000,
+                  pollMs: 1_000,
+                  isInteractive: false,
+                },
+              ),
+            );
+            return (yield* readFileString(stamp)) === slotDirectory;
+          }),
+        ),
+    );
+
+    it(
+      "is told which slots its throttle holds",
+      { timeout: 30_000 },
+      ({ theMarkerSeenByTheCommand }) => {
+        expect(theMarkerSeenByTheCommand).toBe(true);
       },
     );
   });

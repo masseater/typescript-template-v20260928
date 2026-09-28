@@ -154,7 +154,7 @@ Correct:
 }
 ```
 
-The inner call competes for the same host and namespace as an independent holder, so one logical run consumes two slots; with the default limit of 1 it waits for a slot its own parent is holding until the wait budget runs out.
+The inner call would compete for the slots its own parent is holding, so it refuses to run: the outer `throttle` hands the command `MST_THROTTLE_HELD` naming its slot directory, and a `throttle` that starts with that same directory exits with 2 at once and says why on stderr.
 
 Source: masseater/mst:tools/ai-native/src/throttle/usage.ts
 

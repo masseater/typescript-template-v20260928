@@ -56,9 +56,9 @@ describe("cli", () => {
           share this host and namespace at or below the limit. When every slot is held
           the wrapper joins a wait queue, reports its position on stderr, and retries
           every slot on each poll, for at most the wait budget. The operating system
-          releases a slot when its holder exits, including an abrupt termination. Do
-          not nest throttle inside a command it wraps: the inner call counts
-          as one more competitor and consumes a second slot.
+          releases a slot when its holder exits, including an abrupt termination. A
+          throttle started inside a command another throttle wraps on the same slots
+          exits with 2 at once, because it would wait for the slot the outer one holds.
 
           When the command exits, throttle ends the rest of its process group before
           it gives the slot back: SIGTERM first, then SIGKILL after the grace period.
