@@ -9,6 +9,7 @@ export type WorkflowChecksConfig = {
   readonly withKey: string;
   readonly fetchDepthKey: string;
   readonly permissionsKey: string;
+  readonly sharedPermissions: Readonly<Record<string, string>>;
   readonly continueOnErrorKey: string;
   readonly gatingTriggers: readonly string[];
   readonly narrowingKeys: readonly string[];
@@ -35,6 +36,7 @@ export const defaultWorkflowChecksConfig: WorkflowChecksConfig = {
   withKey: "with",
   fetchDepthKey: "fetch-depth",
   permissionsKey: "permissions",
+  sharedPermissions: { contents: "read" },
   continueOnErrorKey: "continue-on-error",
   gatingTriggers: ["pull_request", "pull_request_target"],
   narrowingKeys: ["branches", "branches-ignore", "paths", "paths-ignore"],
