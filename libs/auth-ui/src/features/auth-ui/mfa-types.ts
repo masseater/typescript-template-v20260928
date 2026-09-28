@@ -1,6 +1,7 @@
 import { type ActionState } from "@repo/ui";
 
 import type { SessionView } from "./protocol";
+import type { RecoveryState } from "./recovery-state.ts";
 
 type Enrollment = {
   readonly totpURI: string;
@@ -14,7 +15,7 @@ type PasskeySummary = {
 
 type SettingsContext = {
   readonly action: ActionState;
-  readonly recovery: string | undefined;
+  readonly recovery: RecoveryState | undefined;
   readonly session: SessionView;
   readonly onNotice: (notice: string) => void;
   readonly onNoticeClear: () => void;

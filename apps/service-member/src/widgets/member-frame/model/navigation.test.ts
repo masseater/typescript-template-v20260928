@@ -4,22 +4,15 @@ import { overwriteGetLocale } from "#paraglide/runtime.js";
 import { memberNavItems, titleForPath } from "./navigation.ts";
 
 describe("memberNavItems", () => {
-  it("sends free members from 探す to upgrade", () => {
+  it("points 探す at the search page for every member", () => {
     expect.hasAssertions();
-    const search = memberNavItems(false, "member-1").find((item) => item.id === "search");
-    expect(search?.to).toBe("/upgrade");
-    expect(search?.paid).toBe(true);
-  });
-
-  it("keeps paid members on 探す", () => {
-    expect.hasAssertions();
-    const search = memberNavItems(true, "member-1").find((item) => item.id === "search");
+    const search = memberNavItems("member-1").find((item) => item.id === "search");
     expect(search?.to).toBe("/search");
   });
 
   it("lists the primary destinations", () => {
     expect.hasAssertions();
-    expect(memberNavItems(false, "member-1").map((item) => item.id)).toStrictEqual([
+    expect(memberNavItems("member-1").map((item) => item.id)).toStrictEqual([
       "home",
       "profile",
       "search",
@@ -27,7 +20,7 @@ describe("memberNavItems", () => {
       "messages",
       "notifications",
     ]);
-    expect(memberNavItems(false, "member-1").find((item) => item.id === "profile")).toMatchObject({
+    expect(memberNavItems("member-1").find((item) => item.id === "profile")).toMatchObject({
       params: { id: "member-1" },
       to: "/users/$id",
     });

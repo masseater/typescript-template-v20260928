@@ -1,29 +1,32 @@
-import { Heading } from "@repo/ui";
+import { Heading, STATUS_VARIANT, StatusMessage } from "@repo/ui";
+import { useQuery } from "@tanstack/react-query";
+
+import { pendingCountOptions } from "#shared/api/index.ts";
 
 import type { ReactElement } from "react";
 
-type QueueCard = Readonly<{
-  label: string;
-  value: number;
-}>;
-
-const queueCards: readonly QueueCard[] = [
-  { label: "対応待ちの問い合わせ", value: 5 },
-  { label: "対応待ちの通報", value: 2 },
-  { label: "確認が必要な利用者", value: 3 },
-];
+function PendingInquiries(): ReactElement {
+  const pending = useQuery(pendingCountOptions);
+  if (pending.isError) {
+    return <StatusMessage variant={STATUS_VARIANT.failure}>{pending.error.message}</StatusMessage>;
+  }
+  if (pending.data === undefined) {
+    return <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>;
+  }
+  return (
+    <Heading as="h2" size="section">
+      {pending.data}
+    </Heading>
+  );
+}
 
 function MembersQueueSummary(): ReactElement {
   return (
     <section aria-label="対応待ち" className="grid gap-3 sm:grid-cols-3">
-      {queueCards.map((card) => (
-        <article key={card.label} className="rounded-lg border border-border bg-card p-3">
-          <p className="text-sm leading-tight text-muted-foreground">{card.label}</p>
-          <Heading as="h2" size="section">
-            {card.value}
-          </Heading>
-        </article>
-      ))}
+      <article className="rounded-lg border border-border bg-card p-3">
+        <p className="text-sm leading-tight text-muted-foreground">対応待ちの問い合わせ</p>
+        <PendingInquiries />
+      </article>
     </section>
   );
 }

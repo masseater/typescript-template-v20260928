@@ -1,8 +1,8 @@
-import { useAtomValue } from "@effect/atom-react";
 import { firstResultError, resultValue } from "@repo/ui";
+import { useQuery } from "@tanstack/react-query";
 
 import { useInquiryList, useInquiryStatusFilter } from "#pages/inquiries/model/inquiry-list.ts";
-import { pendingCountAtom } from "#shared/api/index.ts";
+import { pendingCountOptions } from "#shared/api/index.ts";
 import { InquiriesView } from "./inquiries-view.tsx";
 
 import type { ReactElement } from "react";
@@ -10,13 +10,13 @@ import type { ReactElement } from "react";
 function InquiriesPage(): ReactElement {
   const { status, toggle } = useInquiryStatusFilter();
   const listing = useInquiryList(status);
-  const pendingState = useAtomValue(pendingCountAtom);
+  const pending = useQuery(pendingCountOptions);
   return (
     <InquiriesView
-      error={firstResultError(listing, pendingState)}
+      error={firstResultError(listing) ?? pending.error?.message}
       inquiries={resultValue(listing)}
       onToggle={toggle}
-      pendingCount={resultValue(pendingState)}
+      pendingCount={pending.data}
       status={status}
     />
   );

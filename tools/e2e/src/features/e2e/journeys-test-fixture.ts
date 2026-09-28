@@ -99,6 +99,10 @@ const browseMainScreens = (
     yield* seeHeading(stage.page, "ホーム");
     yield* openMainNav(stage, { heading: account.name, linkName: "プロフィール" });
     yield* openMainNav(stage, { heading: "掲示板", linkName: "掲示板" });
+    yield* openMainNav(stage, { heading: "有料プラン", linkName: "探す" });
+    yield* pageStep(() =>
+      stage.page.waitForURL(`${origin}/upgrade`, { timeout: appearanceTimeout }),
+    );
     yield* openMainNav(stage, { heading: "ホーム", linkName: "ホーム" });
     yield* pageStep(() => stage.page.goto(`${origin}/users`));
     yield* pageStep(() =>

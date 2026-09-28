@@ -6,6 +6,7 @@ import { authTask } from "./browser-http.ts";
 import { CHALLENGE_MODE, type ChallengeMode } from "./challenge-modes.ts";
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
+import { RECOVERY_STATE, recoveryStateOf, recoveryUrl } from "./recovery-state.ts";
 
 import type { ReactElement, SyntheticEvent } from "react";
 import type { AuthenticatedHandler } from "./authenticated-handler";
@@ -35,11 +36,8 @@ const signIn = ({
       onChallenge(CHALLENGE_MODE.totp);
       return;
     }
-    if (
-      new URLSearchParams(globalThis.location.search).get(AUTHENTICATION_METHOD.recovery) ===
-      "setup"
-    ) {
-      globalThis.location.assign("/security?recovery=setup");
+    if (recoveryStateOf(globalThis.location.search) === RECOVERY_STATE.setup) {
+      globalThis.location.assign(recoveryUrl("/security", RECOVERY_STATE.setup));
       return;
     }
     yield* authTask(() => Promise.resolve(onAuthenticated()));

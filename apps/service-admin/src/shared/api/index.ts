@@ -1,2 +1,2 @@
 export { adminClient } from "./client.ts";
-export { pendingCountAtom } from "./inquiries.ts";
+export { loadMemberSummary, memberSummaryOptions, pendingCountOptions } from "./inquiries.ts";

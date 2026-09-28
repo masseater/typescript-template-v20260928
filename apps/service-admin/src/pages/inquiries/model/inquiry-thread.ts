@@ -2,7 +2,8 @@ import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
 import { requestAtom, type RequestResult } from "@repo/ui";
 import { Atom } from "effect/unstable/reactivity";
 
-import { loadInquiry, loadMemberSummary } from "#pages/inquiries/api/inquiries.ts";
+import { loadInquiry } from "#pages/inquiries/api/inquiries.ts";
+import { loadMemberSummary } from "#shared/api/index.ts";
 
 import type { AdminInquiryDetail, InquiryMemberSummary } from "./inquiry.ts";
 

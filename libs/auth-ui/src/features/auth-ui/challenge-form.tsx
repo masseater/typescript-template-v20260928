@@ -6,6 +6,7 @@ import { ChallengeCodeField } from "./challenge-code-field";
 import { CHALLENGE_MODE, type ChallengeMode } from "./challenge-modes.ts";
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
+import { RECOVERY_STATE, recoveryUrl } from "./recovery-state.ts";
 
 import type { ReactElement, SyntheticEvent } from "react";
 import type { AuthenticatedHandler } from "./authenticated-handler";
@@ -37,7 +38,7 @@ const completeChallenge = ({
     yield* verifyChallenge(mode, code.value);
     code.handleChange("");
     if (mode === CHALLENGE_MODE.backup) {
-      globalThis.location.assign("/security?recovery=1");
+      globalThis.location.assign(recoveryUrl("/security", RECOVERY_STATE.recovered));
       return;
     }
     yield* authTask(() => Promise.resolve(onAuthenticated()));

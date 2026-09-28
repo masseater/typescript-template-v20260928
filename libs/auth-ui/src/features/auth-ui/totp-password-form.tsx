@@ -6,14 +6,15 @@ import { authTask } from "./browser-http.ts";
 import { CHALLENGE_MODE } from "./challenge-modes.ts";
 import { authClient } from "./client";
 import { requireSuccess, type SessionView } from "./protocol";
+import { RECOVERY_STATE, recoveryUrl, type RecoveryState } from "./recovery-state.ts";
 
 import type { ReactElement, SyntheticEvent } from "react";
 import type { Enrollment, SettingsContext } from "./mfa-types";
 
-const adminLocked = (session: SessionView, recovery: string | undefined): boolean => {
+const adminLocked = (session: SessionView, recovery: RecoveryState | undefined): boolean => {
   return (
     session.user.role !== ROLE.member &&
-    (session.user.twoFactorEnabled || (recovery === "1" && !session.strong))
+    (session.user.twoFactorEnabled || (recovery === RECOVERY_STATE.recovered && !session.strong))
   );
 };
 
@@ -38,7 +39,7 @@ const changeTotp = ({
   readonly onEnroll: (enrollment: Enrollment) => void;
   readonly onNoticeClear: () => void;
   readonly password: { readonly value: string; readonly handleChange: (next: string) => void };
-  readonly recovery: string | undefined;
+  readonly recovery: RecoveryState | undefined;
   readonly session: SessionView;
 }): Effect.Effect<void> =>
   Effect.gen(function* updateTotp() {
@@ -48,7 +49,11 @@ const changeTotp = ({
         yield* authTask(() => authClient.twoFactor.disable({ password: password.value })),
       );
       password.handleChange("");
-      globalThis.location.assign(recovery === "1" ? "/login?recovery=setup" : "/login");
+      globalThis.location.assign(
+        recovery === RECOVERY_STATE.recovered
+          ? recoveryUrl("/login", RECOVERY_STATE.setup)
+          : "/login",
+      );
       return;
     }
     onEnroll(yield* enrollTotp(password.value));
