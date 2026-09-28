@@ -57,6 +57,20 @@ describe("workspaceDependencyRanges", () => {
         ),
       ),
     )
+    .extend("earlierPatternFailure", () =>
+      Effect.runPromise(
+        Effect.scoped(
+          Effect.flatMap(
+            workspaceAt({
+              "pnpm-workspace.yaml": "packages:\n  - missing/*\n  - packages/**\n",
+              "package.json": `{"name":"root"}`,
+            }),
+            (root) =>
+              Effect.map(Effect.flip(workspaceDependencyRanges(root)), (failure) => failure._tag),
+          ),
+        ),
+      ),
+    )
     .extend("unreadableDefinition", () =>
       Effect.runPromise(
         Effect.scoped(
@@ -117,6 +131,12 @@ describe("workspaceDependencyRanges", () => {
       failureTag: "UnlistableWorkspace",
       root: unsupportedPattern.root,
     });
+  });
+
+  it("reports the failure of the earliest pattern when several patterns fail", ({
+    earlierPatternFailure,
+  }) => {
+    expect(earlierPatternFailure).toBe("PlatformError");
   });
 
   it("refuses a workspace definition that is not YAML", ({ unreadableDefinition }) => {

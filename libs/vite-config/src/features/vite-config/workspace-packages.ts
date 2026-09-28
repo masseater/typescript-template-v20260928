@@ -42,6 +42,14 @@ class UnlistableWorkspace extends Schema.TaggedError<UnlistableWorkspace>()("Unl
   }
 }
 
+const settledInOrder = <Item, Value, Failure, Requirements>(
+  items: Iterable<Item>,
+  run: (item: Item) => Effect.Effect<Value, Failure, Requirements>,
+): Effect.Effect<Value[], Failure, Requirements> =>
+  Effect.forEach(items, (item) => Effect.result(run(item)), { concurrency: "unbounded" }).pipe(
+    Effect.flatMap((settled) => Effect.forEach(settled, Effect.fromResult)),
+  );
+
 const holdsManifest = Effect.fn("holdsManifest")(function* holdsManifest(
   root: string,
   directory: string,
@@ -64,7 +72,7 @@ const packageDirectoriesMatching = Effect.fn("packageDirectoriesMatching")(
     }
     const childNames = yield* filesystem.readDirectory(paths.join(root, parent));
     const candidates = childNames.map((childName) => `${parent}/${childName}`);
-    const manifests = yield* Effect.forEach(candidates, (directory) =>
+    const manifests = yield* settledInOrder(candidates, (directory) =>
       holdsManifest(root, directory),
     );
     return candidates.filter((_directory, index) => manifests[index] === true);
@@ -93,10 +101,10 @@ const workspaceMembers = Effect.fn("workspaceMembers")(function* workspaceMember
     catch: () => new UnlistableWorkspace({ definition, reason: "it is not YAML" }),
     try: (): unknown => parse(definitionYaml),
   }).pipe(Effect.flatMap(Schema.decodeUnknownEffect(WorkspaceDefinition)));
-  const directories = yield* Effect.forEach(decoded.packages, (pattern) =>
+  const directories = yield* settledInOrder(decoded.packages, (pattern) =>
     packageDirectoriesMatching(root, pattern),
   );
-  return yield* Effect.forEach([".", ...directories.flat().toSorted()], (directory) =>
+  return yield* settledInOrder([".", ...directories.flat().toSorted()], (directory) =>
     workspaceMemberAt(root, directory),
   );
 });
