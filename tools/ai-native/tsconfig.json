@@ -1,3 +1,5 @@
 {
-  "extends": "@repo/dont-review-it/tsconfig/library.json"
+  "extends": "@repo/dont-review-it/tsconfig/library.json",
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["dist"]
 }

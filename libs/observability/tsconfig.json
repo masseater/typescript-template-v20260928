@@ -8,8 +8,8 @@
     "erasableSyntaxOnly": true
   },
   "include": [
-    "src/**/*.ts",
-    "vite.config.ts",
+    "**/*.ts",
+    "**/*.tsx",
     "../../tools/dont-review-it/src/features/dont-review-it/vitest/parsed-fields-test-fixture.ts"
   ]
 }

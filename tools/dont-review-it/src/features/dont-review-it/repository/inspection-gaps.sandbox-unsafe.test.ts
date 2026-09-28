@@ -1,7 +1,9 @@
 import { NodeServices } from "@effect/platform-node";
 import { Effect, FileSystem, Path } from "effect";
+import * as ts from "typescript-6";
 import { describe, expect, it } from "vite-plus/test";
 
+import { path } from "../platform/path.ts";
 import { overridePluginMismatches } from "./lint-test-fixture.ts";
 import {
   awaitingPresetPackages,
@@ -26,16 +28,6 @@ const tsconfigs: Readonly<Record<string, { readonly default?: unknown }>> = impo
 const nestedTsconfigs: Readonly<Record<string, { readonly default?: unknown }>> = import.meta.glob(
   "../../../../../../{apps,libs,infra,tools}/*/**/tsconfig.json",
   { eager: true },
-);
-
-const qualityTsconfig: Readonly<Record<string, { readonly default?: unknown }>> = import.meta.glob(
-  "../../../../tsconfig.json",
-  { eager: true },
-);
-
-const viteConfigs: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../../../../../{apps,libs,infra,tools}/*/vite.config.ts",
-  { eager: false },
 );
 
 const workspacePath = (key: string): string => {
@@ -78,16 +70,6 @@ const extendsValue = (config: unknown): string | undefined => {
   return typeof value === "string" ? value : undefined;
 };
 
-const includeValue = (config: unknown): readonly string[] | undefined => {
-  if (typeof config !== "object" || config === null) {
-    return undefined;
-  }
-  const value = Reflect.get(config, "include");
-  return Array.isArray(value) && value.every((entry) => typeof entry === "string")
-    ? value
-    : undefined;
-};
-
 const relativeWorkspaceExtends = (): string[] => {
   const directories = new Set(workspaceDirectories);
   return Object.entries(tsconfigs).flatMap(([key, module]) => {
@@ -114,36 +96,38 @@ const relativeWorkspaceExtends = (): string[] => {
   });
 };
 
-const viteConfigsOutsideInclude = (): string[] => {
-  return Object.keys(viteConfigs).flatMap((key) => {
-    const vite = workspacePath(key);
-    const directory = vite.replace(/\/vite\.config\.ts$/u, "");
-    const configKey = Object.keys(tsconfigs).find(
-      (candidate) => workspacePath(candidate).replace(/\/tsconfig\.json$/u, "") === directory,
-    );
-    if (configKey === undefined) {
-      return [vite];
-    }
-    const include = includeValue(tsconfigs[configKey]?.default);
-    if (include === undefined || include.includes("vite.config.ts")) {
-      return [];
-    }
-    return [vite];
-  });
-};
+const trackedSources: readonly string[] = Object.keys(
+  import.meta.glob([
+    "../../../../../../**/*.{ts,tsx}",
+    "!**/.*/**",
+    "!**/dist/**",
+    "!**/node_modules/**",
+  ]),
+)
+  .map(workspacePath)
+  .toSorted();
 
-const qualityIncludesDoctor = (): boolean => {
-  const [module] = Object.values(qualityTsconfig);
-  const config = module?.default;
-  if (typeof config !== "object" || config === null) {
-    return false;
-  }
-  const include = includeValue(config);
-  if (include === undefined) {
-    return !("files" in config);
-  }
-  return include.includes("doctor.config.ts");
-};
+const projectFiles = (
+  directory: string,
+  config: Readonly<Record<string, unknown>>,
+): readonly string[] =>
+  ts
+    .parseJsonConfigFileContent(config, ts.sys, path.join(repositoryRoot, directory))
+    .fileNames.map((file) => path.relative(repositoryRoot, file));
+
+const checkedFiles = (projects: readonly string[]): ReadonlySet<string> =>
+  new Set(
+    projects.flatMap((project) => {
+      const configPath = path.join(repositoryRoot, project);
+      const read = ts.readConfigFile(configPath, (filePath) => ts.sys.readFile(filePath));
+      return projectFiles(path.dirname(project), read.config);
+    }),
+  );
+
+const outsideEveryProject = (
+  sources: readonly string[],
+  checked: ReadonlySet<string>,
+): readonly string[] => sources.filter((source) => !checked.has(source));
 
 describe("inspection coverage", () => {
   it("keeps awaiting preset packages from growing silently", () => {
@@ -247,10 +231,44 @@ describe("inspection coverage", () => {
       }).pipe(Effect.provide(NodeServices.layer)),
     ));
 
-  it("typechecks workspace vite configs and the quality doctor config", () => {
+  it("typechecks every tracked TypeScript source through some tsconfig", () =>
+    Effect.runPromise(
+      Effect.gen(function* everySourceTypechecked() {
+        expect.hasAssertions();
+        const projects = yield* typecheckProjects(repositoryRoot);
+        expect(outsideEveryProject(trackedSources, checkedFiles(projects))).toStrictEqual([]);
+      }).pipe(Effect.provide(NodeServices.layer)),
+    ));
+
+  it("reports sources an enumerating include leaves out", () => {
     expect.hasAssertions();
-    expect(viteConfigsOutsideInclude()).toStrictEqual([]);
-    expect(qualityIncludesDoctor()).toBe(true);
+    expect(
+      outsideEveryProject(
+        [
+          "apps/core/alchemy.run.ts",
+          "libs/auth-ui/storybook/preview.tsx",
+          "libs/ui/design-system.test.ts",
+          "vitest.workers.main.ts",
+        ],
+        new Set([
+          ...projectFiles("apps/core", { include: ["src/**/*.ts", "vite.config.ts"] }),
+          ...projectFiles("libs/auth-ui", {
+            include: ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"],
+          }),
+          ...projectFiles("libs/ui", {
+            include: ["storybook/**/*.ts", "storybook/**/*.tsx", "src/**/*.ts", "src/**/*.tsx"],
+          }),
+          ...projectFiles(".", {
+            include: ["vite.config.ts", "vitest.mutation.config.ts", "vitest.workers.config.ts"],
+          }),
+        ]),
+      ),
+    ).toStrictEqual([
+      "apps/core/alchemy.run.ts",
+      "libs/auth-ui/storybook/preview.tsx",
+      "libs/ui/design-system.test.ts",
+      "vitest.workers.main.ts",
+    ]);
   });
 
   it("does not extend another workspace tsconfig through a relative path", () => {

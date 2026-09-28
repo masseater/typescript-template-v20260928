@@ -1,5 +1,8 @@
 {
   "extends": "@repo/dont-review-it/tsconfig/library.json",
-  "compilerOptions": { "types": ["vite-plus/client", "node"] },
-  "include": ["src/**/*.ts", "vite.config.ts"]
+  "compilerOptions": {
+    "types": ["vite-plus/client", "node"]
+  },
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["scenarios"]
 }

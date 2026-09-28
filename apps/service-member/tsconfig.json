@@ -5,11 +5,5 @@
     "jsx": "react-jsx",
     "noPropertyAccessFromIndexSignature": true
   },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "vite.config.ts",
-    ".paraglide/**/*.ts",
-    ".paraglide/**/*.js"
-  ]
+  "include": ["**/*.ts", "**/*.tsx", ".paraglide/**/*.ts", ".paraglide/**/*.js"]
 }
