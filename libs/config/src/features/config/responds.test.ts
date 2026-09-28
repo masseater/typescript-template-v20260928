@@ -45,11 +45,11 @@ describe.for(probeCases)(
                 writeHead === "retry-until-ok" || writeHead === "retry-exhausted"
                   ? yield* Ref.updateAndGet(attempts, (counted) => counted + 1)
                   : yield* Ref.get(attempts);
+              const retriedStatus =
+                seenAttempts >= successAfterAttempts ? 200 : unavailableStatus;
               const httpStatus =
                 writeHead === "retry-until-ok"
-                  ? seenAttempts >= successAfterAttempts
-                    ? 200
-                    : unavailableStatus
+                  ? retriedStatus
                   : writeHead === "retry-exhausted"
                     ? unavailableStatus
                     : writeHead;

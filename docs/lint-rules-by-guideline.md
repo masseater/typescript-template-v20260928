@@ -88,10 +88,6 @@ No rule of this repository declares this document as its grounds. What the off-t
 | [no-citty-parent-run--move-run-into-a-subcommand](../tools/dont-review-it/docs/lint/no-citty-parent-run--move-run-into-a-subcommand.md) | Disallow a `run` handler on a citty command that declares `subCommands`, so a matched subcommand's output is never followed by the parent's |
 | [no-hardcoded-endpoint--read-from-configuration](../tools/dont-review-it/docs/lint/no-hardcoded-endpoint--read-from-configuration.md) | Disallow text written out in the source at the destination argument of a call that opens a connection, so where a deployment talks to is decided by its configuration rather than by the file that performs the request |
 
-## [.claude/skills/reviews/references/review-findings-and-fix-completion.md](../.claude/skills/reviews/references/review-findings-and-fix-completion.md)
-
-No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
-
 ## [.claude/skills/reviews/references/secrets-and-permissions.md](../.claude/skills/reviews/references/secrets-and-permissions.md)
 
 | Rule | Description |
@@ -102,7 +98,9 @@ No rule of this repository declares this document as its grounds. What the off-t
 
 ## [.claude/skills/reviews/references/simplify.md](../.claude/skills/reviews/references/simplify.md)
 
-No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
+| Rule | Description |
+| --- | --- |
+| [no-conditional-in-consequent-or-test--split-with-if-or-name-the-inner-value](../tools/dont-review-it/docs/lint/no-conditional-in-consequent-or-test--split-with-if-or-name-the-inner-value.md) | Disallow a conditional expression in the test or the consequent of another conditional expression, so which combination of conditions yields which value is readable from top to bottom |
 
 ## [.claude/skills/reviews/references/test-design.md](../.claude/skills/reviews/references/test-design.md)
 
