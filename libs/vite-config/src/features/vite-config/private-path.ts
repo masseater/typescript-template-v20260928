@@ -1,6 +1,7 @@
-import { APPLICATION, buildTargets, hostOf, type BuildTarget } from "@repo/config";
+import { buildTargets, hostOf, type BuildTarget } from "@repo/config";
 
 import { paths } from "./host.ts";
+import { deniedDatabaseFiles, deniedDatabaseSpecifiers } from "./private-database-modules.ts";
 
 const applicationsExcept = (application: BuildTarget): BuildTarget[] =>
   buildTargets.filter(
@@ -19,10 +20,13 @@ const secretFileName = /^(?:\.env.*|\.dev\.vars.*|.*\.(?:pem|key))$/u;
 
 const isSecretFileName = (fileName: string): boolean => secretFileName.test(fileName);
 
-const privateAdminPath = (slashedPath: string, application: BuildTarget): boolean =>
-  application !== APPLICATION.admin &&
-  (/(?:^|\/)libs\/db\/src\/features\/db\/admin(?:\.[^/]*)?$/u.test(slashedPath) ||
-    /@repo\/db\/admin(?:\/|$)/u.test(slashedPath));
+const privateDatabasePath = (slashedPath: string, application: BuildTarget): boolean =>
+  deniedDatabaseFiles(application).some(
+    (databaseFile) => slashedPath === databaseFile || slashedPath.endsWith(`/${databaseFile}`),
+  ) ||
+  deniedDatabaseSpecifiers(application).some(
+    (specifier) => slashedPath.endsWith(specifier) || slashedPath.includes(`${specifier}/`),
+  );
 
 const privatePath = ({
   application,
@@ -40,12 +44,9 @@ const privatePath = ({
     /^(?:infra|tools)(?:\/|$)/u.test(repositoryRelativePath) ||
     new RegExp(`(?:^|/)apps/(?:${foreignApplications})(?:/|$)`, "u").test(slashedPath) ||
     new RegExp(`@repo/(?:${foreignApplications})(?:/|$)`, "u").test(slashedPath) ||
-    /(?:^|\/)(?:\.local(?:-agents)?|\.git)(?:\/|$)|(?:^|\/)libs\/db\/src\/features\/db\/(?:remote[^/]*|bootstrap[^/]*)(?:\.[^/]*)?$|-test-fixture\.[^/]*$/u.test(
-      slashedPath,
-    ) ||
+    /(?:^|\/)(?:\.local(?:-agents)?|\.git)(?:\/|$)|-test-fixture\.[^/]*$/u.test(slashedPath) ||
     isSecretFileName(slashedPath.split("/").at(-1) ?? slashedPath) ||
-    /@repo\/db\/(?:remote|testing)(?:\/|$)/u.test(slashedPath) ||
-    privateAdminPath(slashedPath, application) ||
+    privateDatabasePath(slashedPath, application) ||
     hostPrivatePath(slashedPath, application)
   );
 };
