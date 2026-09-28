@@ -6,6 +6,7 @@ import { APIError as ChallengeError } from "better-call";
 import { Effect, Option, Schema } from "effect";
 
 import { Auth } from "./auth.ts";
+import { bearerToken } from "./bearer-token.ts";
 import { JwksUnavailable } from "./jwks-unavailable.ts";
 
 import type { BetterAuthInstance } from "./create-auth.ts";
@@ -40,16 +41,6 @@ const challengeResponse = (rejected: unknown, resource: McpResource): Response =
     message: challenge.message,
     status: challenge.statusCode,
   });
-};
-
-const bearerToken = (authorization: string): Option.Option<string> => {
-  const [scheme, token, ...rest] = authorization.split(" ");
-  return scheme?.toLowerCase() === "bearer" &&
-    token !== undefined &&
-    token !== "" &&
-    rest.length === 0
-    ? Option.some(token)
-    : Option.none();
 };
 
 const Jwk = Schema.StructWithRest(Schema.Struct({ kty: Schema.String }), [
@@ -156,7 +147,7 @@ const mcpAuthorizer = <Actor, Failure, Requirements>(
 ) => Effect.Effect<Actor | Response, Failure, Requirements | Auth>) =>
   Effect.fn("authorizeMcpRequest")(function* authorizeMcpRequest(incoming, origin) {
     const resource = { challengeScopes: policy.challengeScopes, origin };
-    const token = bearerToken(incoming.headers.get("authorization") ?? "");
+    const token = bearerToken(incoming.headers.get("authorization"));
     if (Option.isNone(token)) {
       return challengeResponse(mcpUnauthorized("BEARER_TOKEN_REQUIRED"), resource);
     }
