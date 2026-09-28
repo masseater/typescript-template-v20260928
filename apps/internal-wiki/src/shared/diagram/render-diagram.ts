@@ -11,13 +11,13 @@ import type { Element } from "hast";
 import type { Box } from "./diagram-geometry.ts";
 
 const themeColors = {
-  accent: "var(--color-fd-primary)",
-  bg: "var(--color-fd-background)",
-  border: "var(--color-fd-border)",
-  fg: "var(--color-fd-foreground)",
-  line: "var(--color-fd-muted-foreground)",
-  muted: "var(--color-fd-muted-foreground)",
-  surface: "var(--color-fd-card)",
+  accent: "var(--foreground)",
+  bg: "var(--background)",
+  border: "var(--border)",
+  fg: "var(--foreground)",
+  line: "var(--muted-foreground)",
+  muted: "var(--muted-foreground)",
+  surface: "var(--card)",
 } as const;
 
 const viewBoxOf = (svg: Element): Box => {

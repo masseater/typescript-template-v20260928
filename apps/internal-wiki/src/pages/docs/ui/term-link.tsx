@@ -19,10 +19,7 @@ function TermLink({ label, term }: Readonly<{ label?: string; term: string }>): 
   const [open, setOpen] = useOpen();
   if (entry === undefined) {
     return (
-      <span
-        className="bg-fd-muted text-fd-muted-foreground rounded-sm px-1"
-        title="用語集にまだ無い用語"
-      >
+      <span className="rounded-sm bg-muted px-1 text-muted-foreground" title="用語集にまだ無い用語">
         {text}
       </span>
     );
@@ -47,7 +44,7 @@ function TermLink({ label, term }: Readonly<{ label?: string; term: string }>): 
     >
       <Link
         href={entry.href}
-        className="bg-fd-primary/10 text-fd-primary rounded-sm px-0.5 font-medium underline decoration-dotted underline-offset-4"
+        className="rounded-sm px-0.5 font-bold text-link underline decoration-dotted underline-offset-4 hover:text-link-hover"
         aria-describedby={open ? tooltipId : undefined}
         onClick={() => {
           setOpen(false);
@@ -59,11 +56,11 @@ function TermLink({ label, term }: Readonly<{ label?: string; term: string }>): 
         <span
           id={tooltipId}
           role="tooltip"
-          className="border-fd-border bg-fd-popover text-fd-popover-foreground absolute bottom-[calc(100%+0.4rem)] left-1/2 z-20 w-64 -translate-x-1/2 rounded-md border p-3 text-left text-sm shadow-md"
+          className="absolute bottom-full left-1/2 z-20 mb-1.5 w-64 -translate-x-1/2 rounded-md border border-border bg-popover p-3 text-left text-sm text-popover-foreground shadow-md"
         >
-          <span className="text-fd-foreground block font-medium">{entry.name}</span>
-          <span className="text-fd-muted-foreground mt-1 block">{entry.description}</span>
-          <span className="text-fd-primary mt-2 block text-xs">{"用語のページを開く"}</span>
+          <span className="block font-bold text-foreground">{entry.name}</span>
+          <span className="mt-1 block text-muted-foreground">{entry.description}</span>
+          <span className="mt-2 block text-xs text-muted-foreground">{"用語のページを開く"}</span>
         </span>
       ) : undefined}
     </span>

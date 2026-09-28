@@ -13,6 +13,7 @@ import {
 } from "../../tools/dont-review-it/src/features/dont-review-it/repository/ui-lint-settings.ts";
 import {
   appSources,
+  appStylesheetSources,
   appStylesheetViolations,
   colorSchemeProbe,
   coverageViolations,
@@ -515,12 +516,19 @@ describe("router link parts owned by ui", () => {
   });
 });
 
-const appSourceFiles = await Effect.runPromise(
-  appSources(designSystemApps).pipe(Effect.provide(NodeServices.layer)),
+const [appSourceFiles, appCssFiles] = await Effect.runPromise(
+  Effect.all([appSources(designSystemApps), appStylesheetSources(designSystemApps)]).pipe(
+    Effect.provide(NodeServices.layer),
+  ),
 );
 
 const primaryUtility =
   /(?<![\w-])(?:bg|text|border|ring|outline|fill|stroke|decoration|divide|accent|caret|shadow|from|via|to)-primary(?!\w)/gu;
+
+const fumadocsColorClass =
+  /(?<![\w-])(?:bg|text|border|ring|outline|fill|stroke|decoration|divide|from|via|to)-fd-[\w-]+|--color-fd-[\w-]+/gu;
+
+const fumadocsPalette = /@import\s+"fumadocs-ui\/css\/(?!shadcn\.css"|preset\.css")[^"]+"/gu;
 
 const fontWeightClass =
   /(?<![\w-])font-(?:thin|extralight|light|normal|medium|semibold|bold|extrabold|black)(?![\w-])/gu;
@@ -564,6 +572,33 @@ describe("app sources keep to the design system", () => {
     expect(
       sourceMatches(probe('<a className="text-link hover:text-primary" />'), primaryUtility),
     ).toStrictEqual(["apps/probe/src/probe.tsx: text-primary"]);
+  });
+
+  it("keeps fumadocs colour classes out of app sources", () => {
+    expect.hasAssertions();
+    expect(sourceMatches(appSourceFiles, fumadocsColorClass)).toStrictEqual([]);
+  });
+
+  it("reports a fumadocs colour class in an app source", () => {
+    expect.hasAssertions();
+    expect(
+      sourceMatches(probe('<span className="bg-fd-muted px-1" />'), fumadocsColorClass),
+    ).toStrictEqual(["apps/probe/src/probe.tsx: bg-fd-muted"]);
+  });
+
+  it("keeps fumadocs colour palettes out of app stylesheets", () => {
+    expect.hasAssertions();
+    expect(sourceMatches(appCssFiles, fumadocsPalette)).toStrictEqual([]);
+  });
+
+  it("reports a fumadocs colour palette imported by an app stylesheet", () => {
+    expect.hasAssertions();
+    expect(
+      sourceMatches(
+        probe('@import "fumadocs-ui/css/shadcn.css";\n@import "fumadocs-ui/css/neutral.css";'),
+        fumadocsPalette,
+      ),
+    ).toStrictEqual(['apps/probe/src/probe.tsx: @import "fumadocs-ui/css/neutral.css"']);
   });
 
   it("uses only the text weights the stylesheet loads", () => {

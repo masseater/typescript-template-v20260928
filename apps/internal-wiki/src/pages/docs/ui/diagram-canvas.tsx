@@ -75,7 +75,7 @@ function DiagramCanvas<NodeType extends Node, EdgeType extends Edge>({
   return (
     <div
       style={{ aspectRatio: aspect }}
-      className="border-fd-border bg-fd-background max-h-[80vh] min-h-60 w-full overflow-hidden rounded-md border in-[:fullscreen]:aspect-auto in-[:fullscreen]:h-full in-[:fullscreen]:rounded-none in-[:fullscreen]:border-0"
+      className="max-h-svh min-h-60 w-full overflow-hidden rounded-md border border-border bg-background in-fullscreen:aspect-auto in-fullscreen:h-full in-fullscreen:rounded-none in-fullscreen:border-0"
     >
       <ReactFlow
         colorMode={resolvedTheme === "dark" ? "dark" : "light"}

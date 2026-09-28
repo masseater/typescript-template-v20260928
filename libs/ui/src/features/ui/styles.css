@@ -91,6 +91,13 @@
   --ring: var(--grey-100);
   --overlay: var(--transparency-15);
   --scrim: var(--transparency-50);
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--card-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-ring: var(--ring);
 }
 
 @media (prefers-color-scheme: dark) {
