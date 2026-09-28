@@ -135,19 +135,6 @@ jobs:
       - run: test "${{ needs.merge-queue-packages.result }}" = "success"
       - run: test "${{ needs.merge-queue-unit.result }}" = "success"
 
-  e2e:
-    if: startsWith(github.head_ref, 'mergify/merge-queue/')
-    runs-on: *runner
-    timeout-minutes: 15
-    env:
-      MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
-    steps:
-      - *checkout
-      - *browser-cache
-      - *setup
-      - *vite-task-cache
-      - run: vp run --filter @repo/e2e test:e2e
-
   cache:
     if: github.event_name == 'push'
     runs-on: *runner

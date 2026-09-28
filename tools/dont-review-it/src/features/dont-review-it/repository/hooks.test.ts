@@ -160,22 +160,9 @@ function reachesTest(directory: string, stages: string[]): boolean {
   return reachable(directory, stages).some((name) => name === "test" || name.startsWith("test:"));
 }
 
-function filterCoveredTestProjects(): Set<string> {
-  const packages = new Set(
-    workflowRuns("../../../../../../.github/workflows/check.yml").flatMap((command) => {
-      const match = /^vp run --filter (@repo\/[\w-]+) (test(?::[\w-]+)?)$/u.exec(command);
-      return match?.[1] === undefined ? [] : [match[1]];
-    }),
-  );
-  return new Set(
-    testProjectDirectories.filter((directory) => packages.has(workspaceNames[directory] ?? "")),
-  );
-}
-
 function ungatedProjects(): string[] {
-  const covered = filterCoveredTestProjects();
   return testProjectDirectories.filter(
-    (directory) => !reachesTest(directory, ["prepr", "premerge"]) && !covered.has(directory),
+    (directory) => !reachesTest(directory, ["prepr", "premerge"]),
   );
 }
 
@@ -280,7 +267,6 @@ describe("lifecycle entry points", () => {
       cache: ["vp run -r prepr"],
       check: [],
       "check-shard": [],
-      e2e: [],
       "merge-queue": [],
       "merge-queue-packages": ["vp run -r premerge"],
       "merge-queue-unit": [],
@@ -303,7 +289,6 @@ describe("lifecycle entry points", () => {
       "vp run -r premerge",
       "vp run compile:paraglide",
       "vp test run --project node --project node-isolated --project workers --shard=${{ matrix.shard }}/4",
-      "vp run --filter @repo/e2e test:e2e",
       "vp run -r prepr",
     ]);
   });
@@ -347,6 +332,7 @@ describe("lifecycle contents", () => {
       "tools/dev#check:exported",
       "tools/dev#setup",
       "tools/dont-review-it#check:staged",
+      "tools/e2e#test:e2e",
     ]);
   });
 
