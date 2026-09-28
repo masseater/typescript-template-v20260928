@@ -8,15 +8,14 @@ import {
   minimumAuthSecretLength,
 } from "@repo/config";
 import { repositoryRoot as root } from "@repo/config/repository-root";
-import { Effect, Option, Path, Schema } from "effect";
+import { Effect, Option, Path, Schema, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
-import { failure } from "./failure.ts";
+import { LocalCommandFailure, failure } from "./failure.ts";
 import { urlPath, withFileSystem } from "./platform.ts";
 import { assertOwnerOnly, privateDirectoryMode, replacePrivateFile } from "./private-files.ts";
 
 import type { Application } from "@repo/config";
-import type { LocalCommandFailure } from "./failure.ts";
 
 type App = Application;
 
@@ -96,11 +95,47 @@ function run(
   });
 }
 
+const absentSession =
+  /^(?:can't find session|no server running on |error connecting to .+ \(No such file or directory\))/u;
+
+function sessionState(
+  exitCode: number,
+  errors: string,
+): Effect.Effect<boolean, LocalCommandFailure> {
+  if (exitCode === 0) return Effect.succeed(true);
+  return absentSession.test(errors.trim())
+    ? Effect.succeed(false)
+    : Effect.fail(
+        new LocalCommandFailure({
+          cause: `tmux has-session exited with ${exitCode}: ${errors.trim()}`,
+          reason: "process_failed",
+        }),
+      );
+}
+
 function running(
   session: string,
-): Effect.Effect<boolean, never, ChildProcessSpawner.ChildProcessSpawner> {
-  return run("tmux", ["-L", socket, "has-session", "-t", session], { cwd: root }).pipe(
-    Effect.match({ onFailure: () => false, onSuccess: () => true }),
+): Effect.Effect<boolean, LocalCommandFailure, ChildProcessSpawner.ChildProcessSpawner> {
+  return Effect.gen(function* hasSession() {
+    const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+    const handle = yield* spawner.spawn(
+      ChildProcess.make("tmux", ["-L", socket, "has-session", "-t", session], {
+        cwd: root,
+        stderr: "pipe",
+        stdin: "ignore",
+        stdout: "ignore",
+      }),
+    );
+    const [errors, exitCode] = yield* Effect.all(
+      [Stream.mkString(Stream.decodeText(handle.stderr)), handle.exitCode],
+      { concurrency: "unbounded" },
+    );
+    return yield* sessionState(exitCode, errors);
+  }).pipe(
+    Effect.scoped,
+    Effect.catchTag("PlatformError", (cause) =>
+      Effect.fail(new LocalCommandFailure({ cause, reason: "process_failed" })),
+    ),
   );
 }
 
@@ -157,6 +192,7 @@ export {
   routes,
   run,
   running,
+  sessionState,
   socket,
 };
 export type { App, Credentials, RouteName, RunOptions };
