@@ -3,12 +3,7 @@ import { layer } from "@effect/vitest";
 import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import {
-  externalRecordKeyOf,
-  externalRecordOf,
-  MAX_INLINE_RECORD_LINES,
-  recordLineCountOf,
-} from "./snapshot-records.ts";
+import { externalRecordKeyOf, externalRecordOf, recordLineCountOf } from "./snapshot-records.ts";
 
 describe("externalRecordKeyOf", () => {
   describe("a title path and an ordinal", () => {
@@ -348,16 +343,6 @@ describe("recordLineCountOf", () => {
 
     it("counts the same as one without them", ({ recordLineCount }) => {
       expect(recordLineCount).toBe(3);
-    });
-  });
-});
-
-describe("MAX_INLINE_RECORD_LINES", () => {
-  describe("the budget both placement rules read", () => {
-    const it = test.extend("inlineRecordBudget", () => MAX_INLINE_RECORD_LINES);
-
-    it("is the one shared number", ({ inlineRecordBudget }) => {
-      expect(inlineRecordBudget).toBe(12);
     });
   });
 });

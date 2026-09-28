@@ -2118,6 +2118,9 @@ importers:
       '@repo/dont-review-it':
         specifier: workspace:*
         version: link:../dont-review-it
+      '@repo/telemetry':
+        specifier: workspace:*
+        version: link:../../libs/telemetry
       '@repo/vite-config':
         specifier: workspace:*
         version: link:../../libs/vite-config
@@ -2415,6 +2418,9 @@ importers:
       '@repo/observability':
         specifier: workspace:*
         version: link:../../libs/observability
+      '@repo/telemetry':
+        specifier: workspace:*
+        version: link:../../libs/telemetry
       '@repo/vite-config':
         specifier: workspace:*
         version: link:../../libs/vite-config

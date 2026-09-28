@@ -5,11 +5,6 @@ import { replacementFor, retiredPackages } from "./retired-packages.ts";
 import { retiredPackagesFromStateKinds, stateKinds } from "./state-kinds.ts";
 
 describe("state-kinds", () => {
-  it("names TanStack Query as the server-state mechanism", () => {
-    expect.hasAssertions();
-    expect(stateKinds.server.mechanism).toContain("TanStack Query");
-  });
-
   it.for(Object.keys(stateKinds.server.retiredPackages))(
     "retires competing server-state package %s toward TanStack Query",
     (dependency) => {

@@ -104,6 +104,7 @@
     "@repo/config": "workspace:*",
     "@repo/infra-cloudflare": "workspace:*",
     "@repo/observability": "workspace:*",
+    "@repo/telemetry": "workspace:*",
     "@repo/vite-config": "workspace:*",
     "@tanstack/intent": "catalog:",
     "@types/mdast": "catalog:",

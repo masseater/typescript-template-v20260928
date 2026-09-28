@@ -1,7 +1,6 @@
 import {
   context,
   metrics,
-  propagation,
   SpanStatusCode,
   trace,
   TraceFlags,
@@ -14,6 +13,7 @@ import {
   ATTR_PROCESS_EXECUTABLE_NAME,
   ATTR_PROCESS_EXIT_CODE,
 } from "@opentelemetry/semantic-conventions/incubating";
+import { setAsideGlobalTelemetry } from "@repo/telemetry/testing";
 import { Effect } from "effect";
 import { pick } from "es-toolkit";
 import { describe, expect, onTestFinished, test, vi } from "vite-plus/test";
@@ -74,20 +74,10 @@ describe("childEnvironment", () => {
         Effect.gen(function* () {
           vi.stubEnv("MST_TELEMETRY", undefined);
           vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-          process.removeAllListeners("beforeExit");
-          context.disable();
-          propagation.disable();
-          trace.disable();
-          metrics.disable();
-          logs.disable();
+          const restoreGlobalTelemetry = setAsideGlobalTelemetry();
           onTestFinished(() => {
             process.exitCode = undefined;
-            process.removeAllListeners("beforeExit");
-            context.disable();
-            propagation.disable();
-            trace.disable();
-            metrics.disable();
-            logs.disable();
+            restoreGlobalTelemetry();
           });
           vi.resetModules();
           const commandTelemetry = yield* Effect.promise(() => import("./command-telemetry.ts"));
@@ -107,24 +97,13 @@ describe("childEnvironment", () => {
           vi.stubEnv("MST_TELEMETRY", "1");
           vi.stubEnv("OTEL_SDK_DISABLED", undefined);
           vi.stubEnv("TRACEPARENT", STALE_TRACEPARENT);
-          process.removeAllListeners("beforeExit");
-          context.disable();
-          propagation.disable();
-          trace.disable();
-          metrics.disable();
-          logs.disable();
+          const restoreGlobalTelemetry = setAsideGlobalTelemetry();
           vi.resetModules();
           const telemetry = yield* Effect.promise(() => import("@repo/ai-native-telemetry"));
           const started = telemetry.startTelemetry(MEASURED_SERVICE);
           onTestFinished(() => {
             process.exitCode = undefined;
-            process.removeAllListeners("beforeExit");
-            context.disable();
-            propagation.disable();
-            trace.disable();
-            metrics.disable();
-            logs.disable();
-            return started.shutdown();
+            return started.shutdown().then(restoreGlobalTelemetry);
           });
           const commandTelemetry = yield* Effect.promise(() => import("./command-telemetry.ts"));
           return context.with(
@@ -155,20 +134,10 @@ describe("measureCommand", () => {
           Effect.gen(function* () {
             vi.stubEnv("MST_TELEMETRY", undefined);
             vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-            process.removeAllListeners("beforeExit");
-            context.disable();
-            propagation.disable();
-            trace.disable();
-            metrics.disable();
-            logs.disable();
+            const restoreGlobalTelemetry = setAsideGlobalTelemetry();
             onTestFinished(() => {
               process.exitCode = undefined;
-              process.removeAllListeners("beforeExit");
-              context.disable();
-              propagation.disable();
-              trace.disable();
-              metrics.disable();
-              logs.disable();
+              restoreGlobalTelemetry();
             });
             vi.resetModules();
             const commandTelemetry = yield* Effect.promise(() => import("./command-telemetry.ts"));
@@ -192,20 +161,10 @@ describe("measureCommand", () => {
           Effect.gen(function* () {
             vi.stubEnv("MST_TELEMETRY", undefined);
             vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-            process.removeAllListeners("beforeExit");
-            context.disable();
-            propagation.disable();
-            trace.disable();
-            metrics.disable();
-            logs.disable();
+            const restoreGlobalTelemetry = setAsideGlobalTelemetry();
             onTestFinished(() => {
               process.exitCode = undefined;
-              process.removeAllListeners("beforeExit");
-              context.disable();
-              propagation.disable();
-              trace.disable();
-              metrics.disable();
-              logs.disable();
+              restoreGlobalTelemetry();
             });
             vi.resetModules();
             const exporterModule = yield* Effect.promise(
@@ -250,12 +209,7 @@ describe("measureCommand", () => {
           Effect.gen(function* () {
             vi.stubEnv("MST_TELEMETRY", "1");
             vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-            process.removeAllListeners("beforeExit");
-            context.disable();
-            propagation.disable();
-            trace.disable();
-            metrics.disable();
-            logs.disable();
+            const restoreGlobalTelemetry = setAsideGlobalTelemetry();
             vi.resetModules();
             const traceExporterModule = yield* Effect.promise(
               () => import("@opentelemetry/exporter-trace-otlp-http"),
@@ -286,13 +240,7 @@ describe("measureCommand", () => {
             const started = telemetry.startTelemetry(MEASURED_SERVICE);
             onTestFinished(() => {
               process.exitCode = undefined;
-              process.removeAllListeners("beforeExit");
-              context.disable();
-              propagation.disable();
-              trace.disable();
-              metrics.disable();
-              logs.disable();
-              return started.shutdown();
+              return started.shutdown().then(restoreGlobalTelemetry);
             });
             const commandTelemetry = yield* Effect.promise(() => import("./command-telemetry.ts"));
             return yield* Effect.promise(() =>
@@ -315,12 +263,7 @@ describe("measureCommand", () => {
           Effect.gen(function* () {
             vi.stubEnv("MST_TELEMETRY", "1");
             vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-            process.removeAllListeners("beforeExit");
-            context.disable();
-            propagation.disable();
-            trace.disable();
-            metrics.disable();
-            logs.disable();
+            const restoreGlobalTelemetry = setAsideGlobalTelemetry();
             vi.resetModules();
             const traceExporterModule = yield* Effect.promise(
               () => import("@opentelemetry/exporter-trace-otlp-http"),
@@ -360,13 +303,7 @@ describe("measureCommand", () => {
             const started = telemetry.startTelemetry(MEASURED_SERVICE);
             onTestFinished(() => {
               process.exitCode = undefined;
-              process.removeAllListeners("beforeExit");
-              context.disable();
-              propagation.disable();
-              trace.disable();
-              metrics.disable();
-              logs.disable();
-              return started.shutdown();
+              return started.shutdown().then(restoreGlobalTelemetry);
             });
             const commandTelemetry = yield* Effect.promise(() => import("./command-telemetry.ts"));
             yield* Effect.promise(() =>
@@ -402,12 +339,7 @@ describe("measureCommand", () => {
           Effect.gen(function* () {
             vi.stubEnv("MST_TELEMETRY", "1");
             vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-            process.removeAllListeners("beforeExit");
-            context.disable();
-            propagation.disable();
-            trace.disable();
-            metrics.disable();
-            logs.disable();
+            const restoreGlobalTelemetry = setAsideGlobalTelemetry();
             vi.resetModules();
             const traceExporterModule = yield* Effect.promise(
               () => import("@opentelemetry/exporter-trace-otlp-http"),
@@ -447,13 +379,7 @@ describe("measureCommand", () => {
             const started = telemetry.startTelemetry(MEASURED_SERVICE);
             onTestFinished(() => {
               process.exitCode = undefined;
-              process.removeAllListeners("beforeExit");
-              context.disable();
-              propagation.disable();
-              trace.disable();
-              metrics.disable();
-              logs.disable();
-              return started.shutdown();
+              return started.shutdown().then(restoreGlobalTelemetry);
             });
             const commandTelemetry = yield* Effect.promise(() => import("./command-telemetry.ts"));
             yield* Effect.promise(() =>
@@ -487,12 +413,7 @@ describe("measureCommand", () => {
           Effect.gen(function* () {
             vi.stubEnv("MST_TELEMETRY", "1");
             vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-            process.removeAllListeners("beforeExit");
-            context.disable();
-            propagation.disable();
-            trace.disable();
-            metrics.disable();
-            logs.disable();
+            const restoreGlobalTelemetry = setAsideGlobalTelemetry();
             vi.resetModules();
             const traceExporterModule = yield* Effect.promise(
               () => import("@opentelemetry/exporter-trace-otlp-http"),
@@ -538,13 +459,7 @@ describe("measureCommand", () => {
             const started = telemetry.startTelemetry(MEASURED_SERVICE);
             onTestFinished(() => {
               process.exitCode = undefined;
-              process.removeAllListeners("beforeExit");
-              context.disable();
-              propagation.disable();
-              trace.disable();
-              metrics.disable();
-              logs.disable();
-              return started.shutdown();
+              return started.shutdown().then(restoreGlobalTelemetry);
             });
             const commandTelemetry = yield* Effect.promise(() => import("./command-telemetry.ts"));
             yield* Effect.promise(() =>
@@ -582,20 +497,10 @@ describe("recordCommandRecord", () => {
         Effect.gen(function* () {
           vi.stubEnv("MST_TELEMETRY", undefined);
           vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-          process.removeAllListeners("beforeExit");
-          context.disable();
-          propagation.disable();
-          trace.disable();
-          metrics.disable();
-          logs.disable();
+          const restoreGlobalTelemetry = setAsideGlobalTelemetry();
           onTestFinished(() => {
             process.exitCode = undefined;
-            process.removeAllListeners("beforeExit");
-            context.disable();
-            propagation.disable();
-            trace.disable();
-            metrics.disable();
-            logs.disable();
+            restoreGlobalTelemetry();
           });
           vi.resetModules();
           const exporterModule = yield* Effect.promise(
@@ -640,12 +545,7 @@ describe("recordCommandRecord", () => {
         Effect.gen(function* () {
           vi.stubEnv("MST_TELEMETRY", "1");
           vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-          process.removeAllListeners("beforeExit");
-          context.disable();
-          propagation.disable();
-          trace.disable();
-          metrics.disable();
-          logs.disable();
+          const restoreGlobalTelemetry = setAsideGlobalTelemetry();
           vi.resetModules();
           const exporterModule = yield* Effect.promise(
             () => import("@opentelemetry/exporter-logs-otlp-http"),
@@ -673,13 +573,7 @@ describe("recordCommandRecord", () => {
           const started = telemetry.startTelemetry(MEASURED_SERVICE);
           onTestFinished(() => {
             process.exitCode = undefined;
-            process.removeAllListeners("beforeExit");
-            context.disable();
-            propagation.disable();
-            trace.disable();
-            metrics.disable();
-            logs.disable();
-            return started.shutdown();
+            return started.shutdown().then(restoreGlobalTelemetry);
           });
           const commandTelemetry = yield* Effect.promise(() => import("./command-telemetry.ts"));
           commandTelemetry.recordCommandRecord({
@@ -718,12 +612,7 @@ describe("recordCommandRecord", () => {
         Effect.gen(function* () {
           vi.stubEnv("MST_TELEMETRY", "1");
           vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-          process.removeAllListeners("beforeExit");
-          context.disable();
-          propagation.disable();
-          trace.disable();
-          metrics.disable();
-          logs.disable();
+          const restoreGlobalTelemetry = setAsideGlobalTelemetry();
           vi.resetModules();
           const exporterModule = yield* Effect.promise(
             () => import("@opentelemetry/exporter-logs-otlp-http"),
@@ -751,13 +640,7 @@ describe("recordCommandRecord", () => {
           const started = telemetry.startTelemetry(MEASURED_SERVICE);
           onTestFinished(() => {
             process.exitCode = undefined;
-            process.removeAllListeners("beforeExit");
-            context.disable();
-            propagation.disable();
-            trace.disable();
-            metrics.disable();
-            logs.disable();
-            return started.shutdown();
+            return started.shutdown().then(restoreGlobalTelemetry);
           });
           const commandTelemetry = yield* Effect.promise(() => import("./command-telemetry.ts"));
           commandTelemetry.recordCommandRecord({

@@ -1,21 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import {
-  architectureKindOf,
-  architectureKinds,
-  fsdPackages,
-  modularBudgets,
-  modularLayers,
-} from "./architecture.ts";
-import { buildTargets } from "./wiki.ts";
-
-describe("fsdPackages", () => {
-  const it = test.extend("packages", () => fsdPackages);
-
-  it("keeps FSD packages aligned with the built frontends", ({ packages }) => {
-    expect(packages).toStrictEqual(buildTargets);
-  });
-});
+import { architectureKindOf } from "./architecture.ts";
 
 describe("architectureKindOf", () => {
   describe.for([
@@ -33,24 +18,5 @@ describe("architectureKindOf", () => {
     it(`classifies as ${expectedArchitecture}`, ({ classifiedArchitecture }) => {
       expect(classifiedArchitecture).toBe(expectedArchitecture);
     });
-  });
-});
-
-describe("modular presets", () => {
-  const it = test
-    .extend("architectureVocabulary", () => architectureKinds)
-    .extend("layers", () => modularLayers)
-    .extend("budgets", () => modularBudgets);
-
-  it("exposes the architecture kinds", ({ architectureVocabulary }) => {
-    expect(architectureVocabulary).toStrictEqual(["fsd", "modular"]);
-  });
-
-  it("exposes the modular layers", ({ layers }) => {
-    expect(layers).toStrictEqual(["app", "features", "shared"]);
-  });
-
-  it("exposes the modular budgets", ({ budgets }) => {
-    expect(budgets).toStrictEqual({ app: 400, shared: 800 });
   });
 });

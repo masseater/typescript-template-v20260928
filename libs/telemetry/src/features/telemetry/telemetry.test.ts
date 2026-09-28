@@ -1,6 +1,6 @@
 import { syncBuiltinESMExports } from "node:module";
 
-import { context, metrics, propagation, trace } from "@opentelemetry/api";
+import { context, metrics, trace } from "@opentelemetry/api";
 import { logs } from "@opentelemetry/api-logs";
 import { globalErrorHandler } from "@opentelemetry/core";
 import { exitWith } from "@repo/cli";
@@ -8,6 +8,8 @@ import { ConfigProvider, Console, Effect, Ref, Schema } from "effect";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import { describe, expect, test, vi } from "vite-plus/test";
+
+import { setAsideGlobalTelemetry } from "./global-telemetry-test-fixture.ts";
 
 import type { Telemetry } from "./telemetry.ts";
 
@@ -91,20 +93,13 @@ describe("measuredTelemetry", () => {
         );
         server.listen({ onUnhandledRequest: "error" });
         syncBuiltinESMExports();
-        const resetGlobalTelemetry = (): void => {
-          process.removeAllListeners("beforeExit");
-          context.disable();
-          propagation.disable();
-          trace.disable();
-          metrics.disable();
-          logs.disable();
-          Effect.runSyncWith(services)(exitWith(0));
-        };
-        resetGlobalTelemetry();
+        const restoreGlobalTelemetry = setAsideGlobalTelemetry();
+        Effect.runSyncWith(services)(exitWith(0));
         onCleanup(() => {
           server.close();
           syncBuiltinESMExports();
-          resetGlobalTelemetry();
+          restoreGlobalTelemetry();
+          Effect.runSyncWith(services)(exitWith(0));
         });
         vi.resetModules();
         const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
