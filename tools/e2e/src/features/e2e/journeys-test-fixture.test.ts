@@ -11,6 +11,7 @@ import {
   runVerifyMemberJourney,
 } from "./journeys-test-fixture.ts";
 import { pageStep } from "./screens.ts";
+import { visitSignedOut } from "./signed-out-gate.ts";
 
 const backupCodesIssuedOnEnrollment = 10;
 const documentsReadByAnyone = 2;
@@ -35,6 +36,15 @@ describe("アプリ全体の導線", () => {
     .extend("verifyMemberJourney", ({ environment, page }) =>
       Effect.runPromise(
         runVerifyMemberJourney({ environment, page }).pipe(Effect.provide(NodeServices.layer)),
+      ),
+    )
+    .extend("signedOutOperatorVisit", ({ environment, page }) =>
+      Effect.runPromise(
+        visitSignedOut(page, {
+          childApi: "/api/reports",
+          origin: environment.originOf("operator"),
+          path: "/reports",
+        }),
       ),
     )
     .extend("robotsTags", ({ environment, page }) =>
@@ -69,6 +79,15 @@ describe("アプリ全体の導線", () => {
     expect(operatorJourney).toStrictEqual({
       landsOnTheOperatorOrigin: true,
       listsTheOperatorsOwnAddress: true,
+    });
+  });
+
+  it("ログインしていない訪問者は管理画面の子のページを開いても子の API を呼ばずにログインへ移る", ({
+    signedOutOperatorVisit,
+  }) => {
+    expect(signedOutOperatorVisit).toStrictEqual({
+      landedOn: "/login",
+      requestedTheChildApi: false,
     });
   });
 

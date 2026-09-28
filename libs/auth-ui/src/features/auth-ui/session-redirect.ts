@@ -4,26 +4,28 @@ import type { Role } from "@repo/config";
 
 const SECURITY_PATH = "/security";
 
-const sessionAllowed = (
-  session: Readonly<{ strong: boolean; user: Readonly<{ role: Role }> }> | undefined,
-  visit: Readonly<{ pathname: string; role: Role | undefined; securityExempt: boolean }>,
-): boolean =>
-  session !== undefined &&
-  ((session.strong && (visit.role === undefined || session.user.role === visit.role)) ||
-    (visit.securityExempt && visit.pathname === SECURITY_PATH));
+type GatedSession = Readonly<{ strong: boolean; user: Readonly<{ role: Role }> }>;
 
-const sessionRedirect = (
-  reading: Readonly<{
-    error: string | undefined;
-    loading: boolean;
-    session: Parameters<typeof sessionAllowed>[0];
-  }>,
-  visit: Parameters<typeof sessionAllowed>[1] & Readonly<{ href: string }>,
-): string | undefined => {
-  if (reading.loading || reading.error !== undefined || sessionAllowed(reading.session, visit)) {
-    return undefined;
+type SessionVisit = Readonly<{
+  href: string;
+  pathname: string;
+  role: Role | undefined;
+  securityExempt: boolean;
+}>;
+
+const sessionAllowed = (session: GatedSession, visit: SessionVisit): boolean =>
+  (session.strong && (visit.role === undefined || session.user.role === visit.role)) ||
+  (visit.securityExempt && visit.pathname === SECURITY_PATH);
+
+const sessionAdmission = <Session extends GatedSession>(
+  session: Session | null,
+  visit: SessionVisit,
+): Readonly<{ admitted: Session }> | Readonly<{ destination: string }> => {
+  if (session === null) {
+    return { destination: loginPath(visit.href) };
   }
-  return reading.session === undefined ? loginPath(visit.href) : SECURITY_PATH;
+  return sessionAllowed(session, visit) ? { admitted: session } : { destination: SECURITY_PATH };
 };
 
-export { sessionAllowed, sessionRedirect };
+export { sessionAdmission };
+export type { SessionVisit };
