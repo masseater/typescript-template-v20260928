@@ -110,7 +110,7 @@ function InquiryDetailView({
     );
   }
   return (
-    <main className="grid min-h-0 flex-1 gap-4 p-4 lg:grid-cols-[14rem_minmax(0,1fr)_14rem]">
+    <main className="grid min-h-0 flex-1 gap-4 p-4 lg:grid-cols-rails">
       <InquiryList inquiries={inquiries} />
       <InquiryConversation inquiry={inquiry} replyForm={replyForm} />
       {memberSummary(inquiry.memberId)}

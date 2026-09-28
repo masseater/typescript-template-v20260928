@@ -174,11 +174,14 @@
   --color-scrim: var(--scrim);
 
   --container-*: initial;
+  --container-bubble: 36rem;
   --container-column: 28rem;
   --container-page: 48rem;
   --container-search: 36rem;
   --container-toast: 24rem;
   --container-wide: 64rem;
+
+  --grid-template-columns-rails: 14rem minmax(0, 1fr) 14rem;
 
   --radius-*: initial;
   --radius-sm: 4px;
@@ -223,6 +226,8 @@
   --font-sans: "Zen Kaku Gothic New", sans-serif;
   --font-display: "Shippori Mincho", serif;
 }
+
+@custom-variant in-fullscreen (:where(:fullscreen) &);
 
 @utility focus-indicator {
   isolation: isolate;
