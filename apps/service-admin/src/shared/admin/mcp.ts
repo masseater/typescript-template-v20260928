@@ -63,12 +63,13 @@ const AdminPermissionChange = Schema.toStandardJSONSchemaV1(
   ),
 );
 
-const failureCodes: ReadonlyMap<string, string> = new Map([
-  ["InviteRejected", "invite_rejected"],
-  ["LastAdminRequired", "last_admin_required"],
-  ["PermissionRequired", "permission_required"],
-  ["TargetUnavailable", "target_unavailable"],
-]);
+const failureCodes = {
+  DatabaseFailure: "unexpected",
+  InviteRejected: "invite_rejected",
+  LastAdminRequired: "last_admin_required",
+  PermissionRequired: "permission_required",
+  TargetUnavailable: "target_unavailable",
+} as const;
 
 function createServer(actor: AdminMcpActor, runAdmin: RunApp): McpServer {
   const server = new McpServer({ name: APPLICATION.admin, version: mcpVersion });
