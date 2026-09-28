@@ -65,19 +65,23 @@ export const hasEnrolledFactor = Effect.fn("hasEnrolledFactor")(function* hasEnr
   userId: string,
   audience: Application,
 ) {
-  const [passkeyCount] = yield* query((database) =>
-    database
-      .select({ count: count() })
-      .from(passkey)
-      .where(and(eq(passkey.userId, userId), eq(passkey.audience, audience))),
-  );
-
-  const [totp] = yield* query((database) =>
-    database
-      .select({ id: twoFactor.id })
-      .from(twoFactor)
-      .where(and(eq(twoFactor.userId, userId), eq(twoFactor.verified, true)))
-      .limit(1),
+  const [[passkeyCount], [totp]] = yield* Effect.all(
+    [
+      query((database) =>
+        database
+          .select({ count: count() })
+          .from(passkey)
+          .where(and(eq(passkey.userId, userId), eq(passkey.audience, audience))),
+      ),
+      query((database) =>
+        database
+          .select({ id: twoFactor.id })
+          .from(twoFactor)
+          .where(and(eq(twoFactor.userId, userId), eq(twoFactor.verified, true)))
+          .limit(1),
+      ),
+    ],
+    { concurrency: "unbounded" },
   );
   return (passkeyCount?.count ?? 0) > 0 || totp !== undefined;
 });

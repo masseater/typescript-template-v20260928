@@ -78,17 +78,21 @@ export const listUsers = Effect.fn("listUsers")(function* listUsers(
   const matching = (database: DrizzleDatabase): SQL | undefined =>
     and(liveAdmin(database, { checkedAt, sessionId }), matchesPage(page));
 
-  const users = yield* query((database) =>
-    database
-      .select(memberColumns)
-      .from(user)
-      .where(matching(database))
-      .orderBy(desc(user.createdAt), user.id)
-      .limit(page.limit)
-      .offset(page.offset),
+  const [users, matchingCount] = yield* Effect.all(
+    [
+      query((database) =>
+        database
+          .select(memberColumns)
+          .from(user)
+          .where(matching(database))
+          .orderBy(desc(user.createdAt), user.id)
+          .limit(page.limit)
+          .offset(page.offset),
+      ),
+      countRows(user, matching),
+    ],
+    { concurrency: "unbounded" },
   );
-
-  const matchingCount = yield* countRows(user, matching);
   return { total: matchingCount, users };
 });
 

@@ -43,25 +43,30 @@ const listReports = Effect.fn("listReports")(function* listReports(
   page: { readonly limit: number; readonly offset: number; readonly status?: ReportStatus },
 ) {
   yield* requireAdmin(sessionId);
-  const listedReports = yield* query((database) =>
-    database
-      .select({
-        createdAt: memberReport.createdAt,
-        id: memberReport.id,
-        reason: memberReport.reason,
-        reporterName: reporterUser.name,
-        status: memberReport.status,
-        targetName: targetUser.name,
-      })
-      .from(memberReport)
-      .leftJoin(reporterUser, eq(reporterUser.id, memberReport.reporterId))
-      .leftJoin(targetUser, eq(targetUser.id, memberReport.targetMemberId))
-      .where(matchesStatus(page.status))
-      .orderBy(desc(memberReport.createdAt), desc(memberReport.id))
-      .limit(page.limit)
-      .offset(page.offset),
+  const [listedReports, matchingCount] = yield* Effect.all(
+    [
+      query((database) =>
+        database
+          .select({
+            createdAt: memberReport.createdAt,
+            id: memberReport.id,
+            reason: memberReport.reason,
+            reporterName: reporterUser.name,
+            status: memberReport.status,
+            targetName: targetUser.name,
+          })
+          .from(memberReport)
+          .leftJoin(reporterUser, eq(reporterUser.id, memberReport.reporterId))
+          .leftJoin(targetUser, eq(targetUser.id, memberReport.targetMemberId))
+          .where(matchesStatus(page.status))
+          .orderBy(desc(memberReport.createdAt), desc(memberReport.id))
+          .limit(page.limit)
+          .offset(page.offset),
+      ),
+      countRows(memberReport, () => matchesStatus(page.status)),
+    ],
+    { concurrency: "unbounded" },
   );
-  const matchingCount = yield* countRows(memberReport, () => matchesStatus(page.status));
   return {
     reports: listedReports.map((listedReport) => ({
       createdAt: listedReport.createdAt.getTime(),

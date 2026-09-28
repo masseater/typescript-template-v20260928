@@ -55,36 +55,41 @@ const pendingRecovery = (email: string, checkedAt: Date): SQL | undefined =>
   );
 
 const loadSnapshot = Effect.fn("loadMemberSnapshot")(function* loadSnapshot(memberId: string) {
-  const [onboarding] = yield* query((database) =>
-    database
-      .select({ step: memberOnboarding.step, updatedAt: memberOnboarding.updatedAt })
-      .from(memberOnboarding)
-      .where(eq(memberOnboarding.userId, memberId))
-      .limit(1),
-  );
-  const [savedInterview] = yield* query((database) =>
-    database.select().from(interview).where(eq(interview.userId, memberId)).limit(1),
-  );
-  const following = yield* query((database) =>
-    database
-      .select({ followeeId: follow.followeeId })
-      .from(follow)
-      .where(eq(follow.followerId, memberId)),
-  );
-  const followers = yield* query((database) =>
-    database
-      .select({ followerId: follow.followerId })
-      .from(follow)
-      .where(eq(follow.followeeId, memberId)),
-  );
-  const agreements = yield* query((database) =>
-    database
-      .select({
-        acceptedAt: agreementAcceptance.acceptedAt,
-        versionId: agreementAcceptance.versionId,
-      })
-      .from(agreementAcceptance)
-      .where(eq(agreementAcceptance.userId, memberId)),
+  const [[onboarding], [savedInterview], following, followers, agreements] = yield* Effect.all(
+    [
+      query((database) =>
+        database
+          .select({ step: memberOnboarding.step, updatedAt: memberOnboarding.updatedAt })
+          .from(memberOnboarding)
+          .where(eq(memberOnboarding.userId, memberId))
+          .limit(1),
+      ),
+      query((database) =>
+        database.select().from(interview).where(eq(interview.userId, memberId)).limit(1),
+      ),
+      query((database) =>
+        database
+          .select({ followeeId: follow.followeeId })
+          .from(follow)
+          .where(eq(follow.followerId, memberId)),
+      ),
+      query((database) =>
+        database
+          .select({ followerId: follow.followerId })
+          .from(follow)
+          .where(eq(follow.followeeId, memberId)),
+      ),
+      query((database) =>
+        database
+          .select({
+            acceptedAt: agreementAcceptance.acceptedAt,
+            versionId: agreementAcceptance.versionId,
+          })
+          .from(agreementAcceptance)
+          .where(eq(agreementAcceptance.userId, memberId)),
+      ),
+    ],
+    { concurrency: "unbounded" },
   );
   const snapshot: typeof MemberSnapshot.Type = {
     agreements: agreements.map((acceptance) => ({
