@@ -10,7 +10,7 @@ export const removeWorktree = (
     const repositoryRoot = yield* repositoryRootOf(run, worktreePath);
     if (repositoryRoot === undefined) {
       return yield* new WorktreeHomeFailure({
-        message: `worktree-home: ${worktreePath} is not a git worktree`,
+        message: `worktree-home: ${worktreePath} has no working tree to remove a worktree from`,
       });
     }
     yield* gitOutput(run, { cwd: repositoryRoot, handed: ["worktree", "remove", worktreePath] });

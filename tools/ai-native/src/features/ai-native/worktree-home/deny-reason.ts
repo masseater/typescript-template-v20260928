@@ -1,14 +1,20 @@
-import { Effect } from "effect";
+import { Effect, Option } from "effect";
 
-import { bashCommandOf } from "../bash-command.ts";
+import { bashCommandOf, malformedBashInputReason } from "../bash-command.ts";
 import { resolvePath } from "../host.ts";
 import { findWorktreeAdds, unresolvedWord, type WorktreeAdd } from "./find-worktree-adds.ts";
-import { insideRepositoryReason, unresolvedDestinationReason } from "./message.ts";
+import {
+  insideRepositoryReason,
+  unconfirmedRepositoryReason,
+  unresolvedDestinationReason,
+} from "./message.ts";
+
+import type { WorktreeHomeFailure } from "./git.ts";
 
 export type WorktreeGuardInquiry = Readonly<{
   cwd: string;
   home: string;
-  repositoryRootOf: (directory: string) => Effect.Effect<string | undefined>;
+  repositoryRootOf: (directory: string) => Effect.Effect<string | undefined, WorktreeHomeFailure>;
   toolInput: unknown;
   toolName: string;
 }>;
@@ -35,19 +41,25 @@ const reasonForAdd = (
     ...worktreeAdd.directories.map((directory) => expandedHome(directory, inquiry.home)),
   );
   const destination = resolvePath(base, expandedHome(worktreeAdd.target ?? "", inquiry.home));
-  return inquiry
-    .repositoryRootOf(base)
-    .pipe(
-      Effect.map((repositoryRoot) =>
-        repositoryRoot !== undefined && isWithin(destination, repositoryRoot)
-          ? insideRepositoryReason(destination, repositoryRoot)
-          : undefined,
-      ),
-    );
+  return inquiry.repositoryRootOf(base).pipe(
+    Effect.map((repositoryRoot) =>
+      repositoryRoot !== undefined && isWithin(destination, repositoryRoot)
+        ? insideRepositoryReason(destination, repositoryRoot)
+        : undefined,
+    ),
+    Effect.catchTag("WorktreeHomeFailure", (failure) =>
+      Effect.succeed(unconfirmedRepositoryReason(failure.message)),
+    ),
+  );
 };
 
-export const denyReasonOf = (inquiry: WorktreeGuardInquiry): Effect.Effect<string | undefined> =>
-  Effect.forEach(
-    inquiry.toolName === "Bash" ? findWorktreeAdds(bashCommandOf(inquiry.toolInput)) : [],
-    (worktreeAdd) => reasonForAdd(worktreeAdd, inquiry),
-  ).pipe(Effect.map((reasons) => reasons.find((reason) => reason !== undefined)));
+export const denyReasonOf = (inquiry: WorktreeGuardInquiry): Effect.Effect<string | undefined> => {
+  if (inquiry.toolName !== "Bash") return Effect.succeed(undefined);
+  return Option.match(bashCommandOf(inquiry.toolInput), {
+    onNone: () => Effect.succeed(`worktree-home: ${malformedBashInputReason}`),
+    onSome: (command) =>
+      Effect.forEach(findWorktreeAdds(command), (worktreeAdd) =>
+        reasonForAdd(worktreeAdd, inquiry),
+      ).pipe(Effect.map((reasons) => reasons.find((reason) => reason !== undefined))),
+  });
+};

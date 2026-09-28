@@ -100,7 +100,7 @@ describe("createWorktree", () => {
     it("fails instead of creating a worktree", ({ theFailure, theSandbox }) => {
       expect(theFailure).toStrictEqual(
         new WorktreeHomeFailure({
-          message: `worktree-home: ${theSandbox} is not inside a git repository`,
+          message: `worktree-home: git rev-parse --path-format=absolute --git-common-dir failed in ${theSandbox}: fatal: not a git repository (or any of the parent directories): .git`,
         }),
       );
     });
