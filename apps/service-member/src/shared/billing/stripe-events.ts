@@ -11,6 +11,7 @@ import {
   refundInvoice,
   settleInvoicePayment,
 } from "@repo/db";
+import { logAt } from "@repo/observability";
 import { Effect, Schema, DateTime } from "effect";
 
 import { StripeEventUnreadable } from "./stripe-event-unreadable.ts";
@@ -26,21 +27,27 @@ const millisecondsPerSecond = 1000;
 const CheckoutSession = Schema.Struct({
   client_reference_id: Schema.NullOr(Schema.String),
   customer: Schema.NullOr(Schema.String),
+  id: Schema.String,
   metadata: Metadata,
   mode: Schema.String,
   subscription: Schema.NullOr(Schema.String),
 });
 
-const Invoice = Schema.Struct({
-  parent: Schema.optionalKey(
-    Schema.NullOr(
-      Schema.Struct({
-        subscription_details: Schema.optionalKey(
-          Schema.NullOr(Schema.Struct({ subscription: Schema.NullOr(Schema.String) })),
+const InvoiceParent = Schema.optionalKey(
+  Schema.NullOr(
+    Schema.Struct({
+      subscription_details: Schema.optionalKey(
+        Schema.NullOr(
+          Schema.Struct({ metadata: Metadata, subscription: Schema.NullOr(Schema.String) }),
         ),
-      }),
-    ),
+      ),
+    }),
   ),
+);
+
+const Invoice = Schema.Struct({
+  id: Schema.String,
+  parent: InvoiceParent,
   subscription: Schema.optionalKey(Schema.NullOr(Schema.String)),
 });
 
@@ -53,6 +60,7 @@ const FinalizedInvoice = Schema.Struct({
   hosted_invoice_url: Schema.NullOr(Schema.String),
   id: Schema.String,
   metadata: Metadata,
+  parent: InvoiceParent,
   status: Schema.String,
 });
 
@@ -92,6 +100,26 @@ function readObject<Contract extends Decodable>(
   );
 }
 
+const unmatched = (
+  event: StripeEvent,
+  stripeObjectId: string,
+): Effect.Effect<typeof WEBHOOK_DISPOSITION.unmatched> =>
+  logAt("Warn", {
+    attributes: {
+      "stripe.event.id": event.id,
+      "stripe.event.type": event.type,
+      "stripe.object.id": stripeObjectId,
+    },
+    eventName: "stripe.webhook.unmatched",
+  }).pipe(Effect.as(WEBHOOK_DISPOSITION.unmatched));
+
+const reportUnmatched =
+  (event: StripeEvent, stripeObjectId: string) =>
+  (disposition: WebhookOutcome): Effect.Effect<WebhookOutcome> =>
+    disposition === WEBHOOK_DISPOSITION.unmatched
+      ? unmatched(event, stripeObjectId)
+      : Effect.succeed(disposition);
+
 function eventRecord(event: StripeEvent): StripeEventRecord {
   return {
     createdAt: DateTime.toDate(DateTime.makeUnsafe(event.created * millisecondsPerSecond)),
@@ -118,14 +146,12 @@ const completeCheckout = Effect.fn("completeCheckout")(function* completeCheckou
   event: StripeEvent,
 ) {
   const session = yield* readObject(CheckoutSession, event.data.object);
-  const memberId = session.client_reference_id ?? session.metadata?.["member_id"];
-  if (
-    session.mode !== "subscription" ||
-    session.customer === null ||
-    session.subscription === null ||
-    memberId === undefined
-  ) {
+  if (session.mode !== "subscription") {
     return WEBHOOK_DISPOSITION.ignored;
+  }
+  const memberId = session.client_reference_id ?? session.metadata?.["member_id"];
+  if (session.customer === null || session.subscription === null || memberId === undefined) {
+    return yield* unmatched(event, session.id);
   }
   const subscription = yield* (yield* Stripe).subscription(session.subscription);
   return yield* attachCheckout(eventRecord(event), subscriptionRecord(memberId, subscription));
@@ -137,7 +163,7 @@ const syncSubscription = Effect.fn("syncSubscription")(function* syncSubscriptio
   const subscription = asStripeSubscription(yield* readObject(SubscriptionBody, event.data.object));
   const memberId = (yield* memberOfCustomer(subscription.customerId)) ?? subscription.memberId;
   if (memberId === undefined) {
-    return WEBHOOK_DISPOSITION.ignored;
+    return yield* unmatched(event, subscription.id);
   }
   return yield* recordSubscription(eventRecord(event), subscriptionRecord(memberId, subscription));
 });
@@ -146,25 +172,37 @@ const invoiceSubscription = Effect.fn("invoiceSubscription")(function* invoiceSu
   event: StripeEvent,
 ) {
   const invoice = yield* readObject(Invoice, event.data.object);
-  return invoice.subscription ?? invoice.parent?.subscription_details?.subscription ?? undefined;
+  return {
+    invoiceId: invoice.id,
+    subscriptionId:
+      invoice.subscription ?? invoice.parent?.subscription_details?.subscription ?? undefined,
+  };
 });
 
 const failPayment = Effect.fn("failPayment")(function* failPayment(event: StripeEvent) {
-  const subscriptionId = yield* invoiceSubscription(event);
+  const { invoiceId, subscriptionId } = yield* invoiceSubscription(event);
   if (subscriptionId === undefined) {
     return WEBHOOK_DISPOSITION.ignored;
   }
-  return yield* markPaymentFailed(eventRecord(event), subscriptionId);
+  return yield* markPaymentFailed(eventRecord(event), subscriptionId).pipe(
+    Effect.flatMap(reportUnmatched(event, invoiceId)),
+  );
 });
 
 const invoiceLedgerState = Effect.fn("invoiceLedgerState")(function* invoiceLedgerState(
   event: StripeEvent,
 ) {
   const invoice = yield* readObject(FinalizedInvoice, event.data.object);
-  const memberId = invoice.metadata?.["member_id"] ?? (yield* memberOfCustomer(invoice.customer));
-  return memberId === undefined
-    ? undefined
-    : ({
+  const memberId =
+    invoice.metadata?.["member_id"] ??
+    invoice.parent?.subscription_details?.metadata?.["member_id"] ??
+    (yield* memberOfCustomer(invoice.customer));
+  return {
+    invoiceId: invoice.id,
+    state:
+      memberId === undefined
+        ? undefined
+        : ({
         amountDue: invoice.amount_due,
         amountPaid: invoice.amount_paid,
         amountRemaining: invoice.amount_remaining,
@@ -173,25 +211,26 @@ const invoiceLedgerState = Effect.fn("invoiceLedgerState")(function* invoiceLedg
         memberId,
         originKey: invoice.metadata?.["origin_key"] ?? `invoice:${invoice.id}`,
         status: invoice.status,
-        stripeInvoiceId: invoice.id,
-      } satisfies InvoiceState);
+            stripeInvoiceId: invoice.id,
+          } satisfies InvoiceState),
+  };
 });
 
 const recordInvoice = Effect.fn("recordInvoice")(function* recordInvoice(event: StripeEvent) {
-  const ledgerState = yield* invoiceLedgerState(event);
-  return ledgerState === undefined
-    ? WEBHOOK_DISPOSITION.ignored
-    : yield* applyInvoiceState(eventRecord(event), ledgerState);
+  const { invoiceId, state } = yield* invoiceLedgerState(event);
+  return state === undefined
+    ? yield* unmatched(event, invoiceId)
+    : yield* applyInvoiceState(eventRecord(event), state);
 });
 
 const settlePayment = Effect.fn("settlePayment")(function* settlePayment(event: StripeEvent) {
-  const ledgerState = yield* invoiceLedgerState(event);
-  if (ledgerState === undefined) {
-    return WEBHOOK_DISPOSITION.ignored;
+  const { invoiceId, state } = yield* invoiceLedgerState(event);
+  if (state === undefined) {
+    return yield* unmatched(event, invoiceId);
   }
   return yield* settleInvoicePayment(eventRecord(event), {
-    invoice: ledgerState,
-    stripeSubscriptionId: yield* invoiceSubscription(event),
+    invoice: state,
+    stripeSubscriptionId: (yield* invoiceSubscription(event)).subscriptionId,
   });
 });
 
@@ -202,7 +241,7 @@ const creditNoteIssued = Effect.fn("creditNoteIssued")(function* creditNoteIssue
   return yield* creditInvoice(eventRecord(event), {
     amount: creditNote.amount,
     stripeInvoiceId: creditNote.invoice,
-  });
+  }).pipe(Effect.flatMap(reportUnmatched(event, creditNote.invoice)));
 });
 
 const chargeRefunded = Effect.fn("chargeRefunded")(function* chargeRefunded(event: StripeEvent) {
@@ -214,7 +253,7 @@ const chargeRefunded = Effect.fn("chargeRefunded")(function* chargeRefunded(even
   return yield* refundInvoice(eventRecord(event), {
     amountRefunded: charge.amount_refunded,
     stripeInvoiceId: refundedInvoiceId,
-  });
+  }).pipe(Effect.flatMap(reportUnmatched(event, refundedInvoiceId)));
 });
 
 const quoteLedgerState = Effect.fn("quoteLedgerState")(function* quoteLedgerState(
@@ -224,9 +263,12 @@ const quoteLedgerState = Effect.fn("quoteLedgerState")(function* quoteLedgerStat
   const memberId =
     (quote.customer === null ? undefined : yield* memberOfCustomer(quote.customer)) ??
     quote.metadata?.["member_id"];
-  return memberId === undefined
-    ? undefined
-    : ({
+  return {
+    quoteId: quote.id,
+    state:
+      memberId === undefined
+        ? undefined
+        : ({
         amountTotal: quote.amount_total,
         collectionMethod: quote.collection_method,
         currency: quote.currency,
@@ -235,21 +277,22 @@ const quoteLedgerState = Effect.fn("quoteLedgerState")(function* quoteLedgerStat
         memberId,
         status: quote.status,
         stripeQuoteId: quote.id,
-        stripeSubscriptionId: quote.subscription ?? undefined,
-      } satisfies QuoteState);
+            stripeSubscriptionId: quote.subscription ?? undefined,
+          } satisfies QuoteState),
+  };
 });
 
 const recordQuote = Effect.fn("recordQuote")(function* recordQuote(event: StripeEvent) {
-  const ledgerState = yield* quoteLedgerState(event);
-  return ledgerState === undefined
-    ? WEBHOOK_DISPOSITION.ignored
-    : yield* applyQuoteState(eventRecord(event), ledgerState);
+  const { quoteId, state } = yield* quoteLedgerState(event);
+  return state === undefined
+    ? yield* unmatched(event, quoteId)
+    : yield* applyQuoteState(eventRecord(event), state);
 });
 
 const quoteAccepted = Effect.fn("quoteAccepted")(function* quoteAccepted(event: StripeEvent) {
-  const ledgerState = yield* quoteLedgerState(event);
+  const { quoteId, state: ledgerState } = yield* quoteLedgerState(event);
   if (ledgerState === undefined) {
-    return WEBHOOK_DISPOSITION.ignored;
+    return yield* unmatched(event, quoteId);
   }
   if (ledgerState.stripeSubscriptionId === undefined) {
     return yield* applyQuoteState(eventRecord(event), ledgerState);

@@ -180,10 +180,26 @@ const attachCheckout = Effect.fn("attachCheckout")(function* attachCheckout(
   ]);
 });
 
+const isRecordedSubscription = Effect.fn("isRecordedSubscription")(function* isRecordedSubscription(
+  stripeSubscriptionId: string,
+) {
+  const [recorded] = yield* query((database) =>
+    database
+      .select({ memberId: planSubscription.memberId })
+      .from(planSubscription)
+      .where(eq(planSubscription.stripeSubscriptionId, stripeSubscriptionId))
+      .limit(1),
+  );
+  return recorded !== undefined;
+});
+
 const markPaymentFailed = Effect.fn("markPaymentFailed")(function* markPaymentFailed(
   webhookEvent: StripeEventRecord,
   stripeSubscriptionId: string,
 ) {
+  if (!(yield* isRecordedSubscription(stripeSubscriptionId))) {
+    return WEBHOOK_DISPOSITION.unmatched;
+  }
   return yield* applyStripeEvent(webhookEvent, [
     (database): BatchItem<"sqlite"> =>
       database

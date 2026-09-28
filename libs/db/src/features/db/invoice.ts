@@ -157,7 +157,7 @@ const creditInvoice = Effect.fn("creditInvoice")(function* creditInvoice(
   credit: Readonly<{ amount: number; stripeInvoiceId: string }>,
 ) {
   if (!(yield* isRecordedInvoice(credit.stripeInvoiceId))) {
-    return WEBHOOK_DISPOSITION.ignored;
+    return WEBHOOK_DISPOSITION.unmatched;
   }
   return yield* applyStripeEvent(webhookEvent, [
     (database): BatchItem<"sqlite"> =>
@@ -173,7 +173,7 @@ const refundInvoice = Effect.fn("refundInvoice")(function* refundInvoice(
   refund: Readonly<{ amountRefunded: number; stripeInvoiceId: string }>,
 ) {
   if (!(yield* isRecordedInvoice(refund.stripeInvoiceId))) {
-    return WEBHOOK_DISPOSITION.ignored;
+    return WEBHOOK_DISPOSITION.unmatched;
   }
   return yield* applyStripeEvent(webhookEvent, [
     (database): BatchItem<"sqlite"> =>

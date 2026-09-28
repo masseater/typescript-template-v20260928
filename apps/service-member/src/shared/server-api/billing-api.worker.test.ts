@@ -158,6 +158,7 @@ function checkoutCompleted(memberId: string, id = "evt_checkout"): Record<string
       object: {
         client_reference_id: memberId,
         customer: customerId,
+        id: "cs_test_session",
         mode: "subscription",
         payment_status: "paid",
         subscription: subscriptionId,
@@ -814,7 +815,7 @@ describe("billing api", () => {
       expect(result.settledStatuses).toStrictEqual(["accepted"]);
     }));
 
-  it("records a canceled quote and ignores one that names no member", ({ auth }) =>
+  it("records a canceled quote and reports one that names no member as unmatched", ({ auth }) =>
     runWith(auth, () =>
       Effect.gen(function* program() {
         (yield* MockNetwork).use(...stripeHandlers);
@@ -855,7 +856,7 @@ describe("billing api", () => {
         return { statuses: listed.quotes.map((quote) => quote.status), unowned };
       }),
     ).then((result) => {
-      expect(result.unowned).toStrictEqual({ outcome: WEBHOOK_DISPOSITION.ignored });
+      expect(result.unowned).toStrictEqual({ outcome: WEBHOOK_DISPOSITION.unmatched });
       expect(result.statuses).toStrictEqual(["canceled"]);
     }));
 
@@ -894,7 +895,9 @@ describe("billing api", () => {
       expect(listed.invoices.map((invoice) => invoice.amountCredited)).toStrictEqual([250]);
     }));
 
-  it("ignores a credit note and a refund for an invoice the ledger never recorded", ({ auth }) =>
+  it("reports a credit note and a refund for an invoice the ledger never recorded as unmatched", ({
+    auth,
+  }) =>
     runWith(auth, () =>
       Effect.gen(function* program() {
         (yield* MockNetwork).use(...stripeHandlers);
@@ -914,7 +917,10 @@ describe("billing api", () => {
         return [credited, refunded];
       }),
     ).then((outcomes) => {
-      expect(outcomes).toStrictEqual([{ outcome: "ignored" }, { outcome: "ignored" }]);
+      expect(outcomes).toStrictEqual([
+        { outcome: WEBHOOK_DISPOSITION.unmatched },
+        { outcome: WEBHOOK_DISPOSITION.unmatched },
+      ]);
     }));
 
   it("treats a replayed event as a no-op and drops the member back to free when the subscription ends", ({

@@ -36,12 +36,13 @@ export const recoverableStatuses: readonly SubscriptionStatus[] = [
 ];
 
 /** @canonical-values config.webhook-outcome */
-export const webhookOutcomes = ["applied", "duplicate", "ignored"] as const;
+export const webhookOutcomes = ["applied", "duplicate", "ignored", "unmatched"] as const;
 export type WebhookOutcome = (typeof webhookOutcomes)[number];
 export const WEBHOOK_DISPOSITION = {
   applied: webhookOutcomes[0],
   duplicate: webhookOutcomes[1],
   ignored: webhookOutcomes[2],
+  unmatched: webhookOutcomes[3],
 } as const satisfies Record<string, WebhookOutcome>;
 
 export const stripeTrialPeriodDays = 14;
