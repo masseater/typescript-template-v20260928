@@ -61,7 +61,7 @@ const exitCodesWithoutVitePlus = await Effect.runPromise(
           const filesystem = yield* FileSystem.FileSystem;
           const home = yield* filesystem.makeTempDirectoryScoped({ prefix: "sync-base-home-" });
           const result = yield* capturedProcess(
-            ChildProcess.make("/bin/sh", ["-c", command], {
+            ChildProcess.make("sh", ["-c", command], {
               env: { CLAUDE_PROJECT_DIR: repositoryRoot, HOME: home, PATH: "/usr/bin:/bin" },
               stdin: Stream.encodeText(Stream.make("{}")),
             }),

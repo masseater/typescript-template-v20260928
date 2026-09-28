@@ -49,7 +49,7 @@ function launchGateway() {
     const command = `exec node ${gateway} ${proxyPort} >> ${log} 2>&1`;
     return yield* run(
       "tmux",
-      ["-L", socket, "new-session", "-d", "-s", gatewaySession, "-c", root, "fish", "-c", command],
+      ["-L", socket, "new-session", "-d", "-s", gatewaySession, "-c", root, "sh", "-c", command],
       { cwd: root },
     );
   });
