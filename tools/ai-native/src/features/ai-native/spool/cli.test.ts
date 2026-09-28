@@ -1,4 +1,4 @@
-import { Effect, type PlatformError, Stream } from "effect";
+import { Effect, Ref, Schedule, Stream } from "effect";
 import { ChildProcess } from "effect/unstable/process";
 import { describe, expect, test } from "vite-plus/test";
 
@@ -663,17 +663,18 @@ describe("spool cli", () => {
                   return Number.isNaN(kiloBytes) ? 0 : kiloBytes * 1024;
                 }),
               );
-              const highestUntilClosed = (
-                highest: number,
-              ): Effect.Effect<number, PlatformError.PlatformError> =>
-                Effect.gen(function* () {
-                  if (!(yield* child.isRunning)) return highest;
-                  yield* Effect.sleep("50 millis");
-                  return yield* highestUntilClosed(Math.max(highest, yield* sampledBytes));
-                });
+              const highest = yield* Ref.make(0);
+              const sampledUntilClosed = sampledBytes.pipe(
+                Effect.flatMap((bytes) => Ref.update(highest, (seen) => Math.max(seen, bytes))),
+                Effect.andThen(child.isRunning),
+                Effect.repeat({
+                  while: (running) => running,
+                  schedule: Schedule.spaced("50 millis"),
+                }),
+              );
               const [highestSampled] = yield* Effect.all(
                 [
-                  highestUntilClosed(0),
+                  sampledUntilClosed.pipe(Effect.andThen(Ref.get(highest))),
                   Stream.runDrain(child.all).pipe(Effect.andThen(child.exitCode)),
                 ],
                 { concurrency: "unbounded" },

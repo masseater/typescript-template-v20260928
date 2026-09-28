@@ -76,10 +76,17 @@ export const slotStateFingerprint = (slotDir: string, limit: number): Effect.Eff
     generationIdentity(markerPath(slotDir, index)),
   ).pipe(Effect.map((generations) => generations.join(",")));
 
-export const reserveWaiterPath = (slotDir: string): string => {
-  const spelled = [String(epochMillis()).padStart(13, "0"), String(process.pid), randomHex(4)].join(
-    "-",
-  );
+type WaiterSpelling = {
+  readonly now?: () => number;
+  readonly uniqueSuffix?: () => string;
+};
+
+const WAITER_SUFFIX_BYTES = 4;
+
+export const reserveWaiterPath = (slotDir: string, spelling: WaiterSpelling = {}): string => {
+  const now = spelling.now ?? epochMillis;
+  const uniqueSuffix = spelling.uniqueSuffix ?? (() => randomHex(WAITER_SUFFIX_BYTES));
+  const spelled = [String(now()).padStart(13, "0"), String(process.pid), uniqueSuffix()].join("-");
   return joinPath(waitersDir(slotDir), spelled);
 };
 

@@ -4,6 +4,7 @@ import { ChildProcess } from "effect/unstable/process";
 import { describe, expect, vi } from "vite-plus/test";
 
 import { runCaptured } from "../child-process.ts";
+import { untilHolds } from "../condition-polling-test-fixture.ts";
 import {
   baseName,
   fileExists,
@@ -43,19 +44,48 @@ const ESCAPED_OUTPUT_COMMAND_LINE = [NODE, "-e", ESCAPED_OUTPUT_SCRIPT].join(" "
 
 const ESCAPED_OUTPUT_ROOT = joinPath(TEST_ROOT, "escaped-output");
 
-const INTERLEAVED_OUTPUT_SCRIPT = [
-  "const delay = (ms) => new Promise((r) => setTimeout(r, ms));",
-  '(async () => { console.log("out one"); await delay(200); console.error("err two"); await delay(200); console.log("out three"); })();',
+const AFTER_GATE = [
+  'const fs = require("node:fs");',
+  "const after = (gate, then) => { const poll = () => (fs.existsSync(gate) ? then() : setTimeout(poll, 20)); poll(); };",
 ].join(" ");
 
-const INTERLEAVED_OUTPUT_COMMAND_LINE = [NODE, "-e", INTERLEAVED_OUTPUT_SCRIPT].join(" ");
+const INTERLEAVED_OUTPUT_GATES = joinPath(TEST_ROOT, "interleaved-output-gates");
+
+const INTERLEAVED_OUTPUT_SECOND_GATE = joinPath(INTERLEAVED_OUTPUT_GATES, "second");
+
+const INTERLEAVED_OUTPUT_THIRD_GATE = joinPath(INTERLEAVED_OUTPUT_GATES, "third");
+
+const INTERLEAVED_OUTPUT_SCRIPT = [
+  AFTER_GATE,
+  'console.log("out one");',
+  'after(process.argv[1], () => { console.error("err two"); after(process.argv[2], () => console.log("out three")); });',
+].join(" ");
+
+const INTERLEAVED_OUTPUT_ARGV = [
+  NODE,
+  "-e",
+  INTERLEAVED_OUTPUT_SCRIPT,
+  INTERLEAVED_OUTPUT_SECOND_GATE,
+  INTERLEAVED_OUTPUT_THIRD_GATE,
+];
+
+const INTERLEAVED_OUTPUT_COMMAND_LINE = INTERLEAVED_OUTPUT_ARGV.join(" ");
 
 const INTERLEAVED_OUTPUT_ROOT = joinPath(TEST_ROOT, "interleaved-output");
 
-const DELAYED_MARK_SCRIPT =
-  'console.log("first-" + "mark"); setTimeout(() => { console.log("second-" + "mark"); }, 700);';
+const DELAYED_MARK_GATES = joinPath(TEST_ROOT, "delayed-mark-gates");
 
-const DELAYED_MARK_COMMAND_LINE = [NODE, "-e", DELAYED_MARK_SCRIPT].join(" ");
+const DELAYED_MARK_GATE = joinPath(DELAYED_MARK_GATES, "second");
+
+const DELAYED_MARK_SCRIPT = [
+  AFTER_GATE,
+  'console.log("first-" + "mark");',
+  'after(process.argv[1], () => console.log("second-" + "mark"));',
+].join(" ");
+
+const DELAYED_MARK_ARGV = [NODE, "-e", DELAYED_MARK_SCRIPT, DELAYED_MARK_GATE];
+
+const DELAYED_MARK_COMMAND_LINE = DELAYED_MARK_ARGV.join(" ");
 
 const DELAYED_MARK_ROOT = joinPath(TEST_ROOT, "delayed-mark");
 
@@ -266,45 +296,48 @@ describe("runSpool", () => {
 
   describe("a command writing to both of its streams in turn", () => {
     const it = standardIoTest
-      .extend("theCodeOfBothStreams", ({}, { onCleanup }) => {
-        onCleanup(() => Effect.runPromise(removePath(INTERLEAVED_OUTPUT_ROOT)));
+      .extend("theRunOfBothStreams", ({}, { onCleanup }) => {
+        onCleanup(() =>
+          Effect.runPromise(
+            Effect.all([removePath(INTERLEAVED_OUTPUT_ROOT), removePath(INTERLEAVED_OUTPUT_GATES)], {
+              discard: true,
+            }),
+          ),
+        );
         return Effect.runPromise(
           Effect.gen(function* () {
             yield* removePath(INTERLEAVED_OUTPUT_ROOT);
-            return yield* Effect.promise(() =>
-              runSpool(["--", NODE, "-e", INTERLEAVED_OUTPUT_SCRIPT], {
-                stdout: process.stdout,
-                stderr: process.stderr,
-                isPassthrough: () => false,
-                now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
-                uniqueSuffix: () => SEAM_SUFFIX,
-                monotonicNow: () => 0,
-                spoolRoot: () => INTERLEAVED_OUTPUT_ROOT,
-              }),
-            );
+            yield* removePath(INTERLEAVED_OUTPUT_GATES);
+            yield* makeDirectory(INTERLEAVED_OUTPUT_GATES);
+            const running = runSpool(["--", ...INTERLEAVED_OUTPUT_ARGV], {
+              stdout: process.stdout,
+              stderr: process.stderr,
+              isPassthrough: () => false,
+              now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
+              uniqueSuffix: () => SEAM_SUFFIX,
+              monotonicNow: () => 0,
+              spoolRoot: () => INTERLEAVED_OUTPUT_ROOT,
+            });
+            const logPath = joinPath(INTERLEAVED_OUTPUT_ROOT, SEAMED_LOG_NAME);
+            const recorded = (line: string) =>
+              fileExists(logPath).pipe(
+                Effect.flatMap((exists) =>
+                  exists
+                    ? readFileString(logPath).pipe(Effect.map((record) => record.includes(line)))
+                    : Effect.succeed(false),
+                ),
+              );
+            yield* untilHolds("the first line was recorded", recorded("out one"));
+            yield* writeFileString({ location: INTERLEAVED_OUTPUT_SECOND_GATE, written: "" });
+            yield* untilHolds("the second line was recorded", recorded("err two"));
+            yield* writeFileString({ location: INTERLEAVED_OUTPUT_THIRD_GATE, written: "" });
+            const code = yield* Effect.promise(() => running);
+            return { code, record: yield* readFileString(logPath) };
           }),
         );
       })
-      .extend("theRecordOfBothStreams", ({}, { onCleanup }) => {
-        onCleanup(() => Effect.runPromise(removePath(INTERLEAVED_OUTPUT_ROOT)));
-        return Effect.runPromise(
-          Effect.gen(function* () {
-            yield* removePath(INTERLEAVED_OUTPUT_ROOT);
-            yield* Effect.promise(() =>
-              runSpool(["--", NODE, "-e", INTERLEAVED_OUTPUT_SCRIPT], {
-                stdout: process.stdout,
-                stderr: process.stderr,
-                isPassthrough: () => false,
-                now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
-                uniqueSuffix: () => SEAM_SUFFIX,
-                monotonicNow: () => 0,
-                spoolRoot: () => INTERLEAVED_OUTPUT_ROOT,
-              }),
-            );
-            return yield* readFileString(joinPath(INTERLEAVED_OUTPUT_ROOT, SEAMED_LOG_NAME));
-          }),
-        );
-      });
+      .extend("theCodeOfBothStreams", ({ theRunOfBothStreams }) => theRunOfBothStreams.code)
+      .extend("theRecordOfBothStreams", ({ theRunOfBothStreams }) => theRunOfBothStreams.record);
 
     it(
       "carries the code of the command it wrapped",
@@ -327,39 +360,20 @@ describe("runSpool", () => {
 
   describe("a command still running after its first line", () => {
     const it = standardIoTest
-      .extend("theRecordSeenWhileStillGoing", ({}, { onCleanup }) => {
-        onCleanup(() => Effect.runPromise(removePath(DELAYED_MARK_ROOT)));
-        return Effect.runPromise(
-          Effect.gen(function* () {
-            yield* removePath(DELAYED_MARK_ROOT);
-            const running = runSpool(["--", NODE, "-e", DELAYED_MARK_SCRIPT], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              isPassthrough: () => false,
-              now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
-              uniqueSuffix: () => SEAM_SUFFIX,
-              monotonicNow: () => 0,
-              spoolRoot: () => DELAYED_MARK_ROOT,
-            });
-            const logPath = joinPath(DELAYED_MARK_ROOT, SEAMED_LOG_NAME);
-            while (
-              !(yield* fileExists(logPath)) ||
-              !(yield* readFileString(logPath)).includes("first-mark")
-            ) {
-              yield* Effect.sleep("20 millis");
-            }
-            const observed = yield* readFileString(logPath);
-            yield* Effect.promise(() => running);
-            return observed;
-          }),
+      .extend("theDelayedRun", ({}, { onCleanup }) => {
+        onCleanup(() =>
+          Effect.runPromise(
+            Effect.all([removePath(DELAYED_MARK_ROOT), removePath(DELAYED_MARK_GATES)], {
+              discard: true,
+            }),
+          ),
         );
-      })
-      .extend("theOutcomeRacedWhileStillGoing", ({}, { onCleanup }) => {
-        onCleanup(() => Effect.runPromise(removePath(DELAYED_MARK_ROOT)));
         return Effect.runPromise(
           Effect.gen(function* () {
             yield* removePath(DELAYED_MARK_ROOT);
-            const running = runSpool(["--", NODE, "-e", DELAYED_MARK_SCRIPT], {
+            yield* removePath(DELAYED_MARK_GATES);
+            yield* makeDirectory(DELAYED_MARK_GATES);
+            const running = runSpool(["--", ...DELAYED_MARK_ARGV], {
               stdout: process.stdout,
               stderr: process.stderr,
               isPassthrough: () => false,
@@ -369,59 +383,40 @@ describe("runSpool", () => {
               spoolRoot: () => DELAYED_MARK_ROOT,
             });
             const logPath = joinPath(DELAYED_MARK_ROOT, SEAMED_LOG_NAME);
-            while (
-              !(yield* fileExists(logPath)) ||
-              !(yield* readFileString(logPath)).includes("first-mark")
-            ) {
-              yield* Effect.sleep("20 millis");
-            }
-            const settled = yield* Effect.promise(() =>
+            yield* untilHolds(
+              "the first line was recorded",
+              fileExists(logPath).pipe(
+                Effect.flatMap((exists) =>
+                  exists
+                    ? readFileString(logPath).pipe(
+                        Effect.map((record) => record.includes("first-mark")),
+                      )
+                    : Effect.succeed(false),
+                ),
+              ),
+            );
+            const seenWhileStillGoing = yield* readFileString(logPath);
+            const racedWhileStillGoing = yield* Effect.promise(() =>
               Promise.race([running, Promise.resolve("still recording")]),
             );
-            yield* Effect.promise(() => running);
-            return settled;
+            yield* writeFileString({ location: DELAYED_MARK_GATE, written: "" });
+            const code = yield* Effect.promise(() => running);
+            return {
+              seenWhileStillGoing,
+              racedWhileStillGoing,
+              code,
+              recordLeft: yield* readFileString(logPath),
+            };
           }),
         );
       })
-      .extend("theCodeOfTheDelayedCommand", ({}, { onCleanup }) => {
-        onCleanup(() => Effect.runPromise(removePath(DELAYED_MARK_ROOT)));
-        return Effect.runPromise(
-          Effect.gen(function* () {
-            yield* removePath(DELAYED_MARK_ROOT);
-            return yield* Effect.promise(() =>
-              runSpool(["--", NODE, "-e", DELAYED_MARK_SCRIPT], {
-                stdout: process.stdout,
-                stderr: process.stderr,
-                isPassthrough: () => false,
-                now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
-                uniqueSuffix: () => SEAM_SUFFIX,
-                monotonicNow: () => 0,
-                spoolRoot: () => DELAYED_MARK_ROOT,
-              }),
-            );
-          }),
-        );
-      })
-      .extend("theRecordLeftByTheDelayedCommand", ({}, { onCleanup }) => {
-        onCleanup(() => Effect.runPromise(removePath(DELAYED_MARK_ROOT)));
-        return Effect.runPromise(
-          Effect.gen(function* () {
-            yield* removePath(DELAYED_MARK_ROOT);
-            yield* Effect.promise(() =>
-              runSpool(["--", NODE, "-e", DELAYED_MARK_SCRIPT], {
-                stdout: process.stdout,
-                stderr: process.stderr,
-                isPassthrough: () => false,
-                now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
-                uniqueSuffix: () => SEAM_SUFFIX,
-                monotonicNow: () => 0,
-                spoolRoot: () => DELAYED_MARK_ROOT,
-              }),
-            );
-            return yield* readFileString(joinPath(DELAYED_MARK_ROOT, SEAMED_LOG_NAME));
-          }),
-        );
-      });
+      .extend("theRecordSeenWhileStillGoing", ({ theDelayedRun }) => theDelayedRun.seenWhileStillGoing)
+      .extend(
+        "theOutcomeRacedWhileStillGoing",
+        ({ theDelayedRun }) => theDelayedRun.racedWhileStillGoing,
+      )
+      .extend("theCodeOfTheDelayedCommand", ({ theDelayedRun }) => theDelayedRun.code)
+      .extend("theRecordLeftByTheDelayedCommand", ({ theDelayedRun }) => theDelayedRun.recordLeft);
 
     it(
       "shows the lines written so far and nothing later",

@@ -4,6 +4,7 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { childEndOf } from "../child-process.ts";
 import { filesystem, joinPath, readDirectory, spawner } from "../host.ts";
+import { untilHolds } from "../condition-polling-test-fixture.ts";
 import { ensureSlots, tryAcquireAny } from "./slots.ts";
 
 const CLI_PATH = joinPath(import.meta.dirname, "cli.ts");
@@ -177,14 +178,9 @@ describe("cli", () => {
             });
             const slotDir = joinPath(tmpRoot, "mst-throttle", "mst");
             yield* ensureSlots(slotDir, 1);
-            const holdTheOnlySlot = (): Effect.Effect<() => Promise<void>> =>
-              Effect.gen(function* () {
-                const held = yield* Effect.promise(() => tryAcquireAny({ slotDir, limit: 1 }));
-                if (held !== null) return held.release;
-                yield* Effect.sleep("200 millis");
-                return yield* holdTheOnlySlot();
-              });
-            const release = yield* holdTheOnlySlot();
+            const held = yield* Effect.promise(() => tryAcquireAny({ slotDir, limit: 1 }));
+            if (held === null) return yield* Effect.die("the only slot of a fresh directory was taken");
+            const release = held.release;
             const child = yield* spawner.spawn(
               ChildProcess.make(process.execPath, [CLI_PATH, "--", process.execPath, "-e", ""], {
                 env: { TMPDIR: tmpRoot, MST_THROTTLE_LIMIT: "1" },
@@ -201,13 +197,10 @@ describe("cli", () => {
                 ),
               ),
             );
-            const untilEnqueued = (): Effect.Effect<void, Error> =>
-              Effect.gen(function* () {
-                if ((yield* ownEntries).length === 1) return;
-                yield* Effect.sleep("100 millis");
-                return yield* untilEnqueued();
-              });
-            yield* untilEnqueued();
+            yield* untilHolds(
+              "the wrapper enqueued itself",
+              ownEntries.pipe(Effect.map((entries) => entries.length === 1)),
+            );
             const ended = yield* Effect.all(
               [
                 child.kill({ killSignal: "SIGTERM" }).pipe(
@@ -241,14 +234,9 @@ describe("cli", () => {
             });
             const slotDir = joinPath(tmpRoot, "mst-throttle", "mst");
             yield* ensureSlots(slotDir, 1);
-            const holdTheOnlySlot = (): Effect.Effect<() => Promise<void>> =>
-              Effect.gen(function* () {
-                const held = yield* Effect.promise(() => tryAcquireAny({ slotDir, limit: 1 }));
-                if (held !== null) return held.release;
-                yield* Effect.sleep("200 millis");
-                return yield* holdTheOnlySlot();
-              });
-            const release = yield* holdTheOnlySlot();
+            const held = yield* Effect.promise(() => tryAcquireAny({ slotDir, limit: 1 }));
+            if (held === null) return yield* Effect.die("the only slot of a fresh directory was taken");
+            const release = held.release;
             const child = yield* spawner.spawn(
               ChildProcess.make(process.execPath, [CLI_PATH, "--", process.execPath, "-e", ""], {
                 env: { TMPDIR: tmpRoot, MST_THROTTLE_LIMIT: "1" },
@@ -265,22 +253,16 @@ describe("cli", () => {
                 ),
               ),
             );
-            const untilEnqueued = (): Effect.Effect<void, Error> =>
-              Effect.gen(function* () {
-                if ((yield* ownEntries).length === 1) return;
-                yield* Effect.sleep("100 millis");
-                return yield* untilEnqueued();
-              });
-            yield* untilEnqueued();
+            yield* untilHolds(
+              "the wrapper enqueued itself",
+              ownEntries.pipe(Effect.map((entries) => entries.length === 1)),
+            );
             yield* child.kill({ killSignal: "SIGTERM" });
             yield* childEndOf(child);
-            const untilDrained = (): Effect.Effect<void, Error> =>
-              Effect.gen(function* () {
-                if ((yield* ownEntries).length === 0) return;
-                yield* Effect.sleep("100 millis");
-                return yield* untilDrained();
-              });
-            yield* untilDrained();
+            yield* untilHolds(
+              "the killed wrapper left the queue",
+              ownEntries.pipe(Effect.map((entries) => entries.length === 0)),
+            );
             const drained = yield* ownEntries;
             yield* Effect.promise(() => release());
             return drained;

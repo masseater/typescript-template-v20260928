@@ -29,6 +29,7 @@ const backoffAfter = (refusals: number): number =>
 
 export type EventQueue = {
   readonly enqueue: (browserEvent: BrowserEvent) => void;
+  readonly drain: Effect.Effect<void, DeliveryRefused | Cause.Done>;
   readonly flush: () => Promise<void>;
   readonly flushInBackground: () => void;
   readonly flushBeforeUnload: () => void;
@@ -102,6 +103,7 @@ export const makeEventQueue = (
         Effect.runSync(Console.error(encodedNotice("browser.telemetry_queue_full")));
       }
     },
+    drain: drainOnce,
     flush: () => Effect.runPromise(drainOnce),
     flushBeforeUnload: () => {
       const unsent = [

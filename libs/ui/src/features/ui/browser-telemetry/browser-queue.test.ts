@@ -1,14 +1,13 @@
-import { Array as Arr, Effect, Ref } from "effect";
+import { Array as Arr, Duration, Effect, Ref } from "effect";
+import { TestClock } from "effect/testing";
 import { describe, expect, test } from "vite-plus/test";
 
 import { makeEventQueue } from "./browser-queue.ts";
 
 import type { BrowserEvent } from "@repo/observability";
 
-const retryBackoffMilliseconds = 1000;
-const secondAttempt = 2;
-const settleMilliseconds = 50;
-const queueTimeout = 60_000;
+const retryBackoff = Duration.seconds(1);
+const secondBackoff = Duration.seconds(2);
 
 const vitalEvent = {
   duration: 0,
@@ -29,23 +28,20 @@ describe("a batch whose delivery is refused", () => {
     Effect.runPromise(
       Effect.gen(function* refusedTwice() {
         const deliveredBatches = yield* Ref.make<readonly (readonly BrowserEvent[])[]>([]);
-        const runWithin = Effect.runPromiseWith(yield* Effect.context());
-        const queue = makeEventQueue((batch) =>
-          runWithin(
-            Ref.update(deliveredBatches, Arr.append(batch)).pipe(
-              Effect.andThen(Effect.die("delivery refused")),
-            ),
-          ),
-        );
-        const flush = Effect.ignore(Effect.tryPromise(queue.flush));
+        const recordWithin = Effect.runSyncWith(yield* Effect.context());
+        const queue = makeEventQueue((batch) => {
+          recordWithin(Ref.update(deliveredBatches, Arr.append(batch)));
+          return Promise.reject(new Error("delivery refused"));
+        });
+        const flush = Effect.ignore(queue.drain);
         queue.enqueue(vitalEvent);
         yield* flush;
         yield* flush;
         return yield* Ref.get(deliveredBatches);
-      }),
+      }).pipe(Effect.provide(TestClock.layer())),
     ));
 
-  it("is not resent within the backoff", { timeout: queueTimeout }, ({ deliveredBatches }) => {
+  it("is not resent within the backoff", ({ deliveredBatches }) => {
     expect(deliveredBatches).toStrictEqual([[vitalEvent]]);
   });
 });
@@ -55,25 +51,22 @@ describe("a batch flushed again once the backoff has passed", () => {
     Effect.runPromise(
       Effect.gen(function* retriedAfterBackoff() {
         const deliveredBatches = yield* Ref.make<readonly (readonly BrowserEvent[])[]>([]);
-        const runWithin = Effect.runPromiseWith(yield* Effect.context());
-        const queue = makeEventQueue((batch) =>
-          runWithin(
-            Ref.update(deliveredBatches, Arr.append(batch)).pipe(
-              Effect.andThen(Effect.die("delivery refused")),
-            ),
-          ),
-        );
-        const flush = Effect.ignore(Effect.tryPromise(queue.flush));
+        const recordWithin = Effect.runSyncWith(yield* Effect.context());
+        const queue = makeEventQueue((batch) => {
+          recordWithin(Ref.update(deliveredBatches, Arr.append(batch)));
+          return Promise.reject(new Error("delivery refused"));
+        });
+        const flush = Effect.ignore(queue.drain);
         queue.enqueue(vitalEvent);
         yield* flush;
         yield* flush;
-        yield* Effect.sleep(`${retryBackoffMilliseconds + settleMilliseconds} millis`);
+        yield* TestClock.adjust(retryBackoff);
         yield* flush;
         return yield* Ref.get(deliveredBatches);
-      }),
+      }).pipe(Effect.provide(TestClock.layer())),
     ));
 
-  it("is sent once more", { timeout: queueTimeout }, ({ deliveredBatches }) => {
+  it("is sent once more", ({ deliveredBatches }) => {
     expect(deliveredBatches).toStrictEqual([[vitalEvent], [vitalEvent]]);
   });
 });
@@ -83,30 +76,24 @@ describe("a batch refused as many times as the queue allows", () => {
     Effect.runPromise(
       Effect.gen(function* refusedUntilDropped() {
         const deliveredBatches = yield* Ref.make<readonly (readonly BrowserEvent[])[]>([]);
-        const runWithin = Effect.runPromiseWith(yield* Effect.context());
-        const queue = makeEventQueue((batch) =>
-          runWithin(
-            Ref.update(deliveredBatches, Arr.append(batch)).pipe(
-              Effect.andThen(Effect.die("delivery refused")),
-            ),
-          ),
-        );
-        const flush = Effect.ignore(Effect.tryPromise(queue.flush));
+        const recordWithin = Effect.runSyncWith(yield* Effect.context());
+        const queue = makeEventQueue((batch) => {
+          recordWithin(Ref.update(deliveredBatches, Arr.append(batch)));
+          return Promise.reject(new Error("delivery refused"));
+        });
+        const flush = Effect.ignore(queue.drain);
         queue.enqueue(vitalEvent);
         yield* flush;
-        yield* Effect.sleep(`${retryBackoffMilliseconds + settleMilliseconds} millis`);
+        yield* TestClock.adjust(retryBackoff);
         yield* flush;
-        yield* Effect.sleep(
-          `${retryBackoffMilliseconds * secondAttempt + settleMilliseconds} millis`,
-        );
+        yield* TestClock.adjust(secondBackoff);
         yield* flush;
         queue.flushBeforeUnload();
-        yield* Effect.sleep(`${settleMilliseconds} millis`);
         return yield* Ref.get(deliveredBatches);
-      }),
+      }).pipe(Effect.provide(TestClock.layer())),
     ));
 
-  it("stops at the limit", { timeout: queueTimeout }, ({ deliveredBatches }) => {
+  it("stops at the limit", ({ deliveredBatches }) => {
     expect(deliveredBatches).toStrictEqual([[vitalEvent], [vitalEvent], [vitalEvent]]);
   });
 });

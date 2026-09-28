@@ -1,11 +1,10 @@
-import { Effect, type Scope } from "effect";
+import { Effect, Fiber, Ref, type Scope } from "effect";
 import { ChildProcess } from "effect/unstable/process";
 import { attemptAsync } from "es-toolkit";
 
 import { childEndOf } from "../child-process.ts";
 import { nativeFailure, spawner } from "../host.ts";
 import { signalProcessTree, TREE_TERMINATION_SIGNAL } from "./process-tree.ts";
-import { DELAY_ENDING, settledDelay } from "./settled-delay.ts";
 import {
   dropInterruptHandler,
   installInterruptHandler,
@@ -41,39 +40,37 @@ type RunCommandDependencies = {
   killGraceMs: number;
 };
 
-const timeoutFired = (parameters: {
+type TimeoutOutcome = { fired: boolean; terminationFailure: Error | null };
+
+const NOT_FIRED: TimeoutOutcome = { fired: false, terminationFailure: null };
+
+const terminateAfterTimeout = (parameters: {
   childPid: number;
   timeoutMs: number;
-  cancel: AbortSignal;
+  fired: Ref.Ref<boolean>;
   dependencies: RunCommandDependencies;
-}): Promise<{ fired: boolean; terminationFailure: Error | null }> =>
-  Effect.runPromise(
-    Effect.gen(function* fireTimeout() {
-      const beforeTimeout = yield* Effect.promise(() =>
-        settledDelay(parameters.timeoutMs, parameters.cancel),
-      );
-      if (beforeTimeout === DELAY_ENDING.cancelled) {
-        return { fired: false, terminationFailure: null };
-      }
-      const firstSignal =
-        parameters.dependencies.platform === "win32"
-          ? TREE_TERMINATION_SIGNAL.forced
-          : TREE_TERMINATION_SIGNAL.graceful;
-      const terminationFailure = yield* parameters.dependencies.signalTree({
-        pid: parameters.childPid,
-        signal: firstSignal,
-      });
-      if (parameters.dependencies.platform === "win32") {
-        return { fired: true, terminationFailure };
-      }
-      yield* Effect.sleep(`${parameters.dependencies.killGraceMs} millis`);
-      const forcedFailure = yield* parameters.dependencies.signalTree({
-        pid: parameters.childPid,
-        signal: TREE_TERMINATION_SIGNAL.forced,
-      });
-      return { fired: true, terminationFailure: terminationFailure ?? forcedFailure };
-    }),
-  );
+}): Effect.Effect<TimeoutOutcome> =>
+  Effect.gen(function* fireTimeout() {
+    yield* Effect.sleep(`${parameters.timeoutMs} millis`);
+    yield* Ref.set(parameters.fired, true);
+    const firstSignal =
+      parameters.dependencies.platform === "win32"
+        ? TREE_TERMINATION_SIGNAL.forced
+        : TREE_TERMINATION_SIGNAL.graceful;
+    const terminationFailure = yield* parameters.dependencies.signalTree({
+      pid: parameters.childPid,
+      signal: firstSignal,
+    });
+    if (parameters.dependencies.platform === "win32") {
+      return { fired: true, terminationFailure };
+    }
+    yield* Effect.sleep(`${parameters.dependencies.killGraceMs} millis`);
+    const forcedFailure = yield* parameters.dependencies.signalTree({
+      pid: parameters.childPid,
+      signal: TREE_TERMINATION_SIGNAL.forced,
+    });
+    return { fired: true, terminationFailure: terminationFailure ?? forcedFailure };
+  });
 
 const reportTreeTerminationFailure = (failure: Error): void => {
   process.stderr.write(
@@ -90,27 +87,33 @@ const guardChild = (input: {
   child: CommandChild;
   invocation: Invocation;
   dependencies: RunCommandDependencies;
-}): Effect.Effect<Verdict & { terminationFailure: Error | null }> => {
-  const canceller = new AbortController();
-  return Effect.gen(function* guardRunningChild() {
+}): Effect.Effect<Verdict & { terminationFailure: Error | null }> =>
+  Effect.gen(function* guardRunningChild() {
     const runningHandler = makeRunningInterruptHandler({
       childPid: input.child.pid,
       signalTree: input.dependencies.signalTree,
       reportFailure: reportTreeTerminationFailure,
     });
     installInterruptHandler(runningHandler);
-    const fired =
+    const fired = yield* Ref.make(false);
+    const firing =
       input.invocation.timeoutSec === 0
-        ? Promise.resolve({ fired: false, terminationFailure: null })
-        : timeoutFired({
-            childPid: input.child.pid,
-            timeoutMs: input.invocation.timeoutSec * 1000,
-            cancel: canceller.signal,
-            dependencies: input.dependencies,
-          });
+        ? undefined
+        : yield* Effect.forkChild(
+            terminateAfterTimeout({
+              childPid: input.child.pid,
+              timeoutMs: input.invocation.timeoutSec * 1000,
+              fired,
+              dependencies: input.dependencies,
+            }),
+          );
     const settled = yield* input.child.exited;
-    canceller.abort();
-    const timeout = yield* Effect.promise(() => fired);
+    const timeout =
+      firing === undefined
+        ? NOT_FIRED
+        : (yield* Ref.get(fired))
+          ? yield* Fiber.join(firing)
+          : yield* Fiber.interrupt(firing).pipe(Effect.as(NOT_FIRED));
     dropInterruptHandler(runningHandler);
     return {
       settled,
@@ -118,7 +121,6 @@ const guardChild = (input: {
       terminationFailure: timeout.terminationFailure,
     };
   });
-};
 
 const releaseHold = (hold: SlotHold): Promise<undefined> =>
   Effect.runPromise(Effect.promise(() => hold.release()).pipe(Effect.as(undefined)));
@@ -235,13 +237,14 @@ const spawnUnderHeldInterrupt = (input: {
     return started;
   });
 
-export const runWithSlot = (input: {
+type HeldRun = {
   invocation: Invocation;
   hold: SlotHold;
   dependencies?: Partial<RunCommandDependencies>;
-}): Promise<number> =>
-  Effect.runPromise(
-    Effect.gen(function* runHeldCommand() {
+};
+
+export const runningWithSlot = (input: HeldRun): Effect.Effect<number> =>
+  Effect.gen(function* runHeldCommand() {
       const dependencies: RunCommandDependencies = {
         platform: input.dependencies?.platform ?? process.platform,
         signalTree: input.dependencies?.signalTree ?? signalProcessTree,
@@ -266,6 +269,9 @@ export const runWithSlot = (input: {
       );
       const releaseFailure = yield* Effect.promise(() => releaseFailureOf(input.hold));
       return reportRunEnd({ invocation: input.invocation, verdict, releaseFailure });
-    }),
-  );
+    });
+
+export const runWithSlot = (input: HeldRun): Promise<number> =>
+  Effect.runPromise(runningWithSlot(input));
+
 export type { ChildExit, CommandChild, RunCommandDependencies };

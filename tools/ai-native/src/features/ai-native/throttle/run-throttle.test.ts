@@ -2,13 +2,12 @@ import { standardIoTest } from "@repo/dont-review-it";
 import { Effect } from "effect";
 import { describe, expect, vi } from "vite-plus/test";
 
+import { untilHolds } from "../condition-polling-test-fixture.ts";
 import {
-  epochMillis,
   fileExists,
   filesystem,
   joinPath,
   readDirectory,
-  readFileString,
   removePath,
   writeFileString,
 } from "../host.ts";
@@ -35,6 +34,22 @@ describe("runThrottle", () => {
         Effect.runPromise(Effect.promise(() => stampsArea).pipe(Effect.flatMap(removePath))),
       );
       return stampsArea;
+    })
+    .extend("gated", ({ stampsDirectory }) => {
+      const gate = joinPath(stampsDirectory, "gate");
+      return {
+        command: (name: string): readonly string[] => [
+          "--",
+          process.execPath,
+          "-e",
+          `const fs = require("node:fs"); fs.writeFileSync(${JSON.stringify(joinPath(stampsDirectory, `${name}-start`))}, ""); const poll = () => { if (!fs.existsSync(${JSON.stringify(gate)})) setTimeout(poll, 20); }; poll();`,
+        ],
+        started: readDirectory(stampsDirectory).pipe(
+          Effect.map((names) => names.filter((name) => name.endsWith("-start"))),
+          Effect.orElseSucceed((): readonly string[] => []),
+        ),
+        open: writeFileString({ location: gate, written: "" }),
+      };
     });
 
   describe("a run under every default", () => {
@@ -286,134 +301,53 @@ describe("runThrottle", () => {
   });
 
   describe("two runs sharing one slot", () => {
-    const it = throttleTest
-      .extend("theCodesOfTwoRunsUnderOneSlot", ({ slotDirectory, stampsDirectory }) => {
-        const seams = {
-          slotDir: slotDirectory,
-          limit: 1,
-          waitBudgetMs: 15_000,
-          pollMs: 50,
-          isInteractive: false,
-        };
-        return Promise.all([
-          runThrottle(
-            [
-              "--",
-              process.execPath,
-              "-e",
-              `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, "a-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${joinPath(stampsDirectory, "a-end")}", String(Date.now())); }, 400);`,
-            ],
-            seams,
-          ),
-          runThrottle(
-            [
-              "--",
-              process.execPath,
-              "-e",
-              `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, "b-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${joinPath(stampsDirectory, "b-end")}", String(Date.now())); }, 400);`,
-            ],
-            seams,
-          ),
-        ]);
-      })
-      .extend("twoRunsUnderOneSlotNeverOverlapped", ({ slotDirectory, stampsDirectory }) =>
-        Effect.runPromise(
-          Effect.gen(function* () {
-            const seams = {
-              slotDir: slotDirectory,
-              limit: 1,
-              waitBudgetMs: 15_000,
-              pollMs: 50,
-              isInteractive: false,
-            };
-            yield* Effect.promise(() =>
-              Promise.all([
-                runThrottle(
-                  [
-                    "--",
-                    process.execPath,
-                    "-e",
-                    `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, "a-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${joinPath(stampsDirectory, "a-end")}", String(Date.now())); }, 400);`,
-                  ],
-                  seams,
-                ),
-                runThrottle(
-                  [
-                    "--",
-                    process.execPath,
-                    "-e",
-                    `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, "b-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${joinPath(stampsDirectory, "b-end")}", String(Date.now())); }, 400);`,
-                  ],
-                  seams,
-                ),
-              ]),
-            );
-            const aStart = Number(yield* readFileString(joinPath(stampsDirectory, "a-start")));
-            const aEnd = Number(yield* readFileString(joinPath(stampsDirectory, "a-end")));
-            const bStart = Number(yield* readFileString(joinPath(stampsDirectory, "b-start")));
-            const bEnd = Number(yield* readFileString(joinPath(stampsDirectory, "b-end")));
-            return aStart <= bStart ? bStart >= aEnd : aStart >= bEnd;
-          }),
-        ),
-      )
-      .extend(
-        "theRankNamedWhileTwoRunsShareOneSlot",
-        ({ slotDirectory, stampsDirectory, stderr }) =>
-          Effect.runPromise(
-            Effect.gen(function* () {
-              const seams = {
-                slotDir: slotDirectory,
-                limit: 1,
-                waitBudgetMs: 15_000,
-                pollMs: 50,
-                isInteractive: false,
-              };
-              yield* Effect.promise(() =>
-                Promise.all([
-                  runThrottle(
-                    [
-                      "--",
-                      process.execPath,
-                      "-e",
-                      `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, "a-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${joinPath(stampsDirectory, "a-end")}", String(Date.now())); }, 400);`,
-                    ],
-                    seams,
-                  ),
-                  runThrottle(
-                    [
-                      "--",
-                      process.execPath,
-                      "-e",
-                      `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, "b-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${joinPath(stampsDirectory, "b-end")}", String(Date.now())); }, 400);`,
-                    ],
-                    seams,
-                  ),
-                ]),
-              );
-              return stderr.text().includes("throttle: waiting 1/1");
-            }),
-          ),
-      );
+    const it = throttleTest.extend("twoRunsUnderOneSlot", ({ slotDirectory, gated, stderr }) =>
+      Effect.runPromise(
+        Effect.gen(function* () {
+          const seams = {
+            slotDir: slotDirectory,
+            limit: 1,
+            waitBudgetMs: 15_000,
+            pollMs: 50,
+            isInteractive: false,
+          };
+          const runs = Promise.all([
+            runThrottle(gated.command("a"), seams),
+            runThrottle(gated.command("b"), seams),
+          ]);
+          const waiting = readDirectory(joinPath(slotDirectory, "waiters")).pipe(
+            Effect.orElseSucceed((): readonly string[] => []),
+          );
+          yield* untilHolds(
+            "one run holds the slot while the other waits",
+            Effect.map(Effect.all([gated.started, waiting]), ([started, waiters]) =>
+              started.length > 0 && waiters.length === 1,
+            ),
+          );
+          const startedWhileTheOtherWaited = (yield* gated.started).length;
+          yield* gated.open;
+          return {
+            codes: yield* Effect.promise(() => runs),
+            startedWhileTheOtherWaited,
+            rankNamed: stderr.text().includes("throttle: waiting 1/1"),
+          };
+        }),
+      ),
+    );
 
-    it("both run", { timeout: 20_000 }, ({ theCodesOfTwoRunsUnderOneSlot }) => {
-      expect(theCodesOfTwoRunsUnderOneSlot).toStrictEqual([0, 0]);
+    it("both run", { timeout: 20_000 }, ({ twoRunsUnderOneSlot }) => {
+      expect(twoRunsUnderOneSlot.codes).toStrictEqual([0, 0]);
     });
 
-    it(
-      "never run at the same time",
-      { timeout: 20_000 },
-      ({ twoRunsUnderOneSlotNeverOverlapped }) => {
-        expect(twoRunsUnderOneSlotNeverOverlapped).toBe(true);
-      },
-    );
+    it("never run at the same time", { timeout: 20_000 }, ({ twoRunsUnderOneSlot }) => {
+      expect(twoRunsUnderOneSlot.startedWhileTheOtherWaited).toBe(1);
+    });
 
-    it(
-      "the one that waited names its rank on stderr",
-      { timeout: 20_000 },
-      ({ theRankNamedWhileTwoRunsShareOneSlot }) => {
-        expect(theRankNamedWhileTwoRunsShareOneSlot).toBe(true);
-      },
-    );
+    it("the one that waited names its rank on stderr", { timeout: 20_000 }, ({
+      twoRunsUnderOneSlot,
+    }) => {
+      expect(twoRunsUnderOneSlot.rankNamed).toBe(true);
+    });
   });
 
   describe("a run finding a free slot", () => {
@@ -426,23 +360,6 @@ describe("runThrottle", () => {
           pollMs: 30_000,
           isInteractive: false,
         }),
-      )
-      .extend("aFreeSlotIsTakenWellBelowOnePollInterval", ({ slotDirectory }) =>
-        Effect.runPromise(
-          Effect.gen(function* () {
-            const before = epochMillis();
-            yield* Effect.promise(() =>
-              runThrottle(TRIVIAL_COMMAND, {
-                slotDir: slotDirectory,
-                limit: 1,
-                waitBudgetMs: 15_000,
-                pollMs: 30_000,
-                isInteractive: false,
-              }),
-            );
-            return epochMillis() - before < 20_000;
-          }),
-        ),
       )
       .extend("theWaitingNamedWhileTakingAFreeSlot", ({ slotDirectory, stderr }) =>
         Effect.runPromise(
@@ -466,14 +383,6 @@ describe("runThrottle", () => {
     });
 
     it(
-      "takes it well below one poll interval",
-      { timeout: 30_000 },
-      ({ aFreeSlotIsTakenWellBelowOnePollInterval }) => {
-        expect(aFreeSlotIsTakenWellBelowOnePollInterval).toBe(true);
-      },
-    );
-
-    it(
       "puts no waiting output on stderr",
       { timeout: 30_000 },
       ({ theWaitingNamedWhileTakingAFreeSlot }) => {
@@ -483,169 +392,74 @@ describe("runThrottle", () => {
   });
 
   describe("two runs in different namespaces", () => {
-    const it = throttleTest
-      .extend("theCodesOfTwoRunsInDifferentNamespaces", ({ slotDirectory, stampsDirectory }) =>
-        Promise.all([
-          runThrottle(
-            [
-              "--",
-              process.execPath,
-              "-e",
-              `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, "a-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${joinPath(stampsDirectory, "a-end")}", String(Date.now())); }, 400);`,
-            ],
-            {
-              slotDir: joinPath(slotDirectory, "a"),
-              limit: 1,
-              waitBudgetMs: 15_000,
-              pollMs: 50,
-              isInteractive: false,
-            },
-          ),
-          runThrottle(
-            [
-              "--",
-              process.execPath,
-              "-e",
-              `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, "b-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${joinPath(stampsDirectory, "b-end")}", String(Date.now())); }, 400);`,
-            ],
-            {
-              slotDir: joinPath(slotDirectory, "b"),
-              limit: 1,
-              waitBudgetMs: 15_000,
-              pollMs: 50,
-              isInteractive: false,
-            },
-          ),
-        ]),
-      )
-      .extend("twoRunsInDifferentNamespacesOverlapped", ({ slotDirectory, stampsDirectory }) =>
-        Effect.runPromise(
-          Effect.gen(function* () {
-            yield* Effect.promise(() =>
-              Promise.all([
-                runThrottle(
-                  [
-                    "--",
-                    process.execPath,
-                    "-e",
-                    `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, "a-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${joinPath(stampsDirectory, "a-end")}", String(Date.now())); }, 400);`,
-                  ],
-                  {
-                    slotDir: joinPath(slotDirectory, "a"),
-                    limit: 1,
-                    waitBudgetMs: 15_000,
-                    pollMs: 50,
-                    isInteractive: false,
-                  },
-                ),
-                runThrottle(
-                  [
-                    "--",
-                    process.execPath,
-                    "-e",
-                    `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, "b-start")}", String(Date.now())); setTimeout(() => { writeFileSync("${joinPath(stampsDirectory, "b-end")}", String(Date.now())); }, 400);`,
-                  ],
-                  {
-                    slotDir: joinPath(slotDirectory, "b"),
-                    limit: 1,
-                    waitBudgetMs: 15_000,
-                    pollMs: 50,
-                    isInteractive: false,
-                  },
-                ),
-              ]),
-            );
-            const aStart = Number(yield* readFileString(joinPath(stampsDirectory, "a-start")));
-            const aEnd = Number(yield* readFileString(joinPath(stampsDirectory, "a-end")));
-            const bStart = Number(yield* readFileString(joinPath(stampsDirectory, "b-start")));
-            const bEnd = Number(yield* readFileString(joinPath(stampsDirectory, "b-end")));
-            return aStart < bEnd && bStart < aEnd;
-          }),
-        ),
-      );
+    const it = throttleTest.extend("twoRunsInDifferentNamespaces", ({ slotDirectory, gated }) =>
+      Effect.runPromise(
+        Effect.gen(function* () {
+          const runs = Promise.all(
+            ["a", "b"].map((namespace) =>
+              runThrottle(gated.command(namespace), {
+                slotDir: joinPath(slotDirectory, namespace),
+                limit: 1,
+                waitBudgetMs: 15_000,
+                pollMs: 50,
+                isInteractive: false,
+              }),
+            ),
+          );
+          yield* untilHolds(
+            "both runs started before either could finish",
+            Effect.map(gated.started, (started) => started.length === 2),
+          );
+          yield* gated.open;
+          return { codes: yield* Effect.promise(() => runs) };
+        }),
+      ),
+    );
 
-    it("both run", { timeout: 30_000 }, ({ theCodesOfTwoRunsInDifferentNamespaces }) => {
-      expect(theCodesOfTwoRunsInDifferentNamespaces).toStrictEqual([0, 0]);
-    });
-
-    it("never contend", { timeout: 30_000 }, ({ twoRunsInDifferentNamespacesOverlapped }) => {
-      expect(twoRunsInDifferentNamespacesOverlapped).toBe(true);
+    it("both run at the same time", { timeout: 30_000 }, ({ twoRunsInDifferentNamespaces }) => {
+      expect(twoRunsInDifferentNamespaces.codes).toStrictEqual([0, 0]);
     });
   });
 
   describe("three runs under an environment limit of two", () => {
-    const it = throttleTest
-      .extend("theCodesOfThreeRunsUnderTwoSlots", ({ slotDirectory, stampsDirectory }) => {
-        vi.stubEnv("MST_THROTTLE_LIMIT", "2");
-        const seams = {
-          slotDir: slotDirectory,
-          waitBudgetMs: 15_000,
-          pollMs: 50,
-          isInteractive: false,
-        };
-        return Promise.all(
-          ["a", "b", "c"].map((stampPrefix) =>
-            runThrottle(
-              [
-                "--",
-                process.execPath,
-                "-e",
-                `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, `${stampPrefix}-start`)}", String(Date.now())); setTimeout(() => { writeFileSync("${joinPath(stampsDirectory, `${stampPrefix}-end`)}", String(Date.now())); }, 1500);`,
-              ],
-              seams,
+    const it = throttleTest.extend("threeRunsUnderTwoSlots", ({ slotDirectory, gated }) =>
+      Effect.runPromise(
+        Effect.gen(function* () {
+          vi.stubEnv("MST_THROTTLE_LIMIT", "2");
+          const seams = {
+            slotDir: slotDirectory,
+            waitBudgetMs: 15_000,
+            pollMs: 50,
+            isInteractive: false,
+          };
+          const runs = Promise.all(
+            ["a", "b", "c"].map((name) => runThrottle(gated.command(name), seams)),
+          );
+          const waiting = readDirectory(joinPath(slotDirectory, "waiters")).pipe(
+            Effect.orElseSucceed((): readonly string[] => []),
+          );
+          yield* untilHolds(
+            "two runs hold the slots while the third waits",
+            Effect.map(Effect.all([gated.started, waiting]), ([started, waiters]) =>
+              started.length === 2 && waiters.length === 1,
             ),
-          ),
-        );
-      })
-      .extend("thePeakOfThreeRunsUnderTwoSlots", ({ slotDirectory, stampsDirectory }) =>
-        Effect.runPromise(
-          Effect.gen(function* () {
-            vi.stubEnv("MST_THROTTLE_LIMIT", "2");
-            const seams = {
-              slotDir: slotDirectory,
-              waitBudgetMs: 15_000,
-              pollMs: 50,
-              isInteractive: false,
-            };
-            yield* Effect.promise(() =>
-              Promise.all(
-                ["a", "b", "c"].map((stampPrefix) =>
-                  runThrottle(
-                    [
-                      "--",
-                      process.execPath,
-                      "-e",
-                      `const { writeFileSync } = require("node:fs"); writeFileSync("${joinPath(stampsDirectory, `${stampPrefix}-start`)}", String(Date.now())); setTimeout(() => { writeFileSync("${joinPath(stampsDirectory, `${stampPrefix}-end`)}", String(Date.now())); }, 1500);`,
-                    ],
-                    seams,
-                  ),
-                ),
-              ),
-            );
-            const spans = yield* Effect.forEach(["a", "b", "c"], (stampPrefix) =>
-              Effect.all({
-                start: readFileString(joinPath(stampsDirectory, `${stampPrefix}-start`)),
-                end: readFileString(joinPath(stampsDirectory, `${stampPrefix}-end`)),
-              }).pipe(Effect.map(({ start, end }) => ({ start: Number(start), end: Number(end) }))),
-            );
-            return Math.max(
-              ...spans.map(
-                ({ start }) =>
-                  spans.filter(
-                    (candidateSpan) => candidateSpan.start <= start && start < candidateSpan.end,
-                  ).length,
-              ),
-            );
-          }),
-        ),
-      );
+          );
+          const startedWhileTheThirdWaited = (yield* gated.started).length;
+          yield* gated.open;
+          return {
+            codes: yield* Effect.promise(() => runs),
+            startedWhileTheThirdWaited,
+          };
+        }),
+      ),
+    );
 
-    it("every run finishes", { timeout: 30_000 }, ({ theCodesOfThreeRunsUnderTwoSlots }) => {
-      expect(theCodesOfThreeRunsUnderTwoSlots).toStrictEqual([0, 0, 0]);
+    it("every run finishes", { timeout: 30_000 }, ({ threeRunsUnderTwoSlots }) => {
+      expect(threeRunsUnderTwoSlots.codes).toStrictEqual([0, 0, 0]);
     });
 
-    it("two really run at a time", { timeout: 30_000 }, ({ thePeakOfThreeRunsUnderTwoSlots }) => {
-      expect(thePeakOfThreeRunsUnderTwoSlots).toBe(2);
+    it("two really run at a time", { timeout: 30_000 }, ({ threeRunsUnderTwoSlots }) => {
+      expect(threeRunsUnderTwoSlots.startedWhileTheThirdWaited).toBe(2);
     });
   });
 

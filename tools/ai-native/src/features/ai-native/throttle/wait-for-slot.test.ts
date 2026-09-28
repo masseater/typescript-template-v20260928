@@ -1,9 +1,11 @@
 import { standardIoTest } from "@repo/dont-review-it";
-import { Effect } from "effect";
+import { Clock, Effect, Fiber, Queue, Ref } from "effect";
+import { TestClock } from "effect/testing";
 import { describe, expect } from "vite-plus/test";
 
+import { untilHolds } from "../condition-polling-test-fixture.ts";
 import {
-  epochMillis,
+  fileExists,
   filesystem,
   joinPath,
   readDirectory,
@@ -12,10 +14,10 @@ import {
 } from "../host.ts";
 import { runThrottle } from "./run-throttle.ts";
 import { ensureSlots, tryAcquireAny } from "./slots.ts";
+import { waitingForSlot } from "./wait-for-slot.ts";
 
 const TRIVIAL_COMMAND = ["--", process.execPath, "-e", ""];
 
-const SHORT_SLEEP_COMMAND = ["--", process.execPath, "-e", "setTimeout(() => {}, 200);"];
 
 const GAVE_UP_LINE_PATTERN = /throttle: gave up: [^\n]*\n/gu;
 
@@ -36,6 +38,17 @@ describe("waitForSlot", () => {
       ),
     );
     return temporarySlotDirectory;
+  }).extend("gate", ({ slotDirectory }) => {
+    const location = joinPath(slotDirectory, "gate");
+    return {
+      command: [
+        "--",
+        process.execPath,
+        "-e",
+        `const fs = require("node:fs"); const poll = () => { if (!fs.existsSync(${JSON.stringify(location)})) setTimeout(poll, 20); }; poll();`,
+      ],
+      open: writeFileString({ location, written: "" }),
+    };
   });
 
   describe("a slot held by a holder that is still alive", () => {
@@ -55,7 +68,13 @@ describe("waitForSlot", () => {
               pollMs: 100,
               isInteractive: false,
             });
-            yield* Effect.sleep("350 millis");
+            yield* untilHolds(
+              "the run waits behind the holder",
+              Effect.map(
+                readDirectory(joinPath(slotDirectory, "waiters")),
+                (waiting) => waiting.length === 1,
+              ),
+            );
             yield* Effect.promise(() => hold.release());
             return yield* Effect.promise(() => pendingRun);
           }),
@@ -69,19 +88,33 @@ describe("waitForSlot", () => {
               tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
             );
             if (hold === null) return yield* Effect.die("the slot was already held");
-            const before = epochMillis();
-            const pendingRun = runThrottle(TRIVIAL_COMMAND, {
-              slotDir: slotDirectory,
-              limit: 1,
-              waitBudgetMs: 10_000,
-              pollMs: 100,
-              isInteractive: false,
-            });
-            yield* Effect.sleep("350 millis");
+            const stamp = joinPath(slotDirectory, "stamp");
+            const pendingRun = runThrottle(
+              [
+                "--",
+                process.execPath,
+                "-e",
+                `require("node:fs").writeFileSync(${JSON.stringify(stamp)}, "ran");`,
+              ],
+              {
+                slotDir: slotDirectory,
+                limit: 1,
+                waitBudgetMs: 10_000,
+                pollMs: 100,
+                isInteractive: false,
+              },
+            );
+            yield* untilHolds(
+              "the run waits behind the holder",
+              Effect.map(
+                readDirectory(joinPath(slotDirectory, "waiters")),
+                (waiting) => waiting.length === 1,
+              ),
+            );
+            const ranBeforeRelease = yield* fileExists(stamp);
             yield* Effect.promise(() => hold.release());
             yield* Effect.promise(() => pendingRun);
-            const elapsed = epochMillis() - before;
-            return elapsed > 300 && elapsed < 20_000;
+            return { ranBeforeRelease, ranAfterRelease: yield* fileExists(stamp) };
           }),
         ),
       );
@@ -98,7 +131,10 @@ describe("waitForSlot", () => {
       "keeps its slot until release",
       { timeout: 30_000 },
       ({ aLiveHolderKeepsItsSlotUntilRelease }) => {
-        expect(aLiveHolderKeepsItsSlotUntilRelease).toBe(true);
+        expect(aLiveHolderKeepsItsSlotUntilRelease).toStrictEqual({
+          ranBeforeRelease: false,
+          ranAfterRelease: true,
+        });
       },
     );
   });
@@ -120,14 +156,27 @@ describe("waitForSlot", () => {
               pollMs: 60,
               isInteractive: false,
             };
-            const runA = runThrottle(SHORT_SLEEP_COMMAND, seams);
-            yield* Effect.sleep("150 millis");
-            const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
-            yield* Effect.sleep("200 millis");
+            const runA = runThrottle(gate.command, seams);
+            yield* untilHolds(
+              "the first run waits behind the holder",
+              Effect.map(
+                readDirectory(joinPath(slotDirectory, "waiters")),
+                (waiting) => waiting.length === 1,
+              ),
+            );
+            const runB = runThrottle(gate.command, seams);
+            yield* untilHolds(
+              "both runs wait behind the holder",
+              Effect.map(
+                readDirectory(joinPath(slotDirectory, "waiters")),
+                (waiting) => waiting.length === 2,
+              ),
+            );
             const waiting = (yield* readDirectory(joinPath(slotDirectory, "waiters"))).map(
               (waiterFileName) => waiterFileName.split("-").at(1),
             );
             yield* Effect.promise(() => hold.release());
+            yield* gate.open;
             yield* Effect.promise(() => runA);
             yield* Effect.promise(() => runB);
             return waiting;
@@ -149,10 +198,22 @@ describe("waitForSlot", () => {
               pollMs: 60,
               isInteractive: false,
             };
-            const runA = runThrottle(SHORT_SLEEP_COMMAND, seams);
-            yield* Effect.sleep("150 millis");
-            const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
-            yield* Effect.sleep("200 millis");
+            const runA = runThrottle(gate.command, seams);
+            yield* untilHolds(
+              "the first run waits behind the holder",
+              Effect.map(
+                readDirectory(joinPath(slotDirectory, "waiters")),
+                (waiting) => waiting.length === 1,
+              ),
+            );
+            const runB = runThrottle(gate.command, seams);
+            yield* untilHolds(
+              "both runs wait behind the holder",
+              Effect.map(
+                readDirectory(joinPath(slotDirectory, "waiters")),
+                (waiting) => waiting.length === 2,
+              ),
+            );
             yield* writeFileString({
               location: joinPath(
                 slotDirectory,
@@ -161,11 +222,17 @@ describe("waitForSlot", () => {
               ),
               written: `${String(EXITED_PID)}\n`,
             });
-            yield* Effect.sleep("200 millis");
+            yield* untilHolds(
+              "the entry of the dead waiter is swept",
+              Effect.map(readDirectory(joinPath(slotDirectory, "waiters")), (waiting) =>
+                waiting.every((waiterFileName) => !waiterFileName.includes(String(EXITED_PID))),
+              ),
+            );
             const waiting = (yield* readDirectory(joinPath(slotDirectory, "waiters"))).map(
               (waiterFileName) => waiterFileName.split("-").at(1),
             );
             yield* Effect.promise(() => hold.release());
+            yield* gate.open;
             yield* Effect.promise(() => runA);
             yield* Effect.promise(() => runB);
             return waiting;
@@ -187,15 +254,34 @@ describe("waitForSlot", () => {
               pollMs: 60,
               isInteractive: false,
             };
-            const runA = runThrottle(SHORT_SLEEP_COMMAND, seams);
-            yield* Effect.sleep("150 millis");
-            const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
-            yield* Effect.sleep("200 millis");
+            const runA = runThrottle(gate.command, seams);
+            yield* untilHolds(
+              "the first run waits behind the holder",
+              Effect.map(
+                readDirectory(joinPath(slotDirectory, "waiters")),
+                (waiting) => waiting.length === 1,
+              ),
+            );
+            const runB = runThrottle(gate.command, seams);
+            yield* untilHolds(
+              "both runs wait behind the holder",
+              Effect.map(
+                readDirectory(joinPath(slotDirectory, "waiters")),
+                (waiting) => waiting.length === 2,
+              ),
+            );
             yield* Effect.promise(() => hold.release());
-            yield* Effect.sleep("150 millis");
+            yield* untilHolds(
+              "the first run took the freed slot",
+              Effect.map(
+                readDirectory(joinPath(slotDirectory, "waiters")),
+                (waiting) => waiting.length === 1,
+              ),
+            );
             const waiting = (yield* readDirectory(joinPath(slotDirectory, "waiters"))).map(
               (waiterFileName) => waiterFileName.split("-").at(1),
             );
+            yield* gate.open;
             yield* Effect.promise(() => runA);
             yield* Effect.promise(() => runB);
             return waiting;
@@ -217,11 +303,24 @@ describe("waitForSlot", () => {
               pollMs: 60,
               isInteractive: false,
             };
-            const runA = runThrottle(SHORT_SLEEP_COMMAND, seams);
-            yield* Effect.sleep("150 millis");
-            const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
-            yield* Effect.sleep("200 millis");
+            const runA = runThrottle(gate.command, seams);
+            yield* untilHolds(
+              "the first run waits behind the holder",
+              Effect.map(
+                readDirectory(joinPath(slotDirectory, "waiters")),
+                (waiting) => waiting.length === 1,
+              ),
+            );
+            const runB = runThrottle(gate.command, seams);
+            yield* untilHolds(
+              "both runs wait behind the holder",
+              Effect.map(
+                readDirectory(joinPath(slotDirectory, "waiters")),
+                (waiting) => waiting.length === 2,
+              ),
+            );
             yield* Effect.promise(() => hold.release());
+            yield* gate.open;
             yield* Effect.promise(() => runA);
             yield* Effect.promise(() => runB);
             return yield* readDirectory(joinPath(slotDirectory, "waiters"));
@@ -243,11 +342,24 @@ describe("waitForSlot", () => {
               pollMs: 60,
               isInteractive: false,
             };
-            const runA = runThrottle(SHORT_SLEEP_COMMAND, seams);
-            yield* Effect.sleep("150 millis");
-            const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
-            yield* Effect.sleep("200 millis");
+            const runA = runThrottle(gate.command, seams);
+            yield* untilHolds(
+              "the first run waits behind the holder",
+              Effect.map(
+                readDirectory(joinPath(slotDirectory, "waiters")),
+                (waiting) => waiting.length === 1,
+              ),
+            );
+            const runB = runThrottle(gate.command, seams);
+            yield* untilHolds(
+              "both runs wait behind the holder",
+              Effect.map(
+                readDirectory(joinPath(slotDirectory, "waiters")),
+                (waiting) => waiting.length === 2,
+              ),
+            );
             yield* Effect.promise(() => hold.release());
+            yield* gate.open;
             yield* Effect.promise(() => runA);
             yield* Effect.promise(() => runB);
             return stderr.text().includes("throttle: waiting 2/2\n");
@@ -269,11 +381,24 @@ describe("waitForSlot", () => {
               pollMs: 60,
               isInteractive: false,
             };
-            const runA = runThrottle(SHORT_SLEEP_COMMAND, seams);
-            yield* Effect.sleep("150 millis");
-            const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
-            yield* Effect.sleep("200 millis");
+            const runA = runThrottle(gate.command, seams);
+            yield* untilHolds(
+              "the first run waits behind the holder",
+              Effect.map(
+                readDirectory(joinPath(slotDirectory, "waiters")),
+                (waiting) => waiting.length === 1,
+              ),
+            );
+            const runB = runThrottle(gate.command, seams);
+            yield* untilHolds(
+              "both runs wait behind the holder",
+              Effect.map(
+                readDirectory(joinPath(slotDirectory, "waiters")),
+                (waiting) => waiting.length === 2,
+              ),
+            );
             yield* Effect.promise(() => hold.release());
+            yield* gate.open;
             yield* Effect.promise(() => runA);
             yield* Effect.promise(() => runB);
             return stderr.text().includes("throttle: waiting 1/1\n");
@@ -357,30 +482,6 @@ describe("waitForSlot", () => {
             );
             yield* Effect.promise(() => hold.release());
             return code;
-          }),
-        ),
-      )
-      .extend("aRunThatRanOutOfBudgetWaitedTheWholeBudget", ({ slotDirectory }) =>
-        Effect.runPromise(
-          Effect.gen(function* () {
-            yield* ensureSlots(slotDirectory, 1);
-            const hold = yield* Effect.promise(() =>
-              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-            );
-            if (hold === null) return yield* Effect.die("the slot was already held");
-            const before = epochMillis();
-            yield* Effect.promise(() =>
-              runThrottle(TRIVIAL_COMMAND, {
-                slotDir: slotDirectory,
-                limit: 1,
-                waitBudgetMs: 400,
-                pollMs: 100,
-                isInteractive: false,
-              }),
-            );
-            const elapsed = epochMillis() - before;
-            yield* Effect.promise(() => hold.release());
-            return elapsed >= 400 && elapsed < 1500;
           }),
         ),
       )
@@ -504,14 +605,6 @@ describe("waitForSlot", () => {
     );
 
     it(
-      "waits the whole budget and no longer",
-      { timeout: 10_000 },
-      ({ aRunThatRanOutOfBudgetWaitedTheWholeBudget }) => {
-        expect(aRunThatRanOutOfBudgetWaitedTheWholeBudget).toBe(true);
-      },
-    );
-
-    it(
       "says it gave up once per run, in the same words every time",
       { timeout: 10_000 },
       ({ theGaveUpReportsOfTwoRuns }) => {
@@ -548,6 +641,60 @@ describe("waitForSlot", () => {
     );
   });
 
+  describe("a wait whose slot never frees", () => {
+    const it = throttleTest.extend("theAttemptsOfAWaitThatRanOutOfBudget", ({ slotDirectory }) =>
+      Effect.runPromise(
+        Effect.gen(function* () {
+          yield* ensureSlots(slotDirectory, 1);
+          const attempts = yield* Queue.unbounded<number>();
+          const attemptedAt = yield* Ref.make<readonly number[]>([]);
+          const waiting = yield* Effect.forkChild(
+            waitingForSlot(
+              {
+                slotDir: slotDirectory,
+                limit: 1,
+                waitBudgetMs: 400,
+                pollMs: 100,
+                interactive: false,
+              },
+              () =>
+                Effect.gen(function* () {
+                  const now = yield* Clock.currentTimeMillis;
+                  yield* Ref.update(attemptedAt, (earlier) => [...earlier, now]);
+                  yield* Queue.offer(attempts, now);
+                  return null;
+                }),
+            ),
+          );
+          const settled = yield* Effect.repeat(
+            Effect.raceFirst(
+              Queue.take(attempts).pipe(
+                Effect.andThen(TestClock.adjust("100 millis")),
+                Effect.as(false),
+              ),
+              Fiber.await(waiting).pipe(Effect.as(true)),
+            ),
+            { until: (done: boolean) => done, times: 10 },
+          );
+          return {
+            outcome: settled ? yield* Fiber.join(waiting) : "still waiting",
+            attemptedAt: yield* Ref.get(attemptedAt),
+          };
+        }).pipe(Effect.provide(TestClock.layer())),
+      ),
+    );
+
+    it(
+      "keeps trying until the budget has passed and gives up at the attempt that reaches it",
+      ({ theAttemptsOfAWaitThatRanOutOfBudget }) => {
+        expect(theAttemptsOfAWaitThatRanOutOfBudget).toStrictEqual({
+          outcome: "budget-exhausted",
+          attemptedAt: [0, 100, 200, 300, 400],
+        });
+      },
+    );
+  });
+
   describe("an interactive wait", () => {
     const it = throttleTest
       .extend("theCodeOfAnInteractiveWait", ({ slotDirectory }) =>
@@ -565,7 +712,13 @@ describe("waitForSlot", () => {
               pollMs: 100,
               isInteractive: true,
             });
-            yield* Effect.sleep("350 millis");
+            yield* untilHolds(
+              "the run waits behind the holder",
+              Effect.map(
+                readDirectory(joinPath(slotDirectory, "waiters")),
+                (waiting) => waiting.length === 1,
+              ),
+            );
             yield* Effect.promise(() => hold.release());
             return yield* Effect.promise(() => pendingRun);
           }),
@@ -586,7 +739,13 @@ describe("waitForSlot", () => {
               pollMs: 100,
               isInteractive: true,
             });
-            yield* Effect.sleep("350 millis");
+            yield* untilHolds(
+              "the run waits behind the holder",
+              Effect.map(
+                readDirectory(joinPath(slotDirectory, "waiters")),
+                (waiting) => waiting.length === 1,
+              ),
+            );
             yield* Effect.promise(() => hold.release());
             yield* Effect.promise(() => pendingRun);
             return stderr.text().includes("\r");
@@ -608,7 +767,13 @@ describe("waitForSlot", () => {
               pollMs: 100,
               isInteractive: true,
             });
-            yield* Effect.sleep("350 millis");
+            yield* untilHolds(
+              "the run waits behind the holder",
+              Effect.map(
+                readDirectory(joinPath(slotDirectory, "waiters")),
+                (waiting) => waiting.length === 1,
+              ),
+            );
             yield* Effect.promise(() => hold.release());
             yield* Effect.promise(() => pendingRun);
             return stderr.text().includes("throttle: waiting 1/1 0s");
@@ -630,7 +795,13 @@ describe("waitForSlot", () => {
               pollMs: 100,
               isInteractive: true,
             });
-            yield* Effect.sleep("350 millis");
+            yield* untilHolds(
+              "the run waits behind the holder",
+              Effect.map(
+                readDirectory(joinPath(slotDirectory, "waiters")),
+                (waiting) => waiting.length === 1,
+              ),
+            );
             yield* Effect.promise(() => hold.release());
             yield* Effect.promise(() => pendingRun);
             return stderr.text().includes("0s\n");
