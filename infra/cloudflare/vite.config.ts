@@ -31,7 +31,12 @@ export default defineConfig({
       deploy: {
         cache: false,
         command: "./src/features/cloudflare/cli.ts deploy",
-        dependsOn: [...stackBuilds, "prerelease", "typescript-template#prerelease"],
+        dependsOn: [
+          ...stackBuilds,
+          "prerelease",
+          "typescript-template#prerelease",
+          "verify:account",
+        ],
       },
       "deploy:ordered": {
         cache: false,
@@ -57,7 +62,6 @@ export default defineConfig({
         precommit: ["check:code"],
         prepush: ["check:effect", "check:imports", "check:modular"],
         prepr: ["verify:stacks"],
-        prerelease: ["verify:account"],
       }),
     },
   },
