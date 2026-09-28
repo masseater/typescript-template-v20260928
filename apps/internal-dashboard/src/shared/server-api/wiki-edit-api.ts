@@ -1,5 +1,6 @@
 import { verifySession } from "@repo/auth";
-import { STAFF_PERMISSION, grantsStaffLevel, httpStatus } from "@repo/config";
+import { httpStatus } from "@repo/config";
+import { STAFF_PERMISSION, grantsStaffLevel } from "@repo/config/identity";
 import {
   WikiDraftConflict,
   discardWikiDraft,

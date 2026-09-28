@@ -3,21 +3,18 @@ import { runStatement } from "@repo/db/testing";
 import { Clock, Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 
+import { bootstrapVerifiedAdmin, enableTotp } from "./auth-test-fixture.ts";
 import { requestEmailChange } from "./email-change-test-fixture.ts";
+import { mailSubjects } from "./email.ts";
 import {
   authTest,
-  bootstrapVerifiedAdmin,
-  clearMailbox,
   clientOf,
-  enableTotp,
-  mailRecipients,
-  mailSubjects,
-  receivedLink,
   registerVerified,
   runWith,
   signIn,
   signInAs,
 } from "./index-test-fixture.ts";
+import { clearMailbox, mailRecipients, receivedLink } from "./mail-test-fixture.ts";
 
 import type { BrowserClient } from "./browser-client-test-fixture.ts";
 

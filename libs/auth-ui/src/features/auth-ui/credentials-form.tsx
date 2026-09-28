@@ -1,4 +1,4 @@
-import { AUTHENTICATION_METHOD } from "@repo/config";
+import { AUTHENTICATION_METHOD } from "@repo/config/identity";
 import { type ActionState, type TextInput, Button, Field, FormColumn } from "@repo/ui";
 import { Effect } from "effect";
 

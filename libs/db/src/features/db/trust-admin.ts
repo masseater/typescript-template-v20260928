@@ -1,12 +1,5 @@
-import {
-  ACCOUNT_STATE,
-  ADMIN_PERMISSION,
-  AUDIT_ACTION,
-  MODERATION_KIND,
-  REPORT_STATUS,
-  ROLE,
-  type ReportStatus,
-} from "@repo/config";
+import { AUDIT_ACTION, MODERATION_KIND, REPORT_STATUS, type ReportStatus } from "@repo/config";
+import { ACCOUNT_STATE, ADMIN_PERMISSION, ROLE } from "@repo/config/identity";
 import { desc, eq, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { Effect } from "effect";

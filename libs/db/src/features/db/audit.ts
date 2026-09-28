@@ -1,9 +1,9 @@
+import { type Role } from "@repo/config/identity";
 import { exists, sql, type SQL, type SQLWrapper } from "drizzle-orm";
 import { DateTime } from "effect";
 
 import { AUDIT_CHANNEL, auditEvent, user, type AuditAction, type AuditChannel } from "./schema.ts";
 
-import type { Role } from "@repo/config";
 import type { DrizzleDatabase } from "./database.ts";
 
 const insertWhere = (

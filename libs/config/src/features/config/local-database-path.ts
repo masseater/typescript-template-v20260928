@@ -25,6 +25,4 @@ const localDatabaseDirectory = (): string => {
   });
 };
 
-const localDatabasePersistence = localDatabaseDirectory();
-
-export { localDatabase, localDatabaseDirectory, localDatabasePersistence, localDatabaseVariable };
+export { localDatabase, localDatabaseDirectory, localDatabaseVariable };

@@ -1,6 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
 import { signedSessionCookie } from "@repo/auth/testing";
-import { APPLICATION, ROLE, STAFF_PERMISSION, httpStatus } from "@repo/config";
+import { APPLICATION, httpStatus } from "@repo/config";
+import { ROLE, STAFF_PERMISSION } from "@repo/config/identity";
 import { AUDIT_CHANNEL, Database } from "@repo/db";
 import { TestDatabase, addSession, addUser, auditActionsOf } from "@repo/db/testing";
 import { recordingSink } from "@repo/observability/testing";

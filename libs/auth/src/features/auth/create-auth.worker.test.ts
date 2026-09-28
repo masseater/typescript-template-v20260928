@@ -1,26 +1,26 @@
-import { APPLICATION, ROLE } from "@repo/config";
+import { APPLICATION } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import { Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 
 import {
-  PASSWORD,
   audienceInputs,
-  authTest,
-  clearMailbox,
-  clientOf,
-  hasMail,
-  mailRecipients,
-  mailSubjects,
   missingSchemaFields,
-  origins,
-  receivedLink,
   register,
+  spendSignInWindow,
+  verifyEmail,
+} from "./auth-test-fixture.ts";
+import { mailSubjects } from "./email.ts";
+import {
+  PASSWORD,
+  authTest,
+  clientOf,
+  origins,
   registerVerified,
   runWith,
   signIn,
-  spendSignInWindow,
-  verifyEmail,
 } from "./index-test-fixture.ts";
+import { clearMailbox, hasMail, mailRecipients, receivedLink } from "./mail-test-fixture.ts";
 
 describe("createAuth", () => {
   describe("a registered user whose email is not verified yet", () => {

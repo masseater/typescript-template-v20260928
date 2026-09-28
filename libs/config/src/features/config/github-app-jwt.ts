@@ -2,8 +2,6 @@ import { Clock, Duration, Effect, Encoding, Redacted, Result } from "effect";
 
 import { GitHubAppKeyInvalid } from "./github-app-key-invalid.ts";
 
-type GitHubAppKey = Readonly<{ appId: string; privateKey: Redacted.Redacted }>;
-
 const jwtClockSkewSeconds = 60;
 const jwtLifetimeSeconds = 540;
 const derShortLengthLimit = 0x80;
@@ -67,7 +65,7 @@ const jsonSegment = (jwtPart: unknown): string =>
   Encoding.encodeBase64Url(new TextEncoder().encode(JSON.stringify(jwtPart)));
 
 const signGitHubAppJwt = Effect.fn("signGitHubAppJwt")(function* signGitHubAppJwt(
-  appKey: GitHubAppKey,
+  appKey: Readonly<{ appId: string; privateKey: Redacted.Redacted }>,
 ) {
   const der = yield* pkcs8Key(Redacted.value(appKey.privateKey));
   const signingKey = yield* Effect.tryPromise({
@@ -96,4 +94,3 @@ const signGitHubAppJwt = Effect.fn("signGitHubAppJwt")(function* signGitHubAppJw
 });
 
 export { signGitHubAppJwt };
-export type { GitHubAppKey };

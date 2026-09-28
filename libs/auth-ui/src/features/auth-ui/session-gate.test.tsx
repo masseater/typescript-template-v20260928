@@ -1,4 +1,4 @@
-import { ROLE } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import { STATUS_VARIANT } from "@repo/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {

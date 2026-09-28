@@ -3,7 +3,7 @@ import { syncBuiltinESMExports } from "node:module";
 import { context, metrics, propagation, trace } from "@opentelemetry/api";
 import { logs } from "@opentelemetry/api-logs";
 import { globalErrorHandler } from "@opentelemetry/core";
-import { exitWith } from "@repo/cli";
+import { exitWith } from "@repo/cli/exit-code";
 import { ConfigProvider, Console, Effect, Ref, Schema } from "effect";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";

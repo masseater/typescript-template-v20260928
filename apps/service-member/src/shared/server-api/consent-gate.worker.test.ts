@@ -1,8 +1,9 @@
 import { assert, it } from "@effect/vitest";
-import { ADMIN_PERMISSION, AGREEMENT_KIND, APPLICATION, ROLE, httpStatus } from "@repo/config";
-import { AgreementRequired, pendingAgreementKinds, requireCurrentAgreements } from "@repo/db";
+import { AGREEMENT_KIND, APPLICATION, httpStatus } from "@repo/config";
+import { ADMIN_PERMISSION, ROLE } from "@repo/config/identity";
+import { AgreementRequired, requireCurrentAgreements } from "@repo/db";
 import { createAgreementDraft, publishAgreementVersion } from "@repo/db/admin";
-import { TestDatabase, runStatement } from "@repo/db/testing";
+import { pendingAgreementKinds, TestDatabase, runStatement } from "@repo/db/testing";
 import { recordingSink } from "@repo/observability/testing";
 import { appLayer } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes } from "@repo/runtime/http";

@@ -1,4 +1,8 @@
-import { telemetryEnv, type Tasks } from "@repo/vite-config";
+import { telemetryEnv } from "@repo/vite-config";
+
+import type { UserConfig } from "vite-plus";
+
+type Tasks = NonNullable<NonNullable<UserConfig["run"]>["tasks"]>;
 
 const unmeasuredTasks = (tasks: Tasks): string[] =>
   Object.entries(tasks).flatMap(([name, task]) => {

@@ -1,4 +1,5 @@
-import { ADMIN_PERMISSION, AUDIT_ACTION, type AgreementKind } from "@repo/config";
+import { AUDIT_ACTION, type AgreementKind } from "@repo/config";
+import { ADMIN_PERMISSION } from "@repo/config/identity";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { DateTime, Effect } from "effect";
 
@@ -164,8 +165,6 @@ const publishAgreementVersion = Effect.fn("publishAgreementVersion")(
 );
 
 export {
-  AgreementVersionTaken,
-  AgreementVersionUnavailable,
   createAgreementDraft,
   listAgreementVersions,
   publishAgreementVersion,

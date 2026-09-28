@@ -5,7 +5,7 @@ import {
   describeDatabase,
   primaryKeyNullability,
   runStatement,
-} from "@repo/db-local";
+} from "@repo/db-local/testing";
 import { generateDrizzleJson, generateMigration } from "drizzle-kit/payload/sqlite";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";

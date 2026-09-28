@@ -1,6 +1,7 @@
 import { assert, it } from "@effect/vitest";
 import { type MailSettings } from "@repo/auth";
-import { PROFILE_VISIBILITY, ROLE } from "@repo/config";
+import { PROFILE_VISIBILITY } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import { query, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
 import { fixtureOrigin } from "@repo/runtime/testing";

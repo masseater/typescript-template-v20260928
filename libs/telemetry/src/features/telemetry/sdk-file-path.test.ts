@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { sdkFilePath } from "./vitest-sdk-path.ts";
+import { sdkFilePath } from "./sdk-file-path.ts";
 
 describe("the sdk path vitest is handed", () => {
   const it = test.extend("sdkPath", () => sdkFilePath("file:///work/sdk%20home/vitest-sdk.ts"));

@@ -11,7 +11,7 @@
     "./shell": "./src/features/ui/shell.ts",
     "./request-client": "./src/features/ui/request-client.ts",
     "./styles.css": "./src/features/ui/styles.css",
-    "./testing": "./src/features/ui/rendered-test-fixture.tsx"
+    "./testing": "./src/features/ui/ui-test-fixture.ts"
   },
   "dependencies": {
     "@effect/atom-react": "catalog:",

@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { ACCOUNT_STATE, ROLE } from "@repo/config";
+import { ACCOUNT_STATE, ROLE, type AccountState, type Role } from "@repo/config/identity";
 import { eq, query, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
 import { Effect, DateTime } from "effect";
@@ -7,7 +7,6 @@ import { Effect, DateTime } from "effect";
 import { homeFeed } from "../server-api/member-social.ts";
 import { getMember, listMembers } from "./members.ts";
 
-import type { AccountState, Role } from "@repo/config";
 import type { Database, DatabaseFailure } from "@repo/db";
 
 const { follow, user } = schema;

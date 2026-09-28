@@ -2,7 +2,7 @@
 
 import { NodeServices } from "@effect/platform-node";
 import { causeRecord, runCli, runCommand } from "@repo/cli";
-import { ROLE } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import { Console, Effect, Option, Schema } from "effect";
 import { Argument, Command, Flag } from "effect/unstable/cli";
 

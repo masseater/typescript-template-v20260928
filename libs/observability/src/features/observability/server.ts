@@ -1,5 +1,4 @@
-export { annotateLogs, annotateSpan, withSpan } from "./annotations.ts";
-export type { Attributes } from "./annotations.ts";
+export { annotateSpan, withSpan } from "./annotations.ts";
 export { CurrentRequest } from "./current-request.ts";
 export { RequestRejected, readJson, rejectionStatus } from "./request.ts";
 export { Telemetry } from "./telemetry.ts";
@@ -11,9 +10,7 @@ export { errorAttributes, wireErrorType } from "./errors.ts";
 export { maximumBatchSize, maximumMeasurement } from "./events.ts";
 export type { BrowserEvent } from "./events.ts";
 export { observeRequest, reportFailure } from "./request-span.ts";
-export { logAt, logCause, statusSeverity } from "./severity.ts";
-export type { Severity } from "./severity.ts";
-export { redactSecrets, redactedField } from "./redact.ts";
+export { logAt, logCause } from "./severity.ts";
 export { reportUnavailable } from "./unavailable.ts";
 export {
   RequestId,
@@ -29,6 +26,4 @@ export {
   traceparentOf,
 } from "./protocol.ts";
 export type { Correlation } from "./protocol.ts";
-export type { RequestContext } from "./current-request.ts";
 export type { Reporting } from "./unavailable.ts";
-export { deploymentKeys, privateDeploymentKeys } from "./deployment-keys.ts";

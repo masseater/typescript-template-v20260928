@@ -1,5 +1,6 @@
 import { assert, it } from "@effect/vitest";
-import { ADMIN_PERMISSION, AGREEMENT_KIND, APPLICATION, AUDIT_ACTION, ROLE } from "@repo/config";
+import { AGREEMENT_KIND, APPLICATION, AUDIT_ACTION } from "@repo/config";
+import { ADMIN_PERMISSION, ROLE } from "@repo/config/identity";
 import { eq } from "drizzle-orm";
 import { DateTime, Effect } from "effect";
 import { TestClock } from "effect/testing";

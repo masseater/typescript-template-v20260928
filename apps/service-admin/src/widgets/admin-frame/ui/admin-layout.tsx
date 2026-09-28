@@ -1,6 +1,6 @@
 import { SessionUserProvider } from "@repo/auth-ui";
 import { SessionGate } from "@repo/auth-ui/session-gate";
-import { ROLE } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import { Outlet } from "@tanstack/react-router";
 
 import { AdminFrame } from "./admin-frame.tsx";

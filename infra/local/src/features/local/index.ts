@@ -1,1 +1,1 @@
-export * from "./receiver.ts";
+export { receiverOrigin } from "./receiver.ts";

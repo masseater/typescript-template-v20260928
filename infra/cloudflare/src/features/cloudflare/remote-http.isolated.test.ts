@@ -4,7 +4,7 @@ import {
   TestBinding,
   deployMigrations,
   executeD1RawBatch,
-} from "@repo/db-local";
+} from "@repo/db-local/testing";
 import { RemoteFailure, loadRemoteMigrations, migrateD1 } from "@repo/db/migrations";
 import { DateTime, Effect, ManagedRuntime } from "effect";
 import { HttpResponse, http } from "msw";

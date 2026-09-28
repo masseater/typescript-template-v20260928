@@ -1,9 +1,9 @@
 import { assert, describe, it } from "@effect/vitest";
-import { inquiryStaff, type ReadOnlyInquiryStaff } from "@repo/db/inquiry-staff";
+import { inquiryStaff } from "@repo/db/inquiry-staff";
 
 describe("the staff surface", () => {
   it("keeps staff inquiry access read-only outside the admin app", () => {
-    const staff: ReadOnlyInquiryStaff = inquiryStaff;
+    const staff = inquiryStaff;
     assert.isFunction(staff.getInquiry);
     assert.isFunction(staff.inquiryCounts);
     assert.isFunction(staff.listMemberInquiries);

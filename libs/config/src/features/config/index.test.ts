@@ -4,15 +4,13 @@ import { describe, expect, test } from "vite-plus/test";
 import { ConfigurationInvalid } from "./configuration-invalid.ts";
 import {
   HttpsOrigin,
-  adminPageSize,
   distinctOrigins,
-  maximumAdminPageSize,
-  readAi,
   readConfig,
   readJobs,
   readSiteEnvironment,
   readWikiBindings,
 } from "./index.ts";
+import { adminPageSize, maximumAdminPageSize } from "./paging.ts";
 
 const local = {
   APP_ORIGIN: "http://localhost:3001",
@@ -76,26 +74,43 @@ describe("readConfig", () => {
   });
 });
 
-describe("readAi", () => {
-  const it = test.extend("runner", () =>
-    Effect.runPromise(readAi({ ...local, ...workerBindings })));
+describe("a site with an AI binding", () => {
+  const it = test.extend("site", () =>
+    Effect.runPromise(
+      readSiteEnvironment({
+        AI: workerBindings.AI,
+        APP_RELEASE: "local",
+        ASSETS: workerBindings.ASSETS,
+      }),
+    ));
 
-  it("returns the AI binding", ({ runner }) => {
-    expect(runner).toStrictEqual(workerBindings.AI);
+  it("returns the AI binding", ({ site }) => {
+    expect(site).toStrictEqual({
+      AI: workerBindings.AI,
+      APP_RELEASE: "local",
+      ASSETS: workerBindings.ASSETS,
+    });
   });
 });
 
-describe("a worker without an AI binding", () => {
-  const it = test.extend("runner", () => Effect.runPromise(readAi(local)));
+describe("a site without an AI binding", () => {
+  const it = test.extend("site", () =>
+    Effect.runPromise(
+      readSiteEnvironment({ APP_RELEASE: "local", ASSETS: workerBindings.ASSETS }),
+    ));
 
-  it("leaves the runner absent", ({ runner }) => {
-    expect(runner).toStrictEqual(undefined);
+  it("leaves the runner absent", ({ site }) => {
+    expect(site).toStrictEqual({ APP_RELEASE: "local", ASSETS: workerBindings.ASSETS });
   });
 });
 
 describe("an AI binding with no run", () => {
   const it = test.extend("refusal", () =>
-    Effect.runPromise(readAi({ ...local, AI: {} }).pipe(Effect.flip)));
+    Effect.runPromise(
+      readSiteEnvironment({ AI: {}, APP_RELEASE: "local", ASSETS: workerBindings.ASSETS }).pipe(
+        Effect.flip,
+      ),
+    ));
 
   it("names the AI binding", ({ refusal }) => {
     expect(refusal).toStrictEqual(new ConfigurationInvalid({ reason: 'Expected Ai\n  at ["AI"]' }));

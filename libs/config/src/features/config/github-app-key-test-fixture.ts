@@ -1,10 +1,5 @@
 import { Effect, Encoding, Option, Result, Schema } from "effect";
 
-type GitHubAppKeyFixture = Readonly<{
-  privateKey: string;
-  signedBy: (authorization: string | null, appId: string) => Promise<boolean>;
-}>;
-
 const rsaModulusLength = 2048;
 const pemLineLength = 64;
 const pkcs1Offset = 26;
@@ -71,8 +66,10 @@ const gitHubAppKeyFixture = Effect.fn("gitHubAppKeyFixture")(function* gitHubApp
         ? pem("PRIVATE KEY", pkcs8)
         : pem("RSA PRIVATE KEY", pkcs8.slice(pkcs1Offset)),
     signedBy,
-  } satisfies GitHubAppKeyFixture;
+  } satisfies Readonly<{
+    privateKey: string;
+    signedBy: (authorization: string | null, appId: string) => Promise<boolean>;
+  }>;
 }, Effect.orDie);
 
 export { gitHubAppKeyFixture };
-export type { GitHubAppKeyFixture };

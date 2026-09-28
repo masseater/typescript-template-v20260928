@@ -3,19 +3,21 @@ import { Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 
 import {
+  bootstrapVerifiedAdmin,
+  enableTotp,
+  pendingSecondFactor,
+  requireStatus,
+  sessionBeforeEnrollment,
+  signInAgainAfterTotp,
+} from "./auth-test-fixture.ts";
+import {
   AuthApps,
   PASSWORD,
   authTest,
-  bootstrapVerifiedAdmin,
   bootstrapVerifiedStaff,
   clientOf,
-  enableTotp,
-  pendingSecondFactor,
   registerVerified,
-  requireStatus,
   runWith,
-  sessionBeforeEnrollment,
-  signInAgainAfterTotp,
   signInAs,
   startAuthorization,
 } from "./index-test-fixture.ts";

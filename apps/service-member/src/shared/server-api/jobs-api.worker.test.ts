@@ -12,8 +12,7 @@ import { recordingSink } from "@repo/observability/testing";
 import { accountApi } from "@repo/runtime/account";
 import { appLayer } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
-import { consumeJobs } from "@repo/runtime/jobs";
-import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
+import { consumeJobs, appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
 import {
   createExecutionContext,

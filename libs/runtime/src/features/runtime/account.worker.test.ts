@@ -1,13 +1,15 @@
-import { httpStatus } from "@repo/config";
+import { APPLICATION, httpStatus } from "@repo/config";
 import { TestDatabase, runStatement } from "@repo/db/testing";
 import { recordingSink } from "@repo/observability/testing";
-import { Effect } from "effect";
+import { Effect, Layer } from "effect";
 import { TestClock } from "effect/testing";
 import { describe, expect, test } from "vite-plus/test";
 
 import { sessionApi } from "./account.ts";
-import { fixtureOrigin, testClockRuntime } from "./app-test-fixture.ts";
+import { appEnvironment, fixtureOrigin } from "./app-test-fixture.ts";
+import { appLayer } from "./bindings.ts";
 import { apiRoot, apiRoutes, createApi, elysiaServer } from "./http.ts";
+import { workerRuntime } from "./worker-runtime.ts";
 
 describe("the health route", () => {
   describe("asked twice while the database breaks in between", () => {
@@ -15,7 +17,18 @@ describe("the health route", () => {
       Effect.runPromise(
         Effect.gen(function* healthStatusesProgram() {
           yield* Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase));
-          const runtime = testClockRuntime({ "/api/health": "health" });
+          const runtime = workerRuntime(() =>
+            Layer.merge(
+              Layer.orDie(
+                appLayer({
+                  env: appEnvironment(),
+                  audience: APPLICATION.user,
+                  routes: { "/api/health": "health" },
+                }),
+              ),
+              TestClock.layer(),
+            ),
+          );
           onCleanup(() => runtime.dispose());
           const { ANY: serveRequest } = elysiaServer(
             createApi(apiRoot).use(
@@ -46,7 +59,18 @@ describe("the health route", () => {
         Effect.gen(function* healthStatusesProgram() {
           yield* Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase));
           yield* Effect.orDie(runStatement("drop table `user`"));
-          const runtime = testClockRuntime({ "/api/health": "health" });
+          const runtime = workerRuntime(() =>
+            Layer.merge(
+              Layer.orDie(
+                appLayer({
+                  env: appEnvironment(),
+                  audience: APPLICATION.user,
+                  routes: { "/api/health": "health" },
+                }),
+              ),
+              TestClock.layer(),
+            ),
+          );
           onCleanup(() => runtime.dispose());
           const { ANY: serveRequest } = elysiaServer(
             createApi(apiRoot).use(
@@ -79,7 +103,18 @@ describe("the health route", () => {
       Effect.runPromise(
         Effect.gen(function* healthStatusesProgram() {
           yield* Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase));
-          const runtime = testClockRuntime({ "/api/health": "health" });
+          const runtime = workerRuntime(() =>
+            Layer.merge(
+              Layer.orDie(
+                appLayer({
+                  env: appEnvironment(),
+                  audience: APPLICATION.user,
+                  routes: { "/api/health": "health" },
+                }),
+              ),
+              TestClock.layer(),
+            ),
+          );
           onCleanup(() => runtime.dispose());
           const { ANY: serveRequest } = elysiaServer(
             createApi(apiRoot).use(

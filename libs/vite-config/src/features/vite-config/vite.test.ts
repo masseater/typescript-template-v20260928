@@ -14,7 +14,6 @@ import {
   lifecycle,
   modularBoundaries,
   paraglideAppRun,
-  sliceBoundaries,
   taskInput,
   telemetryEnv,
   workspaceCheckImports,
@@ -22,6 +21,35 @@ import {
 } from "./vite.ts";
 
 import type { ConfigEnv, PluginOption } from "vite-plus";
+
+const expectedSliceChecks = {
+  "check:feature-sliced": {
+    command: "dont-review-it-feature-sliced",
+    env: [...telemetryEnv],
+    input: [
+      ...taskInput,
+      { base: "workspace", pattern: "!.local" },
+      { base: "workspace", pattern: "!.local/**" },
+      ...localizedApps.map((app) => ({
+        base: "workspace",
+        pattern: `!apps/${app}/.paraglide/**`,
+      })),
+    ],
+  },
+  "check:thin-app-routes": {
+    command: "dont-review-it-thin-app-routes",
+    env: [...telemetryEnv],
+    input: [
+      ...taskInput,
+      { base: "workspace", pattern: "!.local" },
+      { base: "workspace", pattern: "!.local/**" },
+      ...localizedApps.map((app) => ({
+        base: "workspace",
+        pattern: `!apps/${app}/.paraglide/**`,
+      })),
+    ],
+  },
+};
 
 const serve = { command: "serve", isPreview: false, mode: "test" } as const satisfies ConfigEnv;
 
@@ -116,7 +144,7 @@ describe("appRun", () => {
           input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**", ...inlangState],
           output: [{ auto: true }, "!**/node_modules/.cache/**"],
         },
-        ...sliceBoundaries,
+        ...expectedSliceChecks,
         build: {
           command: "vp build",
           env: [...telemetryEnv],
@@ -192,43 +220,6 @@ describe("paraglideAppRun", () => {
           ...applicationRun.tasks["check:react"],
           dependsOn: ["typescript-template#compile:paraglide"],
         },
-      },
-    });
-  });
-});
-
-describe("sliceBoundaries", () => {
-  const it = test.extend("sliceChecks", () => sliceBoundaries);
-
-  it("leaves local state and compiled message catalogs out of the slice checks", ({
-    sliceChecks,
-  }) => {
-    expect(sliceChecks).toStrictEqual({
-      "check:feature-sliced": {
-        command: "dont-review-it-feature-sliced",
-        env: [...telemetryEnv],
-        input: [
-          ...taskInput,
-          { base: "workspace", pattern: "!.local" },
-          { base: "workspace", pattern: "!.local/**" },
-          ...localizedApps.map((app) => ({
-            base: "workspace",
-            pattern: `!apps/${app}/.paraglide/**`,
-          })),
-        ],
-      },
-      "check:thin-app-routes": {
-        command: "dont-review-it-thin-app-routes",
-        env: [...telemetryEnv],
-        input: [
-          ...taskInput,
-          { base: "workspace", pattern: "!.local" },
-          { base: "workspace", pattern: "!.local/**" },
-          ...localizedApps.map((app) => ({
-            base: "workspace",
-            pattern: `!apps/${app}/.paraglide/**`,
-          })),
-        ],
       },
     });
   });

@@ -1,4 +1,4 @@
-import { ROLE } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import { Schema } from "effect";
 
 import { FieldKey, Reply, Sheet, maximumOptions } from "./sheet.ts";

@@ -1,26 +1,26 @@
-import { ADMIN_PERMISSION, APPLICATION, STAFF_PERMISSION } from "@repo/config";
+import { APPLICATION } from "@repo/config";
+import { ADMIN_PERMISSION, STAFF_PERMISSION } from "@repo/config/identity";
 import { inviteAdmin } from "@repo/db/admin";
 import { inviteStaff } from "@repo/db/staff";
 import { Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 
+import { bootstrapVerifiedAdmin, enableTotp } from "./auth-test-fixture.ts";
 import { Auth } from "./auth.ts";
 import { mailSubjects } from "./email.ts";
 import {
   AuthApps,
   PASSWORD,
   authTest,
-  bootstrapVerifiedAdmin,
   clientOf,
-  enableTotp,
   origins,
-  receivedLink,
   runWith,
   signIn,
   signInAs,
   wikiStaff,
 } from "./index-test-fixture.ts";
 import { acceptInvitation, mailInvite, previewInvitation } from "./invite.ts";
+import { receivedLink } from "./mail-test-fixture.ts";
 
 describe("an administrator invite", () => {
   const it = authTest.extend("invitedAdministrator", ({ auth }) =>

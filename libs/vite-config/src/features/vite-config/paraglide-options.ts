@@ -27,4 +27,4 @@ const paraglideCompileOptions = (): CompilerOptions => ({
   ],
 });
 
-export { localizedApps, paraglideCompileOptions, paraglideStrategy };
+export { localizedApps, paraglideCompileOptions };

@@ -1,11 +1,10 @@
 import {
-  ACCOUNT_STATE,
   PHOTO_SLOT,
   PROFILE_VISIBILITY,
-  ROLE,
   type PhotoSlot,
   type ProfileVisibility,
 } from "@repo/config";
+import { ACCOUNT_STATE, ROLE } from "@repo/config/identity";
 import { and, eq, not, or, type SQL } from "drizzle-orm";
 import { DateTime, Effect } from "effect";
 
@@ -80,8 +79,6 @@ const photoKeyColumns = {
   [PHOTO_SLOT.company]: user.companyPhotoKey,
 } as const satisfies Record<PhotoSlot, unknown>;
 
-type PhotoKeys = Readonly<Record<PhotoSlot, string | null>>;
-
 const photoKeysOf = Effect.fn("photoKeysOf")(function* photoKeysOf(memberId: string) {
   const [storedPhotoKeys] = yield* query((database) =>
     database.select(photoKeyColumns).from(user).where(eq(user.id, memberId)).limit(1),
@@ -89,7 +86,7 @@ const photoKeysOf = Effect.fn("photoKeysOf")(function* photoKeysOf(memberId: str
   if (!storedPhotoKeys) {
     return yield* new UserNotFound();
   }
-  return storedPhotoKeys satisfies PhotoKeys;
+  return storedPhotoKeys satisfies Readonly<Record<PhotoSlot, string | null>>;
 });
 
 const visiblePhotoKey = Effect.fn("visiblePhotoKey")(function* visiblePhotoKey(lookup: {
@@ -136,4 +133,3 @@ export {
   updateVisibility,
   visiblePhotoKey,
 };
-export type { PhotoKeys, VisibilitySettings };

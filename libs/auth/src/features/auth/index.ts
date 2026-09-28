@@ -1,6 +1,4 @@
 export { adminScopes } from "./admin-scopes.ts";
-export { AdminMfaRequired } from "./admin-mfa-required.ts";
-export { AdminRequired } from "./admin-required.ts";
 export { Auth } from "./auth.ts";
 export {
   insufficientScopeError,
@@ -8,31 +6,16 @@ export {
   mcpJsonRpcError,
   mcpUnauthorized,
 } from "./mcp-resource.ts";
-export type { McpResourcePolicy, McpTokenSubject } from "./mcp-resource.ts";
 export { AuthFailure } from "./auth-failure.ts";
-export { EmailDeliveryFailed } from "./email-delivery-failed.ts";
 export { EmailVerificationFailed } from "./email-verification-failed.ts";
-export { SessionInvalid } from "./session-invalid.ts";
-export { SessionRequired } from "./session-required.ts";
 export { handleAuthRequest, verifyEmailToken } from "./auth-request.ts";
-export {
-  mailSubjects,
-  notificationMailSubjects,
-  sendContactEmail,
-  sendExistingAccountNotice,
-  sendNotificationEmail,
-  sendVerificationEmail,
-} from "./email.ts";
+export { sendContactEmail, sendNotificationEmail } from "./email.ts";
 export { acceptInvitation, mailInvite, previewInvitation } from "./invite.ts";
 export { InviteRejected } from "@repo/db";
 export type { MailSettings } from "./email.ts";
-export { ApiKeyWriteForbidden } from "./api-key-write-forbidden.ts";
 export {
-  apiKeyFromHeaders,
   apiKeyWriteFailure,
-  verifyMemberApiKey,
   verifySessionOrApiKey,
   verifySessionWriter,
 } from "./member-api-key.ts";
 export { verifiedSessionId, verifySession } from "./session.ts";
-export type { AuthOptions, BetterAuthInstance } from "./create-auth.ts";

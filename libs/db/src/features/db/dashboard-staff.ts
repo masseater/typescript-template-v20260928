@@ -1,4 +1,5 @@
-import { METRIC_KEY, METRIC_PERIOD, ROLE, metricKeys } from "@repo/config";
+import { METRIC_KEY, METRIC_PERIOD, metricKeys } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import { and, desc, eq, gte, lte, type SQL } from "drizzle-orm";
 import { DateTime, Effect } from "effect";
 
@@ -17,14 +18,6 @@ import {
 
 const DEFAULT_TREND_DAYS = 30;
 
-type AuditEventView = Readonly<{
-  action: AuditAction;
-  actorId: string;
-  createdAt: Date;
-  id: string;
-  targetId: string;
-}>;
-
 type MetricTrendPoint = Readonly<{
   bucket: string;
   clientKind: ClientKind;
@@ -34,11 +27,6 @@ type MetricTrendPoint = Readonly<{
 type OverviewCard = Readonly<{
   metric: MetricKey;
   value: number;
-}>;
-
-type OverviewMetrics = Readonly<{
-  cards: readonly OverviewCard[];
-  trend: readonly MetricTrendPoint[];
 }>;
 
 const latestValueOf = (
@@ -88,13 +76,13 @@ const overviewCardsLive = Effect.fn("overviewCardsLive")(function* overviewCards
     .map((snapshotValue) => ({ metric: snapshotValue.metric, value: snapshotValue.value }));
 });
 
-type TrendQuery = Readonly<{
-  days?: number;
-  metric: MetricKey;
-  period: MetricPeriod;
-}>;
-
-const metricTrend = Effect.fn("metricTrend")(function* metricTrendProgram(queryInput: TrendQuery) {
+const metricTrend = Effect.fn("metricTrend")(function* metricTrendProgram(
+  queryInput: Readonly<{
+    days?: number;
+    metric: MetricKey;
+    period: MetricPeriod;
+  }>,
+) {
   const days = queryInput.days ?? DEFAULT_TREND_DAYS;
   const until = DateTime.toDate(yield* DateTime.now);
   until.setUTCHours(0, 0, 0, 0);
@@ -134,7 +122,10 @@ const staffOverview = Effect.fn("staffOverview")(function* staffOverviewProgram(
     metric: METRIC_KEY.memberCount,
     period: METRIC_PERIOD.daily,
   });
-  return { cards, trend } satisfies OverviewMetrics;
+  return { cards, trend } satisfies Readonly<{
+    cards: readonly OverviewCard[];
+    trend: readonly MetricTrendPoint[];
+  }>;
 });
 
 type AuditPage = Readonly<{
@@ -172,7 +163,13 @@ const staffAuditEvents = Effect.fn("staffAuditEvents")(function* staffAuditEvent
   );
   const matchingCount = yield* countRows(auditEvent, () => matchesAuditPage(page));
   return {
-    events: auditEvents satisfies readonly AuditEventView[],
+    events: auditEvents satisfies readonly Readonly<{
+      action: AuditAction;
+      actorId: string;
+      createdAt: Date;
+      id: string;
+      targetId: string;
+    }>[],
     total: matchingCount,
   };
 });
@@ -218,12 +215,4 @@ const dashboardStaff: ReadOnlyDashboardStaff = {
 };
 
 export { dashboardStaff, refreshMetricSnapshots };
-export type {
-  AuditEventView,
-  AuditPage,
-  MetricTrendPoint,
-  OverviewCard,
-  OverviewMetrics,
-  ReadOnlyDashboardStaff,
-  TrendQuery,
-};
+export type { ReadOnlyDashboardStaff };

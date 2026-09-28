@@ -419,10 +419,7 @@ function apiRoutes<Requirements>(
 }
 
 export { AppOrigin } from "./app-origin.ts";
-export { Assets } from "./assets.ts";
-export { InputInvalid } from "./input-invalid.ts";
 export { jsonResponse, secureResponse } from "./responses.ts";
-export { failureBy } from "./failures.ts";
 export {
   apiDocs,
   apiRoot,
@@ -435,7 +432,6 @@ export {
 };
 export type {
   ApiRoutes,
-  Decodable,
   ElysiaContext,
   ElysiaHandler,
   ElysiaStreamContext,

@@ -16,7 +16,8 @@ import {
   wikiOrigin,
   wikiStaff,
 } from "@repo/auth/testing";
-import { APPLICATION, ROLE, httpStatus } from "@repo/config";
+import { APPLICATION, httpStatus } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import { Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 

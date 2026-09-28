@@ -1,5 +1,5 @@
-import { APPLICATION, ROLE } from "@repo/config";
-import { ADMIN_PERMISSION, type AdminPermission } from "@repo/config/identity";
+import { APPLICATION } from "@repo/config";
+import { ADMIN_PERMISSION, type AdminPermission, ROLE } from "@repo/config/identity";
 import { Effect } from "effect";
 
 import {
@@ -10,10 +10,8 @@ import {
   registerVerified,
   signInAs,
 } from "./auth-test-fixture.ts";
-import { origins } from "./browser-client-test-fixture.ts";
 import { startClientAuthorization } from "./oauth-client-test-fixture.ts";
 
-const adminOrigin = origins[APPLICATION.admin];
 const adminRedirectUri = "http://127.0.0.1:43124/callback";
 
 const adminOperator = Effect.fn("adminOperator")(function* adminOperator(
@@ -42,4 +40,4 @@ const startAdminAuthorization = Effect.fn("startAdminAuthorization")(
   },
 );
 
-export { adminOperator, adminOrigin, adminRedirectUri, startAdminAuthorization };
+export { adminOperator, startAdminAuthorization };

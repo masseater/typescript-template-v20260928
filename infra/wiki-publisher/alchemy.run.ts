@@ -9,7 +9,10 @@ import * as GitHub from "alchemy/GitHub";
 import * as Output from "alchemy/Output";
 import { Effect, Redacted } from "effect";
 
-import { productionEnvironment, wikiPublisherApp } from "./src/features/wiki-publisher/index.ts";
+import {
+  productionEnvironment,
+  wikiPublisherApp,
+} from "./src/features/wiki-publisher/wiki-publisher.ts";
 
 const { config } = await Effect.runPromise(deploymentAccess());
 

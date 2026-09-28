@@ -38,11 +38,4 @@ const RegisteredPerson = Schema.Struct({
   name: Schema.String,
 });
 
-export {
-  RecordingSegment,
-  RecordingSpeaker,
-  RecordingSummary,
-  RecordingView,
-  RegisteredPerson,
-  SpeakerLabel,
-};
+export { RecordingSegment, RecordingSummary, RecordingView, RegisteredPerson, SpeakerLabel };

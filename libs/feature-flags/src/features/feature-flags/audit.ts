@@ -2,7 +2,7 @@ import { webCrypto } from "@repo/config";
 import { AUDIT_ACTION, auditEvent, query } from "@repo/db";
 import { DateTime, Effect } from "effect";
 
-import { auditTargetForToggle, type FlagKey } from "./definitions.ts";
+import { auditTargetForToggle, type FlagKey } from "./flag-vocabulary.ts";
 
 const recordFlagToggle = Effect.fn("recordFlagToggle")(function* recordFlagToggle(toggleAudit: {
   readonly actorId: string;

@@ -15,4 +15,4 @@ const SOURCE_MAP_MANIFEST = "emitted-maps.json";
 const sourceMapManifest = (repositoryRoot: string, app: BuildTarget): string =>
   paths.join(sourceMapDirectories(repositoryRoot, app).client, SOURCE_MAP_MANIFEST);
 
-export { SOURCE_MAP_MANIFEST, sourceMapDirectories, sourceMapManifest };
+export { sourceMapDirectories, sourceMapManifest };

@@ -13,7 +13,7 @@ import {
   flagVariations,
   variationForBoolean,
   type FlagKey,
-} from "./definitions.ts";
+} from "./flag-vocabulary.ts";
 
 const RemoteFlag = Schema.Struct({
   defaultVariation: Schema.Literals(flagVariations),

@@ -3,9 +3,9 @@ import {
   Email,
   GoogleAnalyticsMeasurementId,
   HttpsOrigin,
-  ROLE,
   distinctOrigins,
 } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import { workerCompatibility } from "@repo/config/worker";
 import { Recipients } from "@repo/monitor";
 import { otlpSignalUrl } from "@repo/observability";

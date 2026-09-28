@@ -1,7 +1,7 @@
-import { Effect, type Redacted } from "effect";
+import { Effect } from "effect";
 
 import { recordFlagToggle } from "./audit.ts";
-import { flagDefinitionFor, type FlagKey } from "./definitions.ts";
+import { flagDefinitionFor, type FlagKey } from "./flag-vocabulary.ts";
 import { type FlagshipWriteConfig, writeFlag } from "./flagship-write.ts";
 import { FeatureFlags } from "./service.ts";
 
@@ -52,11 +52,4 @@ const toggleFlagRemote = Effect.fn("toggleFlagRemote")(function* toggleFlagRemot
   };
 });
 
-type FlagshipToggleEnv = Readonly<{
-  FLAGSHIP_ACCOUNT_ID: string;
-  FLAGSHIP_API_TOKEN: Redacted.Redacted;
-  FLAGSHIP_APP_ID: string;
-}>;
-
 export { toggleFlag, toggleFlagRemote };
-export type { FlagshipToggleEnv };

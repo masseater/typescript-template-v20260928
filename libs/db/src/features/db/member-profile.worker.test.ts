@@ -1,4 +1,5 @@
-import { PHOTO_SLOT, PROFILE_VISIBILITY, ROLE } from "@repo/config";
+import { PHOTO_SLOT, PROFILE_VISIBILITY } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 

@@ -4,7 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/features/vite-config/index.ts",
-    "./private-path": "./src/features/vite-config/private-path.ts",
+    "./secret-file-name": "./src/features/vite-config/secret-file-name.ts",
     "./source-maps": "./src/features/vite-config/source-maps.ts"
   },
   "dependencies": {

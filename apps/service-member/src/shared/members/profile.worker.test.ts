@@ -1,5 +1,6 @@
 import { assert, it } from "@effect/vitest";
-import { PROFILE_VISIBILITY, ROLE } from "@repo/config";
+import { PROFILE_VISIBILITY } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import { blockMember, query, schema, setPhotoKey } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
 import { DateTime, Effect } from "effect";

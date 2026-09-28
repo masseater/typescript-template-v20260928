@@ -1,5 +1,5 @@
 import { useSessionUser } from "@repo/auth-ui";
-import { ADMIN_PERMISSION, grantsAdminLevel } from "@repo/config";
+import { ADMIN_PERMISSION, grantsAdminLevel } from "@repo/config/identity";
 import { LoadingRow, NavigationLink, Table, TableBody } from "@repo/ui";
 import { createColumnHelper, metaHelper, tableFeatures, useTable } from "@tanstack/react-table";
 

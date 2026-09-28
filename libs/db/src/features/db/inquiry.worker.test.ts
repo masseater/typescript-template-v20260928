@@ -1,9 +1,10 @@
-import { APPLICATION, ROLE } from "@repo/config";
+import { APPLICATION } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { TestDatabase } from "./database-test-fixture.ts";
-import { staffInquiryCounts } from "./inquiry-staff.ts";
+import { inquiryStaff } from "./inquiry-staff.ts";
 import {
   closeInquiry,
   countPendingInquiries,
@@ -86,7 +87,7 @@ describe("replyAsAdmin", () => {
   });
 });
 
-describe("staffInquiryCounts", () => {
+describe("inquiryStaff.inquiryCounts", () => {
   const it = test.extend("inquiryTally", () =>
     Effect.runPromise(
       Effect.gen(function* tallyInquiries() {
@@ -98,7 +99,7 @@ describe("staffInquiryCounts", () => {
         yield* createMemberInquiry("member", { body: "2件目", subject: "2件目" });
         const closed = yield* createMemberInquiry("member", { body: "3件目", subject: "3件目" });
         yield* closeInquiry(sessionId, closed.id);
-        const inquiryCounts = yield* staffInquiryCounts();
+        const inquiryCounts = yield* inquiryStaff.inquiryCounts();
         const pending = yield* countPendingInquiries(sessionId);
         return {
           byStatus: inquiryCounts.byStatus,

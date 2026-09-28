@@ -5,7 +5,6 @@ const isolatedNodeTests = `**/*${isolatedNodeTestSuffix}`;
 const devServerTests = "**/*.dev-server.test.ts";
 const workerTestPattern = String.raw`\.worker\.test\.[cm]?[jt]sx?$`;
 const testPattern = String.raw`\.(?:test|spec)\.[cm]?[jt]sx?$`;
-const unitTestShardCount = 4;
 const prCheckShardCount = 4;
 const prCheckRootShard = "root";
 const nodeRuntimePackages = [
@@ -24,7 +23,7 @@ const testFile = new RegExp(testPattern, "u");
 const deployedToWorkers = /\/(?:apps|libs|infra\/(?:budget|error|health)-monitor)\//u;
 
 const browserOrNodeOnly =
-  /\/libs\/(?:ui|auth-ui)\/|\/libs\/runtime\/src\/features\/runtime\/client\.ts$|\/libs\/db\/src\/features\/db\/remote[^/]*\.ts$|\/libs\/db-local\/src\/features\/db-local\/testing-node[^/]*\.ts$/u;
+  /\/libs\/(?:ui|auth-ui)\/|\/libs\/runtime\/src\/features\/runtime\/client\.ts$|\/libs\/db\/src\/features\/db\/remote[^/]*\.ts$|\/libs\/db-local\/src\/features\/db-local\/node-database-test-fixture\.ts$/u;
 
 const runsInWorkerRuntime = (inspected: string): boolean => {
   return (
@@ -43,7 +42,6 @@ export {
   prCheckShardCount,
   runsInWorkerRuntime,
   testPattern,
-  unitTestShardCount,
   workerRuntimeModules,
   workerTestPattern,
   workerTestSuffix,

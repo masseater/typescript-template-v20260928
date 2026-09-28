@@ -1,4 +1,5 @@
-import { APPLICATION, ROLE } from "@repo/config";
+import { APPLICATION } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import { eq } from "drizzle-orm";
 import { DateTime, Effect, Ref } from "effect";
 import { describe, expect, test } from "vite-plus/test";

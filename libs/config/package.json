@@ -13,7 +13,7 @@
     "./worker": "./src/features/config/worker.ts",
     "./identity": "./src/features/config/identity.ts",
     "./schema-mismatches": "./src/features/config/schema-mismatches.ts",
-    "./testing": "./src/features/config/github-app-key-test-fixture.ts"
+    "./testing": "./src/features/config/config-test-fixture.ts"
   },
   "dependencies": {
     "effect": "catalog:"

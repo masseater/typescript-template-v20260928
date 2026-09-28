@@ -20,7 +20,6 @@
     "./monitor": "./src/features/cloudflare/monitor.ts",
     "./operator": "./src/features/cloudflare/operator.ts",
     "./prefixed-stack": "./src/features/cloudflare/prefixed-stack.ts",
-    "./stacks": "./src/features/cloudflare/stacks.ts",
     "./wiki-program": "./src/features/cloudflare/wiki-program.ts"
   },
   "dependencies": {

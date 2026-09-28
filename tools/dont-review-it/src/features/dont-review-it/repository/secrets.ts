@@ -1,5 +1,5 @@
 import { deploymentKey, privateDeploymentKeys } from "@repo/observability/deployment-keys";
-import { isSecretFileName } from "@repo/vite-config/private-path";
+import { isSecretFileName } from "@repo/vite-config/secret-file-name";
 import { ConfigProvider, Effect } from "effect";
 
 interface DeploymentValue {

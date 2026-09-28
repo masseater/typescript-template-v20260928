@@ -2,7 +2,8 @@ import { Effect, Redacted } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { ConfigurationInvalid } from "./configuration-invalid.ts";
-import { isLocalDevelopmentOrigin, readEnvironment, readStripeConfig } from "./index.ts";
+import { isLocalDevelopmentOrigin } from "./environment.ts";
+import { readEnvironment, readStripeConfig } from "./index.ts";
 
 const localBindings = {
   APP_ORIGIN: "http://localhost:3001",

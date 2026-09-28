@@ -159,5 +159,5 @@ abstract class Monitor<Bindings extends MonitorBindings> {
   protected abstract check(notify: Notify): Effect.Effect<object, unknown>;
 }
 
-export { AlertEnvironment, Monitor, Recipients };
+export { Monitor, Recipients };
 export type { Alert, MonitorBindings, Notify };

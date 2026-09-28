@@ -4,7 +4,9 @@ import {
   googleAnalyticsScriptSrc,
   httpStatus,
 } from "@repo/config";
-import { strictTransportSecurity } from "@repo/runtime/security";
+import { hstsMaxAgeSeconds } from "@repo/runtime/security";
+
+const strictTransportSecurity = `max-age=${hstsMaxAgeSeconds}; includeSubDomains`;
 const nonceBytes = 16;
 const isolationDirectives = [
   "base-uri 'none'",

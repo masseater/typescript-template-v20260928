@@ -1,5 +1,5 @@
 import { readJobs } from "@repo/config";
-import { consumeJobs } from "@repo/runtime/jobs";
+import { consumeJobs } from "@repo/runtime/testing";
 import { Effect } from "effect";
 
 import { MonitorFailure } from "./failure.ts";

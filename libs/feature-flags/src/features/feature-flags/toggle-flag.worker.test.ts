@@ -1,69 +1,39 @@
-import { assert, describe, it } from "@effect/vitest";
 import { ErrorCode, StandardResolutionReasons } from "@openfeature/server-sdk";
-import { Effect, Layer } from "effect";
+import { ConfigurationInvalid } from "@repo/config";
+import { Effect } from "effect";
+import { describe, expect, test } from "vite-plus/test";
 
-import {
-  editorsOnly,
-  evaluationFromDetails,
-  failClosedEnabled,
-  FLAG_EVALUATION_KIND,
-  FlagEditorAccess,
-  configuredFeatureFlagsLayer,
-  memoryFeatureFlagsLayer,
-} from "./index.ts";
+import { evaluationFromDetails } from "./evaluation.ts";
+import { FLAG_EVALUATION_KIND } from "./flag-vocabulary.ts";
+import { configuredFeatureFlagsLayer } from "./index.ts";
 
-const viewerOnlyEditors = Layer.mergeAll(
-  memoryFeatureFlagsLayer,
-  editorsOnly(new Set(["viewer-id"])),
-);
+describe("a primary targeting result", () => {
+  const it = test.extend("evaluation", () =>
+    evaluationFromDetails({ reason: StandardResolutionReasons.TARGETING_MATCH, value: true }));
 
-describe("FlagEditorAccess", () => {
-  it.effect("rejects a viewer from editing flags", () =>
-    Effect.gen(function* rejectViewer() {
-      const access = yield* FlagEditorAccess.pipe(Effect.provide(viewerOnlyEditors));
-      const flagEditorRequired = yield* access
-        .assertEditor({ id: "viewer-id", permission: null })
-        .pipe(Effect.flip);
-      assert.strictEqual(flagEditorRequired._tag, "FlagEditorRequired");
-    }),
-  );
+  it("keeps the evaluated value", ({ evaluation }) => {
+    expect(evaluation).toStrictEqual({ enabled: true, kind: FLAG_EVALUATION_KIND.evaluated });
+  });
 });
 
-describe("evaluationFromDetails", () => {
-  it.effect("keeps a primary targeting result", () =>
-    Effect.sync(() => {
-      assert.deepStrictEqual(
-        evaluationFromDetails({
-          reason: StandardResolutionReasons.TARGETING_MATCH,
-          value: true,
-        }),
-        { enabled: true, kind: FLAG_EVALUATION_KIND.evaluated },
-      );
-    }),
-  );
+describe("a provider error", () => {
+  const it = test.extend("evaluation", () =>
+    evaluationFromDetails({
+      errorCode: ErrorCode.PROVIDER_NOT_READY,
+      reason: StandardResolutionReasons.ERROR,
+      value: true,
+    }));
 
-  it.effect(
-    "fail-closes provider errors instead of treating the OpenFeature default as enabled",
-    () =>
-      Effect.sync(() => {
-        assert.deepStrictEqual(
-          evaluationFromDetails({
-            errorCode: ErrorCode.PROVIDER_NOT_READY,
-            reason: StandardResolutionReasons.ERROR,
-            value: true,
-          }),
-          { enabled: failClosedEnabled, kind: FLAG_EVALUATION_KIND.failClosed },
-        );
-        assert.strictEqual(failClosedEnabled, false);
-      }),
-  );
+  it("fail-closes instead of treating the OpenFeature default as enabled", ({ evaluation }) => {
+    expect(evaluation).toStrictEqual({ enabled: false, kind: FLAG_EVALUATION_KIND.failClosed });
+  });
 });
 
-describe("configuredFeatureFlagsLayer", () => {
-  it.effect("refuses to run without Flagship outside local development", () =>
-    Effect.gen(function* refuseMissingFlagship() {
-      const invalid = yield* configuredFeatureFlagsLayer({ local: false }).pipe(Effect.flip);
-      assert.strictEqual(invalid.reason, "FLAGS");
-    }),
-  );
+describe("feature flags outside local development without Flagship", () => {
+  const it = test.extend("refusal", () =>
+    Effect.runPromise(configuredFeatureFlagsLayer({ local: false }).pipe(Effect.flip)));
+
+  it("names the missing binding", ({ refusal }) => {
+    expect(refusal).toStrictEqual(new ConfigurationInvalid({ reason: "FLAGS" }));
+  });
 });

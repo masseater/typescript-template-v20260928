@@ -1,4 +1,4 @@
-import { AUTHENTICATION_METHOD, type StrongAuthenticationMethod } from "@repo/config";
+import { AUTHENTICATION_METHOD, type StrongAuthenticationMethod } from "@repo/config/identity";
 import { type ActionState, type TextInput, Button, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import { TotpField } from "./totp-field";

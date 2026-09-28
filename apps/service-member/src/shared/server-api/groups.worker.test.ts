@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { ROLE, type Role } from "@repo/config";
+import { ROLE, type Role } from "@repo/config/identity";
 import { blockMember, GROUP_JOIN_POLICY, query, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
 import { Effect, DateTime, Schema } from "effect";

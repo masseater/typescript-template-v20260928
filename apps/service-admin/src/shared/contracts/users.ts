@@ -1,4 +1,4 @@
-import { ACCOUNT_STATE, accountStates } from "@repo/config";
+import { ACCOUNT_STATE, accountStates } from "@repo/config/identity";
 import { adminPageSize, maximumAdminPageSize } from "@repo/config/paging";
 import { Identifier, IdentifierQuery, UserKeyword, pageNumber } from "@repo/runtime/contracts";
 import { Schema, Struct } from "effect";

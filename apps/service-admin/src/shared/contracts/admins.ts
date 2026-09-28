@@ -1,4 +1,5 @@
-import { Email, adminPermissions } from "@repo/config";
+import { Email } from "@repo/config";
+import { adminPermissions } from "@repo/config/identity";
 import { Identifier, InvitationIssued } from "@repo/runtime/contracts";
 import { Schema } from "effect";
 

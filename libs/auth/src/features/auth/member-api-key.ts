@@ -97,10 +97,4 @@ const apiKeyWriteFailure = {
   },
 } as const;
 
-export {
-  apiKeyFromHeaders,
-  apiKeyWriteFailure,
-  verifyMemberApiKey,
-  verifySessionOrApiKey,
-  verifySessionWriter,
-};
+export { apiKeyWriteFailure, verifySessionOrApiKey, verifySessionWriter };

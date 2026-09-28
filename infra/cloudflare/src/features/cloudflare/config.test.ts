@@ -1,5 +1,5 @@
 import { assert, it } from "@effect/vitest";
-import { ConfigurationInvalid, readAi, readConfig } from "@repo/config";
+import { ConfigurationInvalid, readConfig, readSiteEnvironment } from "@repo/config";
 import { readOptionalStorage, readStorage } from "@repo/config/storage";
 import { otlpSignalUrl } from "@repo/observability";
 import { Effect } from "effect";
@@ -23,7 +23,8 @@ import type {
   SendEmail,
   Service,
 } from "@cloudflare/workers-types";
-import type { Application, CapabilityOf } from "@repo/config";
+import type { Application } from "@repo/config";
+import type { CapabilityOf } from "@repo/config/testing";
 import type { Assets, Flagship, InferEnv } from "alchemy/Cloudflare";
 import type { CapabilityEnv, SharedEnv, UnionToIntersection } from "./bindings.ts";
 
@@ -167,8 +168,8 @@ it.effect("every application reads exactly the bindings its Worker declares", ()
     const admin = yield* readConfig(adminBindings);
     assert.strictEqual(admin.APP_ORIGIN, settings.origins["service-admin"]);
     assert.strictEqual(admin.APP_RELEASE, release);
-    assert.isUndefined(yield* readAi(adminBindings));
-    assert.isDefined(yield* readAi(userBindings));
+    assert.isUndefined((yield* readSiteEnvironment(adminBindings)).AI);
+    assert.isDefined((yield* readSiteEnvironment(userBindings)).AI);
     assert.isUndefined((yield* readOptionalStorage(adminBindings)).files);
     assert.isUndefined((yield* readOptionalStorage(adminBindings)).cache);
     const adminStorage = yield* readStorage(adminBindings).pipe(Effect.flip);

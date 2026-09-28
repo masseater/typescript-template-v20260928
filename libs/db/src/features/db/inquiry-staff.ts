@@ -5,28 +5,11 @@ import { DateTime, Effect } from "effect";
 import { query } from "./database.ts";
 import { InquiryNotFound } from "./inquiry-not-found.ts";
 import { inquiryThread, memberInquiryColumns } from "./inquiry-thread.ts";
-import { inquiry, inquiryStatuses, user } from "./schema.ts";
+import { inquiry, user } from "./schema.ts";
 
 import type { InquiryMessage } from "./inquiry.ts";
 
-type StaffInquirySummary = Readonly<{
-  createdAt: Date;
-  id: string;
-  memberId: string;
-  status: InquiryStatus;
-  subject: string;
-  updatedAt: Date;
-}>;
-
-type StaffInquiryThread = StaffInquirySummary & Readonly<{ messages: readonly InquiryMessage[] }>;
-
 type InquiryStatusCount = Readonly<Record<InquiryStatus, number>>;
-type InquiryDailyTrend = InquiryStatusCount & Readonly<{ day: string }>;
-
-type InquiryStaffCounts = Readonly<{
-  byStatus: InquiryStatusCount;
-  trend: readonly InquiryDailyTrend[];
-}>;
 
 const noInquiries: InquiryStatusCount = {
   [INQUIRY_STATUS.answered]: 0,
@@ -41,6 +24,8 @@ const statusTally = (
     (tally, statusCount) => ({ ...tally, [statusCount.status]: statusCount.count }),
     noInquiries,
   );
+
+type InquiryDailyTrend = InquiryStatusCount & Readonly<{ day: string }>;
 
 const dailyTrend = (
   dailyCounts: readonly Readonly<{ count: number; day: string; status: InquiryStatus }>[],
@@ -77,7 +62,10 @@ const staffInquiryCounts = Effect.fn("staffInquiryCounts")(function* staffInquir
   return {
     byStatus: statusTally(statusCounts),
     trend: dailyTrend(dailyCounts),
-  } satisfies InquiryStaffCounts;
+  } satisfies Readonly<{
+    byStatus: InquiryStatusCount;
+    trend: readonly InquiryDailyTrend[];
+  }>;
 });
 
 const staffListMemberInquiries = Effect.fn("staffListMemberInquiries")(
@@ -102,33 +90,21 @@ const staffGetInquiry = Effect.fn("staffGetInquiry")(function* staffGetInquiry(i
   const found = query((database) =>
     database.select(memberInquiryColumns).from(inquiry).where(eq(inquiry.id, inquiryId)).limit(1),
   );
-  return (yield* inquiryThread(inquiryId, found)) satisfies StaffInquiryThread;
+  return (yield* inquiryThread(inquiryId, found)) satisfies Readonly<{
+    createdAt: Date;
+    id: string;
+    memberId: string;
+    messages: readonly InquiryMessage[];
+    status: InquiryStatus;
+    subject: string;
+    updatedAt: Date;
+  }>;
 });
 
-type ReadOnlyInquiryStaff = Readonly<{
-  getInquiry: typeof staffGetInquiry;
-  inquiryCounts: typeof staffInquiryCounts;
-  listMemberInquiries: typeof staffListMemberInquiries;
-}>;
-
-const inquiryStaff: ReadOnlyInquiryStaff = {
+const inquiryStaff = {
   getInquiry: staffGetInquiry,
   inquiryCounts: staffInquiryCounts,
   listMemberInquiries: staffListMemberInquiries,
 };
 
-export {
-  inquiryStaff,
-  inquiryStatuses,
-  staffGetInquiry,
-  staffInquiryCounts,
-  staffListMemberInquiries,
-};
-export type {
-  InquiryDailyTrend,
-  InquiryStaffCounts,
-  InquiryStatusCount,
-  ReadOnlyInquiryStaff,
-  StaffInquirySummary,
-  StaffInquiryThread,
-};
+export { inquiryStaff };

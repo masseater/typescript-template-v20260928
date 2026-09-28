@@ -1,7 +1,7 @@
 import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
 import { mailInvite } from "@repo/auth";
-import { APPLICATION, ACCOUNT_STATE } from "@repo/config";
-import { accountStates, adminPermissions } from "@repo/config/identity";
+import { APPLICATION } from "@repo/config";
+import { accountStates, adminPermissions, ACCOUNT_STATE } from "@repo/config/identity";
 import { AUDIT_CHANNEL } from "@repo/db";
 import {
   deleteUser,

@@ -1,4 +1,4 @@
-import { strictTransportSecurity } from "@repo/runtime/security";
+import { hstsMaxAgeSeconds } from "@repo/runtime/security";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
@@ -60,7 +60,7 @@ describe("a secured response to a request that arrived over https", () => {
     }).headers.get("strict-transport-security"));
 
   it("demands https for a year", ({ transportSecurity }) => {
-    expect(transportSecurity).toBe(strictTransportSecurity);
+    expect(transportSecurity).toBe(`max-age=${hstsMaxAgeSeconds}; includeSubDomains`);
   });
 });
 

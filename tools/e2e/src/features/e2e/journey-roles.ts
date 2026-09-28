@@ -1,5 +1,5 @@
-import { APPLICATION, ROLE, type Application } from "@repo/config";
-import { ADMIN_PERMISSION } from "@repo/config/identity";
+import { APPLICATION, type Application } from "@repo/config";
+import { ADMIN_PERMISSION, ROLE } from "@repo/config/identity";
 
 const journeyRoles = [ROLE.member, ADMIN_PERMISSION.operator, "knowledge"] as const;
 

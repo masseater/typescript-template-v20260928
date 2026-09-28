@@ -1,6 +1,6 @@
-import { loginPath } from "./login-redirect.ts";
+import { type Role } from "@repo/config/identity";
 
-import type { Role } from "@repo/config";
+import { loginPath } from "./login-redirect.ts";
 
 const SECURITY_PATH = "/security";
 

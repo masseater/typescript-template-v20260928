@@ -1,4 +1,4 @@
-import { ROLE } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import { and, eq, query, schema } from "@repo/db";
 import { DateTime, Effect } from "effect";
 

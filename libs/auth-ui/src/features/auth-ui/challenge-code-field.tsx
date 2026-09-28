@@ -1,4 +1,4 @@
-import { AUTHENTICATION_METHOD } from "@repo/config";
+import { AUTHENTICATION_METHOD } from "@repo/config/identity";
 import { type TextInput, Field } from "@repo/ui";
 
 import { TotpField } from "./totp-field";

@@ -1,7 +1,8 @@
 import { APPLICATION, wikiWorker } from "@repo/config";
 import { describe, expect, test } from "vite-plus/test";
 
-import { applicationsExcept, isSecretFileName, privatePath } from "./private-path.ts";
+import { applicationsExcept, privatePath } from "./private-path.ts";
+import { isSecretFileName } from "./secret-file-name.ts";
 
 const repositoryRoot = "/repo";
 

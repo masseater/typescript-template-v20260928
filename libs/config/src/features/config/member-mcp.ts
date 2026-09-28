@@ -13,8 +13,6 @@ const memberMcpScopes = [
   "offline_access",
 ] as const;
 
-type MemberMcpScope = (typeof memberMcpScopes)[number];
-
 const MEMBER_MCP_SCOPE = {
   messageSend: memberMcpScopes[3],
   offlineAccess: memberMcpScopes[4],
@@ -31,4 +29,3 @@ const memberMcpToolScopes = [
 ] as const;
 
 export { MEMBER_MCP_SCOPE, memberMcpScopes, memberMcpToolScopes };
-export type { MemberMcpScope };

@@ -4,7 +4,7 @@ import { State as StateRoute } from "alchemy/Alchemist";
 import { Config, Effect, Redacted } from "effect";
 
 import { verifiedSecrets } from "./credentials.ts";
-import { ENVIRONMENT_FILE_VARIABLE } from "./deployment.ts";
+import { ENVIRONMENT_FILE_VARIABLE } from "./environment-file-variable.ts";
 import { causeRecord, reportCause, withVerifiedSecrets } from "./secrets.ts";
 import { otlpAuthorization, settings } from "./settings.ts";
 

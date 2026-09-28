@@ -1,14 +1,5 @@
-import {
-  AUTHENTICATION_METHOD,
-  ROLE,
-  accountPermissions,
-  applications,
-  auditActions,
-  clientKinds,
-  metricKeys,
-  metricPeriods,
-  roles,
-} from "@repo/config";
+import { applications, auditActions, clientKinds, metricKeys, metricPeriods } from "@repo/config";
+import { AUTHENTICATION_METHOD, ROLE, accountPermissions, roles } from "@repo/config/identity";
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";

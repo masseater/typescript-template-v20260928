@@ -5,8 +5,8 @@ import {
   REPORT_REASON,
   REPORT_STATUS,
   REPORT_SUBJECT,
-  ROLE,
 } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import { AUDIT_ACTION, CONVERSATION_KIND, fileReport, query, schema } from "@repo/db";
 import { dismissReport, listReports, readReport, suspendTarget } from "@repo/db/admin";
 import { TestDatabase, addSession, addUser } from "@repo/db/testing";

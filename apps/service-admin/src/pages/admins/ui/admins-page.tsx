@@ -1,5 +1,5 @@
 import { ForbiddenNotice, useSessionUser } from "@repo/auth-ui";
-import { ADMIN_PERMISSION, grantsAdminLevel } from "@repo/config";
+import { ADMIN_PERMISSION, grantsAdminLevel } from "@repo/config/identity";
 import { InvitationBoard, Page } from "@repo/ui";
 
 import { useAdminList } from "#pages/admins/model/admin-list.ts";

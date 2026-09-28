@@ -147,4 +147,3 @@ const exchangeOAuthCode = Effect.fn("exchangeOAuthCode")(function* exchangeOAuth
 });
 
 export { exchangeOAuthCode, grantOAuthAuthorization, startClientAuthorization };
-export type { AuthorizationFlow, OAuthClient };

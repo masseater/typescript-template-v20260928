@@ -6,14 +6,10 @@ import { migrate as applyD1MigrationFiles } from "drizzle-orm/d1/migrator";
 import { readMigrationFiles, type MigrationConfig } from "drizzle-orm/migrator";
 import { Clock, Effect, Schema } from "effect";
 
-import {
-  BOOTSTRAP_KIND,
-  BootstrappedAdmin,
-  bootstrapStatement,
-  type Email,
-} from "./bootstrap-statement.ts";
+import { BOOTSTRAP_KIND, BootstrappedAdmin, bootstrapStatement } from "./bootstrap-promotion.ts";
 
 import type { D1Database } from "@cloudflare/workers-types";
+import type { Email } from "@repo/config";
 import type { SQLiteAsyncDatabase } from "drizzle-orm/sqlite-core";
 
 const RemoteFailureCode = Schema.Literals([
@@ -245,6 +241,5 @@ export {
   fail,
   loadRemoteMigrations,
   migrateD1,
-  migrateDatabase,
   migrationsFolder,
 };

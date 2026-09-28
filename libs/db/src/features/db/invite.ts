@@ -1,10 +1,5 @@
-import {
-  ACCOUNT_STATE,
-  AUDIT_ACTION,
-  audienceRoles,
-  type AccountPermission,
-  type Application,
-} from "@repo/config";
+import { AUDIT_ACTION, audienceRoles, type Application } from "@repo/config";
+import { ACCOUNT_STATE, type AccountPermission } from "@repo/config/identity";
 import { and, eq, gt, isNull, type SQL } from "drizzle-orm";
 import { DateTime, Duration, Effect } from "effect";
 

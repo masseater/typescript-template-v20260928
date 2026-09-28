@@ -1,4 +1,5 @@
-import { ACCOUNT_STATE, APPLICATION, ROLE } from "@repo/config";
+import { APPLICATION } from "@repo/config";
+import { ACCOUNT_STATE, ROLE } from "@repo/config/identity";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 

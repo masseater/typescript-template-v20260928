@@ -1,7 +1,7 @@
 import { mailpitPort } from "@repo/config";
 import { describe, expect, test } from "vite-plus/test";
 
-import { receiverPorts } from "./receiver.ts";
+import { receiverOrigin } from "./receiver.ts";
 
 const MAILPIT_SMTP_PORT = 1025;
 
@@ -21,9 +21,9 @@ const publishedPorts = Array.from(composeYaml.matchAll(published), ({ groups }) 
 });
 
 const expectedPublishedPorts = [
-  `${receiverPorts.otlp}:${receiverPorts.otlp}`,
-  `${receiverPorts.logs}:${receiverPorts.logs}`,
-  `${receiverPorts.traces}:${receiverPorts.traces}`,
+  ...(["otlp", "logs", "traces"] as const)
+    .map((signal) => new URL(receiverOrigin(signal)).port)
+    .map((port) => `${port}:${port}`),
   `${mailpitPort}:${mailpitPort}`,
   `${MAILPIT_SMTP_PORT}:${MAILPIT_SMTP_PORT}`,
 ];

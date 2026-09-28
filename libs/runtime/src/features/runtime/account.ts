@@ -19,9 +19,10 @@ import {
   InvitePreview,
   InvitePreviewQuery,
   SessionView,
-} from "./contracts.ts";
+} from "./account-contracts.ts";
 import { DatabaseHealth } from "./database-health.ts";
-import { createApi, failureBy } from "./http.ts";
+import { failureBy } from "./failures.ts";
+import { createApi } from "./http.ts";
 
 import type { EmailVerificationFailed } from "@repo/auth";
 import type { Failure, FailureMapping, FailureTable } from "./failures.ts";
@@ -165,7 +166,6 @@ export {
   accountApi,
   authUnavailable,
   databaseUnavailable,
-  forbidden,
   inviteApi,
   privileged,
   sessionApi,

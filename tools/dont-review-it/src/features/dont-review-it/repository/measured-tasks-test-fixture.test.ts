@@ -1,4 +1,4 @@
-import { measured } from "@repo/vite-config";
+import { telemetryEnv } from "@repo/vite-config";
 import { describe, expect, it } from "vite-plus/test";
 
 import { unmeasuredTasks, wildcardEnvTasks } from "./measured-tasks-test-fixture.ts";
@@ -20,13 +20,11 @@ describe("cached tasks", () => {
 
   it("are left alone once measured", () => {
     expect(
-      unmeasuredTasks(
-        measured({
-          bare: "vp test run",
-          cached: { command: "vp test run", env: ["CI"] },
-          uncached: { cache: false, command: "vp dev" },
-        }),
-      ),
+      unmeasuredTasks({
+        bare: { command: "vp test run", env: [...telemetryEnv] },
+        cached: { command: "vp test run", env: ["CI", ...telemetryEnv] },
+        uncached: { cache: false, command: "vp dev" },
+      }),
     ).toStrictEqual([]);
   });
 

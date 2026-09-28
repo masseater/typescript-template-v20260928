@@ -1,4 +1,5 @@
-import { ROLE, memberRetentionDays } from "@repo/config";
+import { memberRetentionDays } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import { logAt, logCause } from "@repo/observability";
 import { and, desc, eq, gt, inArray, isNull, lte, type SQL } from "drizzle-orm";
 import { DateTime, Effect, Schema, type Cause } from "effect";
@@ -483,9 +484,6 @@ const purgeExpiredWithdrawnMembers = Effect.fn("purgeExpiredWithdrawnMembers")(
 );
 
 export {
-  MemberLeaveUnavailable,
-  RecoveryExpired,
-  RecoveryUnavailable,
   acceptRecovery,
   declineRecovery,
   findRecoveryOffer,

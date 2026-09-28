@@ -2,9 +2,8 @@ import { homedir } from "node:os";
 
 import { optionalSetting } from "@repo/config/process-environment";
 
+import { ENVIRONMENT_FILE_VARIABLE } from "./environment-file-variable.ts";
 import { path } from "./platform.ts";
-
-const ENVIRONMENT_FILE_VARIABLE = "TEMPLATE_CLOUDFLARE_ENV_FILE";
 
 const nonEmptySetting = (variable: string): string | undefined => {
   const configured = optionalSetting(variable);
@@ -27,4 +26,4 @@ const secretsFile = (project: string): string => {
     : path.resolve(configured);
 };
 
-export { ENVIRONMENT_FILE_VARIABLE, secretsFile, secretsFileConfigured };
+export { secretsFile, secretsFileConfigured };

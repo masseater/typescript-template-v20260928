@@ -1,4 +1,4 @@
-import { accountPermissions, roles } from "@repo/config";
+import { accountPermissions, roles } from "@repo/config/identity";
 import { Predicate, Result, Schema } from "effect";
 
 const SessionView = Schema.Struct({

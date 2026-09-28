@@ -1,4 +1,4 @@
-import { ROLE } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 
 import type { SettingsContext } from "./mfa-types";
 import type { SessionView } from "./protocol";

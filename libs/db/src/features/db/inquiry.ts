@@ -1,11 +1,11 @@
 import {
-  ADMIN_PERMISSION,
   AUDIT_ACTION,
   INQUIRY_AUTHOR_KIND,
   InquiryStatus,
-  maximumAdminPageSize,
   type InquiryAuthorKind,
 } from "@repo/config";
+import { ADMIN_PERMISSION } from "@repo/config/identity";
+import { maximumAdminPageSize } from "@repo/config/paging";
 import { and, desc, eq, sql, type SQL } from "drizzle-orm";
 import { DateTime, Effect, Schema } from "effect";
 
@@ -29,7 +29,7 @@ import {
   user,
 } from "./schema.ts";
 
-export const InquiryPage = Schema.Struct({
+const InquiryPage = Schema.Struct({
   limit: Schema.Int.check(Schema.isBetween({ maximum: maximumAdminPageSize, minimum: 1 })),
   offset: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
   status: Schema.optionalKey(InquiryStatus),
@@ -49,24 +49,6 @@ type InquiryMessage = Readonly<{
   body: string;
   createdAt: Date;
   id: string;
-}>;
-
-type InquiryThread = InquirySummary &
-  Readonly<{ messages: readonly InquiryMessage[]; replyable: boolean }>;
-
-type AdminInquirySummary = InquirySummary &
-  Readonly<{
-    memberId: string;
-    memberName: string;
-  }>;
-
-type AdminInquiryThread = AdminInquirySummary &
-  Readonly<{ messages: readonly InquiryMessage[]; replyable: boolean }>;
-
-type MemberSummary = Readonly<{
-  email: string;
-  id: string;
-  name: string;
 }>;
 
 const auditInquiryReply = (
@@ -143,7 +125,8 @@ const getMemberInquiry = Effect.fn("getMemberInquiry")(function* getMemberInquir
       .where(and(eq(inquiry.id, inquiryId), eq(inquiry.memberId, memberId)))
       .limit(1),
   );
-  return (yield* inquiryThread(inquiryId, found)) satisfies InquiryThread;
+  return (yield* inquiryThread(inquiryId, found)) satisfies InquirySummary &
+    Readonly<{ messages: readonly InquiryMessage[]; replyable: boolean }>;
 });
 
 const createMemberInquiry = Effect.fn("createMemberInquiry")(function* createMemberInquiry(
@@ -227,7 +210,13 @@ const getAdminInquiry = Effect.fn("getAdminInquiry")(function* getAdminInquiry(
 ) {
   yield* requireAdmin(sessionId);
   const found = adminInquiryRows(() => eq(inquiry.id, inquiryId), { limit: 1, offset: 0 });
-  return (yield* inquiryThread(inquiryId, found)) satisfies AdminInquiryThread;
+  return (yield* inquiryThread(inquiryId, found)) satisfies InquirySummary &
+    Readonly<{
+      memberId: string;
+      memberName: string;
+      messages: readonly InquiryMessage[];
+      replyable: boolean;
+    }>;
 });
 
 const countPendingInquiries = Effect.fn("countPendingInquiries")(function* countPendingInquiries(
@@ -316,7 +305,11 @@ const getInquiryMemberSummary = Effect.fn("getInquiryMemberSummary")(
     if (!member) {
       return yield* new InquiryNotFound();
     }
-    return member satisfies MemberSummary;
+    return member satisfies Readonly<{
+      email: string;
+      id: string;
+      name: string;
+    }>;
   },
 );
 
@@ -332,13 +325,4 @@ export {
   replyAsAdmin,
   replyAsMember,
 };
-export { InquiryForbidden } from "./inquiry-forbidden.ts";
-export { InquiryNotFound } from "./inquiry-not-found.ts";
-export type {
-  AdminInquirySummary,
-  AdminInquiryThread,
-  InquiryMessage,
-  InquirySummary,
-  InquiryThread,
-  MemberSummary,
-};
+export type { InquiryMessage };

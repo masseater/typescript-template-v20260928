@@ -10,7 +10,6 @@ import {
   isolatedNodeTests,
   prCheckRootShard,
   prCheckShardCount,
-  unitTestShardCount,
 } from "./test-runtime.ts";
 
 type TreeScan<Scanned> = Effect.Effect<Scanned, TreeFailure, FileSystem.FileSystem | Path.Path>;
@@ -92,9 +91,8 @@ describe("vitest isolation and sharding", () => {
 
   it("shards the merge-queue unit suite without repeating package premerge", () => {
     expect.hasAssertions();
-    expect(unitTestShardCount).toBe(4);
     expect(workflow).toContain("shard: [1, 2, 3, 4]");
-    expect(workflow).toContain(`--shard=\${{ matrix.shard }}/${String(unitTestShardCount)}`);
+    expect(workflow).toContain("--shard=${{ matrix.shard }}/4");
     expect(workflow).toContain("merge-queue-packages:");
     expect(workflow).toContain("merge-queue-unit:");
     expect(workflow).toMatch(

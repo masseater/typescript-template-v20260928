@@ -1,8 +1,9 @@
 import { field, rootManifests, workspaceManifests } from "./dependencies-test-fixture.ts";
 import { directoryOfGlobKey } from "./repository-path-test-fixture.ts";
 
-import type { Tasks } from "@repo/vite-config";
 import type { ConfigEnv, UserConfig, UserConfigFnObject } from "vite-plus";
+
+type Tasks = NonNullable<NonNullable<UserConfig["run"]>["tasks"]>;
 
 const configModules: Readonly<Record<string, UserConfig | UserConfigFnObject>> = import.meta.glob(
   [

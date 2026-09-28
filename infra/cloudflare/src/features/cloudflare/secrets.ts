@@ -3,7 +3,7 @@ import { Cause, Effect, Option, Predicate, Schema } from "effect";
 import { ConfigProvider, fromDotEnvContents } from "effect/ConfigProvider";
 
 import type { deploymentKey } from "@repo/observability/deployment-keys";
-import type { ENVIRONMENT_FILE_VARIABLE } from "./deployment.ts";
+import type { ENVIRONMENT_FILE_VARIABLE } from "./environment-file-variable.ts";
 
 const OK_EXIT_CODE = 0;
 

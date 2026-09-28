@@ -1,11 +1,10 @@
+import { APPLICATION, AUDIT_ACTION } from "@repo/config";
 import {
-  APPLICATION,
-  AUDIT_ACTION,
   ROLE,
   STAFF_PERMISSION,
   staffPermissions,
   type StaffPermission,
-} from "@repo/config";
+} from "@repo/config/identity";
 import { and, desc, eq } from "drizzle-orm";
 import { DateTime, Effect } from "effect";
 
@@ -143,9 +142,3 @@ export const removeStaff = Effect.fn("removeStaff")(function* removeStaff(
   }
   return removed;
 });
-
-export { AdminStrongSessionRequired } from "./admin-strong-session-required.ts";
-export { InviteRejected } from "./invite-rejected.ts";
-export { LastEditorRequired } from "./last-editor-required.ts";
-export { PermissionRequired } from "./permission-required.ts";
-export { TargetUnavailable } from "./target-unavailable.ts";

@@ -1,4 +1,4 @@
-import { ROLE } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import {
   NOTIFICATION_KIND,
   UserNotFound,

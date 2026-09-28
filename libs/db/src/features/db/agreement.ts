@@ -158,17 +158,15 @@ const acceptAgreementVersions = Effect.fn("acceptAgreementVersions")(
   },
 );
 
-type AcceptedAgreement = Readonly<{
-  acceptedAt: Date;
-  kind: AgreementKind;
-  version: string;
-  versionId: string;
-}>;
-
 const acceptedAgreements = Effect.fn("acceptedAgreements")(function* acceptedAgreements(
   userId: string,
 ) {
-  const acceptedVersions: readonly AcceptedAgreement[] = yield* query((database) =>
+  const acceptedVersions: readonly Readonly<{
+    acceptedAt: Date;
+    kind: AgreementKind;
+    version: string;
+    versionId: string;
+  }>[] = yield* query((database) =>
     database
       .select({
         acceptedAt: agreementAcceptance.acceptedAt,
@@ -233,4 +231,3 @@ export {
   requireSignupAgreements,
   withdrawAgreementKind,
 };
-export type { AcceptedAgreement, PublishedAgreement };

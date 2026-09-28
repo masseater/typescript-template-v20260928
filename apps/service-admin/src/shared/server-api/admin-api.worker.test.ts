@@ -1,6 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
 import { signedSessionCookie } from "@repo/auth/testing";
-import { ACCOUNT_STATE, ADMIN_PERMISSION, APPLICATION, ROLE, httpStatus } from "@repo/config";
+import { APPLICATION, httpStatus } from "@repo/config";
+import { ACCOUNT_STATE, ADMIN_PERMISSION, ROLE, type AdminPermission } from "@repo/config/identity";
 import { Database } from "@repo/db";
 import { TestDatabase, addSession, addUser, auditActionsOf } from "@repo/db/testing";
 import { recordingSink } from "@repo/observability/testing";
@@ -14,8 +15,6 @@ import { Effect, Layer, Schema } from "effect";
 import { AdminList } from "#shared/contracts/index.ts";
 import { routes } from "#shared/telemetry/index.ts";
 import { adminRoutes } from "./admin-api.ts";
-
-import type { AdminPermission } from "@repo/config";
 
 type Actor = "member" | "operator" | "owner" | "viewer" | "weak-owner";
 

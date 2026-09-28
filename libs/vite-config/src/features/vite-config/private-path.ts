@@ -1,6 +1,7 @@
 import { APPLICATION, buildTargets, hostOf, type BuildTarget } from "@repo/config";
 
 import { paths } from "./host.ts";
+import { isSecretFileName } from "./secret-file-name.ts";
 
 const applicationsExcept = (application: BuildTarget): BuildTarget[] =>
   buildTargets.filter(
@@ -14,10 +15,6 @@ const hostPrivatePath = (slashedPath: string, application: BuildTarget): boolean
     new RegExp(`(?:^|/)apps/${host}/(?!content(?:/|$))`, "u").test(slashedPath)
   );
 };
-
-const secretFileName = /^(?:\.env.*|\.dev\.vars.*|.*\.(?:pem|key))$/u;
-
-const isSecretFileName = (fileName: string): boolean => secretFileName.test(fileName);
 
 const privateAdminPath = (slashedPath: string, application: BuildTarget): boolean =>
   application !== APPLICATION.admin &&
@@ -50,4 +47,4 @@ const privatePath = ({
   );
 };
 
-export { applicationsExcept, isSecretFileName, privatePath };
+export { applicationsExcept, privatePath };

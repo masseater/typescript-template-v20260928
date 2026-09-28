@@ -10,4 +10,4 @@ const receiverOrigin = function receiverOrigin(signal: keyof typeof receiverPort
   return loopbackOrigin(receiverPorts[signal]);
 };
 
-export { receiverOrigin, receiverPorts };
+export { receiverOrigin };

@@ -1,4 +1,4 @@
-import { AUTHENTICATION_METHOD } from "@repo/config";
+import { AUTHENTICATION_METHOD } from "@repo/config/identity";
 import { useAction, ActionStatus, Heading } from "@repo/ui";
 
 import { PasskeySettings } from "./passkey-settings";

@@ -1,4 +1,5 @@
-import { APPLICATION, ROLE, memberApiKeyReadPermissions } from "@repo/config";
+import { APPLICATION, memberApiKeyReadPermissions } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import { query, schema } from "@repo/db";
 import { DateTime, Effect } from "effect";
 import { describe, expect } from "vite-plus/test";

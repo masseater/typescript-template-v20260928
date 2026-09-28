@@ -1,12 +1,12 @@
 import { assert, describe, it } from "@effect/vitest";
+import { SUBSCRIPTION_STATUS } from "@repo/config";
 import {
   ADMIN_PERMISSION,
   ROLE,
   STAFF_PERMISSION,
-  SUBSCRIPTION_STATUS,
   type AccountPermission,
   type Role,
-} from "@repo/config";
+} from "@repo/config/identity";
 import { eq, query, recordSubscription, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
 import { Effect, DateTime, Schema } from "effect";

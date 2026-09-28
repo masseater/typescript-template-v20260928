@@ -1,4 +1,5 @@
-import { Email, staffPermissions } from "@repo/config";
+import { Email } from "@repo/config";
+import { staffPermissions } from "@repo/config/identity";
 import {
   CreatedResource,
   Identifier,

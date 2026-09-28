@@ -1,6 +1,6 @@
 import { NodeServices } from "@effect/platform-node";
 import { repositoryFile, repositoryRoot } from "@repo/config/repository-root";
-import { lifecycleInherits, lifecycles } from "@repo/vite-config";
+import { lifecycle, lifecycles } from "@repo/vite-config";
 import { Effect, FileSystem, Path, Schema } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 import { parse } from "yaml";
@@ -125,7 +125,7 @@ function brokenChain(directory: string): string[] {
     const chained =
       taskNames(directory).includes(name) &&
       commands(directory, name).length === 0 &&
-      inherited.toSorted().join(",") === [...lifecycleInherits[name]].toSorted().join(",");
+      inherited.toSorted().join(",") === [...lifecycle({})[name].dependsOn].toSorted().join(",");
     return chained ? [] : [`${directory}: ${name}`];
   });
 }

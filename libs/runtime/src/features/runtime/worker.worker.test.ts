@@ -9,9 +9,10 @@ import { Effect, Layer, Ref, Schema } from "effect";
 import { HttpResponse, http } from "msw";
 import { describe, expect, test } from "vite-plus/test";
 
-import { appEnvironment, fixtureAuthSecret, fixtureOrigin } from "./app-test-fixture.ts";
+import { appEnvironment, fixtureOrigin } from "./app-test-fixture.ts";
+import { Assets } from "./assets.ts";
 import { appLayer } from "./bindings.ts";
-import { appServerEntry, serveApp, serveWorker, workerRuntime } from "./worker.ts";
+import { appServerEntry, serveApp, workerRuntime } from "./worker.ts";
 
 const migrated = Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase));
 
@@ -61,6 +62,9 @@ describe.for([
           const reportedLines = yield* Schema.decodeUnknownEffect(
             Schema.Array(Schema.Record(Schema.String, Schema.String)),
           )(logs.stderr).pipe(Effect.orDie);
+          const authSecret = yield* Schema.decodeUnknownEffect(Schema.String)(
+            appEnvironment(overrides)["AUTH_SECRET"],
+          ).pipe(Effect.orDie);
           const {
             "error.cause": causeSummary = "",
             "error.fingerprint": fingerprint = "",
@@ -72,7 +76,7 @@ describe.for([
             fingerprintIsShortHex: /^[0-9a-f]{8}$/u.test(fingerprint),
             reported,
             reportedLineCount: reportedLines.length,
-            secretLeaked: `${causeSummary}${locations}`.includes(fixtureAuthSecret),
+            secretLeaked: `${causeSummary}${locations}`.includes(authSecret),
           };
         }),
       ),
@@ -350,14 +354,17 @@ describe("a worker exporting telemetry", () => {
         );
         network.enable();
         const runtime = workerRuntime(() =>
-          Layer.orDie(
-            Telemetry.layer({
-              log: recordingSink().sink,
-              otlp: { endpoint: otlpEndpoint },
-              release: "abc123",
-              routes: { "/": "home" },
-              serviceName: "service-member",
-            }),
+          Layer.merge(
+            Layer.orDie(
+              Telemetry.layer({
+                log: recordingSink().sink,
+                otlp: { endpoint: otlpEndpoint },
+                release: "abc123",
+                routes: { "/": "home" },
+                serviceName: "service-member",
+              }),
+            ),
+            Layer.succeed(Assets, { fetch: () => Promise.resolve(new Response(undefined)) }),
           ),
         );
         onCleanup(() =>
@@ -371,7 +378,7 @@ describe("a worker exporting telemetry", () => {
             ),
           ),
         );
-        const worker = serveWorker({
+        const worker = serveApp({
           reporting: { log: recordingSink().sink, service: "service-member" },
           route: () => Effect.succeed(new Response(undefined, { status: httpStatus.noContent })),
           runtime,

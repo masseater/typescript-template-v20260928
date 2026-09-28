@@ -52,5 +52,9 @@ const TestDatabase = testDatabase(true);
 const EmptyTestDatabase = testDatabase(false);
 
 export { BOOTSTRAP_KIND, BootstrapKind, bootstrapAdmin } from "./bootstrap-statement.ts";
+export { pendingAgreementKinds } from "./agreement.ts";
+export type { UserRecord } from "./identity-schema.ts";
+export { photoKeysOf } from "./member-profile.ts";
 export { addSession, addUser, auditActionsOf } from "./records-test-fixture.ts";
+export { getSessionSecurity } from "./security.ts";
 export { EmptyTestDatabase, TestDatabase, getSchemaShape, runStatement };

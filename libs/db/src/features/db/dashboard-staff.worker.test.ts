@@ -5,9 +5,9 @@ import {
   CLIENT_KIND,
   METRIC_KEY,
   METRIC_PERIOD,
-  ROLE,
   auditActions,
 } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import { and, eq } from "drizzle-orm";
 import { DateTime, Effect, Schema } from "effect";
 import { describe, expect, test } from "vite-plus/test";

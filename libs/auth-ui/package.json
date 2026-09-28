@@ -6,7 +6,7 @@
     ".": "./src/features/auth-ui/index.ts",
     "./consent": "./src/features/auth-ui/oauth-consent.ts",
     "./session-gate": "./src/features/auth-ui/session-gate.tsx",
-    "./session": "./src/features/auth-ui/use-session.ts"
+    "./session": "./src/features/auth-ui/session-loader.ts"
   },
   "dependencies": {
     "@better-auth/passkey": "catalog:",

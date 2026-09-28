@@ -1,4 +1,4 @@
-import { ROLE } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import { describe, expect, test } from "vite-plus/test";
 
 import { sessionRedirect } from "./session-redirect.ts";

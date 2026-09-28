@@ -6,9 +6,7 @@ import { Effect } from "effect";
 import { loadArtifacts, workerModuleGlobs } from "./artifacts.ts";
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
 import { otlpAuthorization, settings } from "./settings.ts";
-import { stackName } from "./stacks.ts";
-
-const wikiWorkerResource = "Worker";
+import { wikiWorkerResource } from "./worker-refs.ts";
 
 const wikiProgram = Effect.fn("wikiProgram")(function* wikiProgram() {
   const config = yield* Effect.orDie(settings);
@@ -37,8 +35,4 @@ const wikiProgram = Effect.fn("wikiProgram")(function* wikiProgram() {
   return { workerName: worker.workerName };
 });
 
-function wikiWorkerRef(): Effect.Effect<Worker> {
-  return Worker.ref(wikiWorkerResource, { stack: stackName(wikiWorker) });
-}
-
-export { wikiProgram, wikiWorkerRef };
+export { wikiProgram };

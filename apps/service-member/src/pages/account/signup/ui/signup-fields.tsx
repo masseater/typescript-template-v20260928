@@ -1,5 +1,5 @@
 import { authClient, requireSuccess } from "@repo/auth-ui";
-import { AUTHENTICATION_METHOD } from "@repo/config";
+import { AUTHENTICATION_METHOD } from "@repo/config/identity";
 import { maximumNameLength, maximumPasswordLength } from "@repo/runtime/contracts";
 import { type ActionState, Button, Field, FormColumn } from "@repo/ui";
 import { useForm } from "@tanstack/react-form";

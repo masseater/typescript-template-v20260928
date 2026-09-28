@@ -10,7 +10,7 @@
     "./client": "./src/features/runtime/client.ts",
     "./contracts": "./src/features/runtime/contracts.ts",
     "./account": "./src/features/runtime/account.ts",
-    "./jobs": "./src/features/runtime/jobs.ts",
+    "./jobs": "./src/features/runtime/job-batch.ts",
     "./testing": "./src/features/runtime/app-test-fixture.ts",
     "./security": "./src/features/runtime/security.ts"
   },

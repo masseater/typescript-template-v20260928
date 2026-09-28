@@ -3,11 +3,11 @@ import {
   PHOTO_CONTENT_TYPE,
   PHOTO_SLOT,
   PROFILE_VISIBILITY,
-  ROLE,
   maximumPhotoBytes,
 } from "@repo/config";
-import { photoKeysOf, query, schema } from "@repo/db";
-import { TestDatabase } from "@repo/db/testing";
+import { ROLE, type Role } from "@repo/config/identity";
+import { query, schema } from "@repo/db";
+import { photoKeysOf, TestDatabase } from "@repo/db/testing";
 import { FileStore } from "@repo/runtime";
 import { AppOrigin } from "@repo/runtime/http";
 import { testFileStore } from "@repo/runtime/testing";
@@ -24,7 +24,7 @@ import {
 } from "./photos.ts";
 import { readPhotoUpload } from "./upload.ts";
 
-import type { ProfileVisibility, Role } from "@repo/config";
+import type { ProfileVisibility } from "@repo/config";
 import type { Database, DatabaseFailure } from "@repo/db";
 import type { PhotoStorageFailed } from "./photo-storage-failed.ts";
 

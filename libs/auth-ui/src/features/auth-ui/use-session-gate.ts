@@ -1,10 +1,10 @@
+import { type Role } from "@repo/config/identity";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 import { sessionAllowed, sessionRedirect } from "./session-redirect.ts";
 import { useSession } from "./use-session.ts";
 
-import type { Role } from "@repo/config";
 import type { SessionView } from "./protocol.ts";
 
 const useSessionGate = (

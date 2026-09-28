@@ -1,4 +1,5 @@
-import { APPLICATION, ROLE, STAFF_PERMISSION } from "@repo/config";
+import { APPLICATION } from "@repo/config";
+import { ROLE, STAFF_PERMISSION } from "@repo/config/identity";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 

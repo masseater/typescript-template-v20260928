@@ -1,12 +1,19 @@
 import { NodeServices } from "@effect/platform-node";
-import { APPLICATION, AUTHENTICATION_METHOD } from "@repo/config";
-import { EmptyTestDatabase, TestBinding, deployMigrations, runStatement } from "@repo/db-local";
+import { APPLICATION } from "@repo/config";
+import { AUTHENTICATION_METHOD } from "@repo/config/identity";
+import {
+  EmptyTestDatabase,
+  TestBinding,
+  deployMigrations,
+  runStatement,
+} from "@repo/db-local/testing";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { bootstrapAdmin, BootstrapUnavailable } from "./bootstrap-statement.ts";
+import { bootstrapAdmin } from "./bootstrap-statement.ts";
+import { BootstrapUnavailable } from "./bootstrap-unavailable.ts";
 import { query } from "./database.ts";
 import {
   RemoteFailure,

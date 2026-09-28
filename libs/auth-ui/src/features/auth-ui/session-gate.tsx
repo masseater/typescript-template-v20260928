@@ -1,9 +1,9 @@
+import { type Role } from "@repo/config/identity";
 import { STATUS_VARIANT } from "@repo/ui";
 
 import { SessionStatus } from "./session-status.tsx";
 import { useSessionGate } from "./use-session-gate.ts";
 
-import type { Role } from "@repo/config";
 import type { ReactElement } from "react";
 import type { SessionView } from "./protocol.ts";
 

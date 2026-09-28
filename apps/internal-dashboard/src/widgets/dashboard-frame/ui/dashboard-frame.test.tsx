@@ -1,5 +1,5 @@
 import { japaneseFieldValidationMessages } from "@repo/ui";
-import { AppProviders } from "@repo/ui/shell";
+import { AppProviders } from "@repo/ui/testing";
 import {
   createMemoryHistory,
   createRootRoute,

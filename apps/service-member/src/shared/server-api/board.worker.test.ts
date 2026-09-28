@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { ROLE, type Role } from "@repo/config";
+import { ROLE, type Role } from "@repo/config/identity";
 import { query, schema } from "@repo/db";
 import { TestDatabase, runStatement } from "@repo/db/testing";
 import { DateTime, Effect } from "effect";

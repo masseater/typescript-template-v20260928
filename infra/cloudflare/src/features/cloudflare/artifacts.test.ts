@@ -1,5 +1,5 @@
 import { assert, it } from "@effect/vitest";
-import { SOURCE_MAP_MANIFEST, sourceMapDirectories } from "@repo/vite-config/source-maps";
+import { sourceMapDirectories, sourceMapManifest } from "@repo/vite-config/source-maps";
 import { Effect, FileSystem, Schema } from "effect";
 
 import { ArtifactWrites, loadArtifacts } from "./artifacts.ts";
@@ -59,7 +59,9 @@ function writeUserBuild(root: string): Effect.Effect<UserBuild> {
     });
     yield* writeFiles(sourceMapDirectories(root, "service-member").client, {
       "app.js.map": "private source map",
-      [SOURCE_MAP_MANIFEST]: manifest,
+    });
+    yield* writeFiles(path.dirname(sourceMapManifest(root, "service-member")), {
+      [path.basename(sourceMapManifest(root, "service-member"))]: manifest,
     });
     yield* writeFiles(server, {
       ".dev.vars": "AUTH_SECRET=private",
@@ -172,8 +174,7 @@ it.effect("resolves the upload without writing anything outside a deployment", (
 it.effect("refuses to publish a build that never recorded what its maps were", () =>
   Effect.gen(function* program() {
     const { root } = yield* userBuild;
-    const kept = sourceMapDirectories(root, "service-member").client;
-    yield* removePath(path.join(kept, SOURCE_MAP_MANIFEST));
+    yield* removePath(sourceMapManifest(root, "service-member"));
     assert.strictEqual(yield* failureCode(root, "service-member"), "source_maps_missing");
   }).pipe(Effect.scoped),
 );

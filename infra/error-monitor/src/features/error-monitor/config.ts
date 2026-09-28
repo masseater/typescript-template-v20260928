@@ -34,7 +34,6 @@ const observabilityQueryEndpoint = (accountId: string): string =>
 
 export {
   ErrorMonitorFailure,
-  errorMonitorEnv,
   errorMonitorWorker,
   observabilityQueryEndpoint,
   parseErrorMonitorConfig,

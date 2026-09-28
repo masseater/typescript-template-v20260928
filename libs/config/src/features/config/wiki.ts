@@ -7,12 +7,9 @@ const wikiServerFnBase = `${wikiBasePath}/_serverFn`;
 const wikiPagesBinding = "WIKI";
 const wikiApiBinding = "WIKI_API";
 const wikiApiEntrypoint = "WikiApi";
-const wikiDevOriginVariable = "WIKI_DEV_ORIGIN";
 const wikiPort = 3004;
 
 const wikiWorker = "internal-wiki";
-
-type WikiWorker = typeof wikiWorker;
 
 const buildTargets = [...applications, wikiWorker] as const;
 type BuildTarget = (typeof buildTargets)[number];
@@ -32,10 +29,9 @@ export {
   wikiApiBinding,
   wikiApiEntrypoint,
   wikiBasePath,
-  wikiDevOriginVariable,
   wikiPagesBinding,
   wikiPort,
   wikiServerFnBase,
   wikiWorker,
 };
-export type { BuildTarget, WikiWorker };
+export type { BuildTarget };

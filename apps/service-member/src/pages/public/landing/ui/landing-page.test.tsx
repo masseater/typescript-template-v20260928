@@ -1,4 +1,4 @@
-import { AppProviders } from "@repo/ui/shell";
+import { AppProviders } from "@repo/ui/testing";
 import {
   RouterContextProvider,
   createMemoryHistory,

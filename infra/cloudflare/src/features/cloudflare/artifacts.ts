@@ -1,6 +1,6 @@
 import { repositoryRoot } from "@repo/config/repository-root";
 import { serverOnlyMarkers } from "@repo/vite-config";
-import { isSecretFileName } from "@repo/vite-config/private-path";
+import { isSecretFileName } from "@repo/vite-config/secret-file-name";
 import { Context, Effect } from "effect";
 
 import {

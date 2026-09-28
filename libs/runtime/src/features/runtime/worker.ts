@@ -170,9 +170,8 @@ const withQueue = (
 } => {
   return { ...worker, queue };
 };
-export { appServerEntry, serveApp, serveWorker, startRoute, withQueue };
+export { appServerEntry, serveApp, startRoute, withQueue };
+export type { AppRoute, FetchWorker, StartHandler };
 export { configuredSiteLayer } from "./site.ts";
 export type { SiteServices } from "./site.ts";
 export { workerRuntime } from "./worker-runtime.ts";
-export type { AppRoute, FetchWorker, StartHandler };
-export type { WorkerRuntime } from "./worker-runtime.ts";

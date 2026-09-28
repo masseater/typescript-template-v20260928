@@ -1,6 +1,7 @@
 import { Auth } from "@repo/auth";
 import { AuthApps, MockNetwork, authTest, runWith, wikiStaff } from "@repo/auth/testing";
-import { APPLICATION, ROLE, STAFF_PERMISSION, httpStatus } from "@repo/config";
+import { APPLICATION, httpStatus } from "@repo/config";
+import { ROLE, STAFF_PERMISSION } from "@repo/config/identity";
 import { findWikiDraft, markWikiDraftPublished } from "@repo/db";
 import { addUser, runStatement } from "@repo/db/testing";
 import { recordingSink } from "@repo/observability/testing";

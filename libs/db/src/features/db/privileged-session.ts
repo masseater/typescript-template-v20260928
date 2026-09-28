@@ -1,7 +1,7 @@
+import { APPLICATION, type Application } from "@repo/config";
 import {
   ACCOUNT_STATE,
   ADMIN_PERMISSION,
-  APPLICATION,
   ROLE,
   STAFF_PERMISSION,
   adminPermissions,
@@ -9,10 +9,9 @@ import {
   strongAuthenticationMethods,
   type AccountPermission,
   type AdminPermission,
-  type Application,
   type Role,
   type StaffPermission,
-} from "@repo/config";
+} from "@repo/config/identity";
 import { and, eq, exists, gt, inArray, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { Effect } from "effect";

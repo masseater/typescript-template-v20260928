@@ -1,7 +1,8 @@
 import { Effect, Schema } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { EmailVerificationRequest, EmailVerified, ErrorBody } from "./contracts.ts";
+import { EmailVerificationRequest, EmailVerified } from "./account-contracts.ts";
+import { ErrorBody } from "./contracts.ts";
 
 const maximumTokenLength = 4096;
 

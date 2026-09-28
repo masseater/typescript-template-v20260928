@@ -24,4 +24,4 @@ const startAuthorization = Effect.fn("startAuthorization")(function* startAuthor
   });
 });
 
-export { redirectUri, startAuthorization, wikiOrigin, wikiStaff };
+export { startAuthorization, wikiOrigin, wikiStaff };

@@ -1,4 +1,4 @@
-import { ROLE } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import { StatusMessage } from "@repo/ui";
 
 import type { ReactElement } from "react";

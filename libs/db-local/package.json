@@ -8,8 +8,8 @@
   },
   "type": "module",
   "exports": {
-    ".": "./src/features/db-local/testing-node.ts",
-    "./platform": "./src/features/db-local/index.ts"
+    "./platform": "./src/features/db-local/index.ts",
+    "./testing": "./src/features/db-local/node-database-test-fixture.ts"
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",

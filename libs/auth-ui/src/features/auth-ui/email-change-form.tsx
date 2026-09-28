@@ -1,4 +1,4 @@
-import { AUTHENTICATION_METHOD, type StrongAuthenticationMethod } from "@repo/config";
+import { AUTHENTICATION_METHOD, type StrongAuthenticationMethod } from "@repo/config/identity";
 import { ActionStatus, Field, FormColumn, useAction, useTextInput } from "@repo/ui";
 import { Effect } from "effect";
 

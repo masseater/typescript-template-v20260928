@@ -1,6 +1,6 @@
 import { httpStatus } from "@repo/config";
 import { Telemetry } from "@repo/observability";
-import { cspNonceHeader, strictTransportSecurity } from "@repo/runtime/security";
+import { cspNonceHeader, hstsMaxAgeSeconds } from "@repo/runtime/security";
 import { Effect, Layer, Schema } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
@@ -262,7 +262,7 @@ describe("a document that arrived over https", () => {
     ));
 
   it("demands https for a year", ({ documentTransportSecurity }) => {
-    expect(documentTransportSecurity).toBe(strictTransportSecurity);
+    expect(documentTransportSecurity).toBe(`max-age=${hstsMaxAgeSeconds}; includeSubDomains`);
   });
 });
 

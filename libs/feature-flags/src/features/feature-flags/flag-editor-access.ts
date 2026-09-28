@@ -1,6 +1,6 @@
-import { Context, Effect, Layer } from "effect";
+import { Context, type Effect } from "effect";
 
-import { FlagEditorRequired } from "./flag-editor-required.ts";
+import type { FlagEditorRequired } from "./flag-editor-required.ts";
 
 class FlagEditorAccess extends Context.Service<
   FlagEditorAccess,
@@ -11,14 +11,4 @@ class FlagEditorAccess extends Context.Service<
   }
 >()("@repo/feature-flags/FlagEditorAccess") {}
 
-const allowAllEditors = Layer.succeed(FlagEditorAccess, {
-  assertEditor: () => Effect.void,
-});
-
-const editorsOnly = (viewers: ReadonlySet<string>): Layer.Layer<FlagEditorAccess> =>
-  Layer.succeed(FlagEditorAccess, {
-    assertEditor: (user) =>
-      viewers.has(user.id) ? Effect.fail(new FlagEditorRequired()) : Effect.void,
-  });
-
-export { FlagEditorAccess, allowAllEditors, editorsOnly };
+export { FlagEditorAccess };

@@ -1,4 +1,4 @@
-import { ACCOUNT_STATE } from "@repo/config";
+import { ACCOUNT_STATE } from "@repo/config/identity";
 
 import { AccountState, nextAccountStates } from "#shared/contracts/index.ts";
 

@@ -1,4 +1,4 @@
-import { ADMIN_PERMISSION } from "@repo/config";
+import { ADMIN_PERMISSION } from "@repo/config/identity";
 import { apiData } from "@repo/runtime/client";
 import { InvitationForm } from "@repo/ui";
 

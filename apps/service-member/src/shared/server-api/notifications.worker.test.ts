@@ -1,6 +1,7 @@
 import { assert, it } from "@effect/vitest";
-import { notificationMailSubjects, type MailSettings } from "@repo/auth";
-import { ROLE } from "@repo/config";
+import { type MailSettings } from "@repo/auth";
+import { notificationMailSubjects } from "@repo/auth/testing";
+import { ROLE } from "@repo/config/identity";
 import { NOTIFICATION_KIND, and, eq, query, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
 import { fixtureOrigin } from "@repo/runtime/testing";

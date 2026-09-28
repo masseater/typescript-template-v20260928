@@ -24,7 +24,7 @@ import { TargetUnavailable } from "./target-unavailable.ts";
 
 import type { DatabaseFailure } from "./database-failure.ts";
 
-export const UserPage = Schema.Struct({
+const UserPage = Schema.Struct({
   accountState: Schema.optionalKey(Schema.Literals(accountStates)),
   emailVerified: Schema.optionalKey(Schema.Boolean),
   keyword: Schema.optionalKey(Schema.String),
@@ -347,20 +347,13 @@ export const setAdminState = Effect.fn("setAdminState")(function* setAdminState(
   return changed;
 });
 
-export { AdminStrongSessionRequired } from "./admin-strong-session-required.ts";
 export {
-  AgreementVersionTaken,
-  AgreementVersionUnavailable,
   createAgreementDraft,
   listAgreementVersions,
   publishAgreementVersion,
   readAgreementVersion,
   reviseAgreementDraft,
 } from "./agreement-admin.ts";
-export { InviteRejected } from "./invite-rejected.ts";
-export { LastAdminRequired } from "./last-admin-required.ts";
-export { PermissionRequired } from "./permission-required.ts";
-export { TargetUnavailable } from "./target-unavailable.ts";
 export {
   dismissReport,
   listReports,
@@ -368,5 +361,3 @@ export {
   suspendTarget,
   warnTarget,
 } from "./trust-admin.ts";
-export { TrustSubjectNotFound } from "./trust-subject-not-found.ts";
-export { TrustTargetUnavailable } from "./trust-target-unavailable.ts";

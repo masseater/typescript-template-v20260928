@@ -1,4 +1,4 @@
-import { ACCOUNT_STATE } from "@repo/config";
+import { ACCOUNT_STATE } from "@repo/config/identity";
 import { describe, expect, it } from "vite-plus/test";
 
 import { rowConfirmation } from "./user-labels.ts";

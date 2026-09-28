@@ -1,9 +1,5 @@
-import {
-  AUTHENTICATION_METHOD,
-  audienceRoles,
-  loopbackHosts,
-  type Application,
-} from "@repo/config";
+import { audienceRoles, loopbackHosts, type Application } from "@repo/config";
+import { AUTHENTICATION_METHOD } from "@repo/config/identity";
 import {
   hasEnrolledFactor,
   hasVerificationAudience,

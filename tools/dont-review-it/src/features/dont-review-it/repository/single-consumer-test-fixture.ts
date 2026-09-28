@@ -2,8 +2,7 @@ import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, FileSystem, Path } from "effect";
 
 import { directoryEntries, type TreeScan } from "../platform/directory-entries.ts";
-import { path } from "../platform/path.ts";
-import { posixPath } from "../platform/path.ts";
+import { path, posixPath } from "../platform/path.ts";
 import {
   declaredDependencies,
   field,
@@ -553,5 +552,10 @@ const repositorySingleConsumerFindings: TreeScan<readonly Finding[]> = Effect.ma
     ),
 );
 
-export { moduleSpecifiers, repositorySingleConsumerFindings, singleConsumerFindings };
+export {
+  moduleSpecifiers,
+  repositorySingleConsumerFindings,
+  repositorySources,
+  singleConsumerFindings,
+};
 export type { Finding, SourceText };

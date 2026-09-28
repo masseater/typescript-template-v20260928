@@ -35,7 +35,6 @@ export const moderationKinds = [
   "moderation_unsuspend",
   "moderation_warn",
 ] as const;
-export type ModerationKind = (typeof moderationKinds)[number];
 export const MODERATION_KIND = {
   suspend: moderationKinds[0],
   unsuspend: moderationKinds[1],

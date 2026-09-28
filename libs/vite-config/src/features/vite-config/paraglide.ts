@@ -3,7 +3,7 @@ import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect } from "effect";
 
 import { paths } from "./host.ts";
-import { localizedApps, paraglideCompileOptions, paraglideStrategy } from "./paraglide-options.ts";
+import { localizedApps, paraglideCompileOptions } from "./paraglide-options.ts";
 import { telemetryEnv } from "./run-config.ts";
 import { taskInput } from "./task-input.ts";
 
@@ -55,10 +55,4 @@ const workspaceParaglideCompile = {
   env: [...telemetryEnv],
 } satisfies NonNullable<NonNullable<NonNullable<UserConfig["run"]>["tasks"]>[string]>;
 
-export {
-  paraglideAppPlugin,
-  paraglideCompileOptions,
-  paraglideStrategy,
-  withoutInlangState,
-  workspaceParaglideCompile,
-};
+export { paraglideAppPlugin, withoutInlangState, workspaceParaglideCompile };

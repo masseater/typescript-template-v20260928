@@ -12,7 +12,7 @@ import {
   maximumMemberPage,
 } from "./member.ts";
 
-import type { UserRecord } from "@repo/db";
+import type { UserRecord } from "@repo/db/testing";
 
 type Matches<View, Fields extends keyof UserRecord> = [View] extends [Pick<UserRecord, Fields>]
   ? [Pick<UserRecord, Fields>] extends [View]

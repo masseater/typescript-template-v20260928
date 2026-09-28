@@ -4,7 +4,8 @@ import { Effect, FileSystem } from "effect";
 import { vi } from "vite-plus/test";
 
 import { verifiedSecrets } from "./credentials.ts";
-import { ENVIRONMENT_FILE_VARIABLE, secretsFile } from "./deployment.ts";
+import { secretsFile } from "./deployment.ts";
+import { ENVIRONMENT_FILE_VARIABLE } from "./environment-file-variable.ts";
 import { layer, path } from "./platform.ts";
 import { verificationEnvironment } from "./verification-settings.ts";
 

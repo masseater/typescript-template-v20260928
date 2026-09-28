@@ -1,29 +1,31 @@
+import { APPLICATION } from "@repo/config";
 import {
   ACCOUNT_STATE,
   ADMIN_PERMISSION,
-  APPLICATION,
   AUTHENTICATION_METHOD,
   ROLE,
-} from "@repo/config";
-import { getSessionSecurity } from "@repo/db";
+} from "@repo/config/identity";
 import { setMemberState } from "@repo/db/admin";
+import { getSessionSecurity } from "@repo/db/testing";
 import { Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 
 import { AdminMfaRequired } from "./admin-mfa-required.ts";
 import {
+  bootstrapVerifiedAdmin,
+  enableTotp,
+  pendingSecondFactor,
+  requireStatus,
+  signInAgainAfterTotp,
+} from "./auth-test-fixture.ts";
+import {
   AuthApps,
   assignRoleByEmail,
   authTest,
-  bootstrapVerifiedAdmin,
   clientOf,
-  enableTotp,
-  pendingSecondFactor,
   registerVerified,
-  requireStatus,
   runWith,
   signIn,
-  signInAgainAfterTotp,
   signInAs,
   wikiStaff,
 } from "./index-test-fixture.ts";

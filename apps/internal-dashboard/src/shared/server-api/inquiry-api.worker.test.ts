@@ -1,6 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
 import { httpStatus } from "@repo/config";
-import { inquiryStaff, type ReadOnlyInquiryStaff } from "@repo/db/inquiry-staff";
+import { inquiryStaff } from "@repo/db/inquiry-staff";
 import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
 import { fixtureOrigin } from "@repo/runtime/testing";
 import { Effect } from "effect";
@@ -45,7 +45,7 @@ it.effect("rejects write requests on inquiry routes", () =>
 
 describe("the staff surface", () => {
   it("exposes only read-only inquiry staff operations", () => {
-    const staff: ReadOnlyInquiryStaff = inquiryStaff;
+    const staff = inquiryStaff;
     assert.isFunction(staff.getInquiry);
     assert.isFunction(staff.inquiryCounts);
     assert.isFunction(staff.listMemberInquiries);

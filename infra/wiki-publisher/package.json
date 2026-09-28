@@ -2,9 +2,6 @@
   "name": "@repo/infra-wiki-publisher",
   "private": true,
   "type": "module",
-  "exports": {
-    ".": "./src/features/wiki-publisher/index.ts"
-  },
   "dependencies": {
     "@repo/config": "workspace:*",
     "@repo/infra-cloudflare": "workspace:*",

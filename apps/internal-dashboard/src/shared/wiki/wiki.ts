@@ -1,4 +1,5 @@
-import { APPLICATION, STAFF_PERMISSION, grantsStaffLevel } from "@repo/config";
+import { APPLICATION } from "@repo/config";
+import { STAFF_PERMISSION, grantsStaffLevel } from "@repo/config/identity";
 import {
   FlagEditorAccess,
   FlagEditorRequired,

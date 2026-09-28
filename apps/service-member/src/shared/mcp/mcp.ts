@@ -1,5 +1,6 @@
 import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
-import { ACCOUNT_STATE, APPLICATION, MEMBER_MCP_SCOPE, ROLE } from "@repo/config";
+import { APPLICATION, MEMBER_MCP_SCOPE } from "@repo/config";
+import { ACCOUNT_STATE, ROLE } from "@repo/config/identity";
 import { and, eq, query, requirePaid, schema } from "@repo/db";
 import { mcpEndpoint, toolFailure, toolRunner } from "@repo/runtime";
 import { Clock, Effect, Schema } from "effect";

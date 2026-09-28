@@ -1,11 +1,5 @@
-import {
-  APPLICATION,
-  METRIC_KEY,
-  METRIC_PERIOD,
-  ROLE,
-  clientKinds,
-  metricPeriods,
-} from "@repo/config";
+import { APPLICATION, METRIC_KEY, METRIC_PERIOD, clientKinds, metricPeriods } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import { count, eq } from "drizzle-orm";
 import { DateTime, Effect } from "effect";
 import { sumBy } from "es-toolkit";

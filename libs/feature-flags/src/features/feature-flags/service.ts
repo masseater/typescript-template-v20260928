@@ -3,17 +3,17 @@ import { OpenFeature, TypedInMemoryProvider } from "@openfeature/server-sdk";
 import { ConfigurationInvalid } from "@repo/config";
 import { Context, Effect, Layer, Ref } from "effect";
 
+import { evaluationFromDetails, failClosedEnabled, type FlagEvaluation } from "./evaluation.ts";
 import {
   booleanForVariation,
   flagDefinitions,
   flagDefinitionFor,
   variationForBoolean,
   type FlagKey,
-} from "./definitions.ts";
-import { evaluationFromDetails, failClosedEnabled, type FlagEvaluation } from "./evaluation.ts";
+} from "./flag-vocabulary.ts";
 import { FlagshipWriteFailed } from "./flagship-write.ts";
 
-export type FlagState = Readonly<{
+type FlagState = Readonly<{
   description: string;
   enabled: boolean;
   key: FlagKey;
@@ -146,9 +146,4 @@ const configuredFeatureFlagsLayer = (
     : Effect.fail(new ConfigurationInvalid({ reason: "FLAGS" }));
 };
 
-export {
-  configuredFeatureFlagsLayer,
-  FeatureFlags,
-  flagshipFeatureFlagsLayer,
-  memoryFeatureFlagsLayer,
-};
+export { configuredFeatureFlagsLayer, FeatureFlags };

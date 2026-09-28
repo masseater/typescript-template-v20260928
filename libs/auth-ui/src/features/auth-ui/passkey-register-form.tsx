@@ -1,4 +1,4 @@
-import { ROLE } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import { Button, Field, FormColumn, useTextInput } from "@repo/ui";
 import { Effect } from "effect";
 

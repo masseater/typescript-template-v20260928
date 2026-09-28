@@ -1,10 +1,8 @@
-import { getSchemaShape } from "@repo/db/testing";
+import { getSchemaShape, type UserRecord } from "@repo/db/testing";
 import { Effect, Schema } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { SessionView } from "./contracts.ts";
-
-import type { UserRecord } from "@repo/db";
+import { SessionView } from "./account-contracts.ts";
 
 const storedUser: Pick<
   UserRecord,

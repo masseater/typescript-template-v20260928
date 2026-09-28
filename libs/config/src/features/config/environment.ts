@@ -106,12 +106,7 @@ const Bindings = Schema.Struct({
   FLAGS: Schema.optionalKey(FlagshipBinding),
 });
 
-const AiBindings = Schema.Struct({
-  AI: Schema.optionalKey(bindingWith<Ai>("Ai", ["run"])),
-});
-
 const stripeKeyModes = ["live", "test"] as const;
-type StripeKeyMode = (typeof stripeKeyModes)[number];
 const StripeSecretKey = Schema.RedactedFromValue(
   Schema.String.check(Schema.isPattern(/^(?:sk|rk)_(?:live|test)_[A-Za-z0-9]+$/u)),
 );
@@ -127,7 +122,7 @@ const StripeScalars = Schema.Struct({
   STRIPE_WEBHOOK_SECRET: StripeWebhookSecret,
 });
 
-const stripeKeyMode = (secretKey: Redacted.Redacted): StripeKeyMode =>
+const stripeKeyMode = (secretKey: Redacted.Redacted): (typeof stripeKeyModes)[number] =>
   Redacted.value(secretKey).split("_")[1] === "live" ? "live" : "test";
 
 const isLocalLanHostname = (hostname: string): boolean =>
@@ -249,11 +244,6 @@ const readCore = Effect.fn("readCore")(function* readCore(input: unknown) {
   return CORE;
 });
 
-const readAi = Effect.fn("readAi")(function* readAi(input: unknown) {
-  const { AI } = yield* decode(AiBindings, input);
-  return AI;
-});
-
 const readStripeConfig = Effect.fn("readStripeConfig")(function* readStripeConfig(input: unknown) {
   const scalars = yield* decode(StripeScalars, input);
   const keyMode = stripeKeyMode(scalars.STRIPE_SECRET_KEY);
@@ -280,13 +270,11 @@ export {
   decode,
   distinctOrigins,
   isLocalDevelopmentOrigin,
-  readAi,
   readConfig,
   readCore,
   readEnvironment,
   readSiteEnvironment,
   readStripeConfig,
   readWikiBindings,
-  stripeKeyModes,
 };
-export type { AppConfig, AssetFetcher, ServiceFetcher, SiteConfig, StripeConfig, StripeKeyMode };
+export type { AppConfig, AssetFetcher, ServiceFetcher, SiteConfig, StripeConfig };

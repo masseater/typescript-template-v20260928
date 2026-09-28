@@ -25,7 +25,6 @@ import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 import {
-  defineConfig,
   lazyPlugins,
   type ConfigEnv,
   type PluginOption,
@@ -44,7 +43,7 @@ import {
 import { elysiaAot, elysiaWorkerdJit } from "./elysia-aot.ts";
 import { withoutEnvFileLoader } from "./env-file-loader.ts";
 import { paths } from "./host.ts";
-import { lifecycle, lifecycleInherits, lifecycles } from "./lifecycle.ts";
+import { lifecycle, lifecycles } from "./lifecycle.ts";
 import { localizedApps } from "./paraglide-options.ts";
 import { withoutInlangState, workspaceParaglideCompile } from "./paraglide.ts";
 import { previewDevVars } from "./preview-dev-vars.ts";
@@ -99,16 +98,6 @@ const appServer = (app: Application): ServerOptions => ({
   port: applicationPorts[app],
   strictPort: true,
 });
-
-const generatedDirectories = [
-  "node_modules",
-  ".local",
-  "dist",
-  ".wrangler",
-  ".alchemy",
-  ".artifacts",
-  ".spool",
-] as const;
 
 const withoutGenerated = (...directories: readonly string[]): string[] =>
   directories.flatMap((directory) => [`!${directory}`, `!${directory}/**`]);
@@ -439,39 +428,29 @@ export {
   wikiConfig,
   appRun,
   elysiaWorkerdJit,
-  appServer,
   awaitingEffectDiagnostics,
   awaitingEffectRun,
   checkCode,
   clientReachableModules,
-  defineConfig,
   effectDiagnostics,
   effectRun,
   effectTsgoNoEmit,
   intentValidation,
   lifecycle,
-  lifecycleInherits,
   lifecycles,
   modularBoundaries,
   paraglideAppRun,
-  previewDevVars,
   workspaceParaglideCompile,
   reactCompiler,
   serverOnlyMarkers,
   serverOnlyPackages,
-  generatedDirectories,
-  sliceBoundaries,
-  startOptions,
-  measured,
   taskInput,
   telemetryEnv,
   testRun,
   wikiCompanion,
   wikiDevServices,
-  withoutEnvFileLoader,
   workspaceCheckImports,
 };
 export { paths } from "./host.ts";
-export { paraglideAppPlugin, paraglideCompileOptions, paraglideStrategy } from "./paraglide.ts";
+export { paraglideAppPlugin } from "./paraglide.ts";
 export { runTypecheckGate } from "./effect-typecheck.ts";
-export { devBoundary, failOnBrokenSourceMaps, privateSourceMaps, type RunConfig, type Tasks };

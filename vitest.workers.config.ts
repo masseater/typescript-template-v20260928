@@ -8,10 +8,10 @@ import {
   jobsWorkflowClass,
   jobsWorkflowName,
 } from "@repo/config";
+import { localDatabase } from "@repo/config/local-database-path";
 import { userInboxBinding, userInboxClassName } from "@repo/config/realtime";
 import { localCacheNamespace, localFileBucket } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
-import { localDatabase } from "@repo/db/local";
 import { loadRemoteMigrations } from "@repo/db/migrations";
 import { workerTests } from "@repo/dont-review-it";
 import { monitorBinding } from "@repo/monitor";

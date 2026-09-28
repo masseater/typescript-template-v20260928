@@ -1,5 +1,5 @@
 import { RegistryProvider } from "@effect/atom-react";
-import { AppProviders } from "@repo/ui/shell";
+import { AppProviders } from "@repo/ui/testing";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 

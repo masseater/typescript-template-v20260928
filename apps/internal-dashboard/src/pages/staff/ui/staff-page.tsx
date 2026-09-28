@@ -1,5 +1,5 @@
 import { ForbiddenNotice, useSessionUser } from "@repo/auth-ui";
-import { STAFF_PERMISSION, grantsStaffLevel } from "@repo/config";
+import { STAFF_PERMISSION, grantsStaffLevel } from "@repo/config/identity";
 import { InvitationBoard, Page } from "@repo/ui";
 
 import { useStaffList } from "#pages/staff/model/staff-list.ts";

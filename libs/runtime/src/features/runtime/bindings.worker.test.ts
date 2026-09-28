@@ -3,7 +3,7 @@ import { env } from "cloudflare:workers";
 import { Effect, Redacted } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { appEnvironment, fixtureAuthSecret, fixtureOrigin } from "./app-test-fixture.ts";
+import { appEnvironment, fixtureOrigin } from "./app-test-fixture.ts";
 import { readWorkerConfig } from "./bindings.ts";
 
 describe("readWorkerConfig", () => {
@@ -27,7 +27,7 @@ describe("readWorkerConfig", () => {
         APP_ORIGIN: fixtureOrigin,
         APP_RELEASE: "test",
         ASSETS: workerEnvironment["ASSETS"],
-        AUTH_SECRET: fixtureAuthSecret,
+        AUTH_SECRET: workerEnvironment["AUTH_SECRET"],
         DB: env.DB,
         EMAIL: workerEnvironment["EMAIL"],
         EMAIL_FROM: "sender@example.test",
@@ -64,7 +64,7 @@ describe("readWorkerConfig", () => {
         APP_ORIGIN: fixtureOrigin,
         APP_RELEASE: "test",
         ASSETS: workerEnvironment["ASSETS"],
-        AUTH_SECRET: fixtureAuthSecret,
+        AUTH_SECRET: workerEnvironment["AUTH_SECRET"],
         DB: env.DB,
         EMAIL: workerEnvironment["EMAIL"],
         EMAIL_FROM: "sender@example.test",

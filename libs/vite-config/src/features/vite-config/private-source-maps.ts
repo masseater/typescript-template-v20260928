@@ -2,7 +2,7 @@ import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, Schema } from "effect";
 
 import { filesystem, paths } from "./host.ts";
-import { SOURCE_MAP_MANIFEST, sourceMapDirectories } from "./source-maps.ts";
+import { sourceMapDirectories, sourceMapManifest } from "./source-maps.ts";
 
 import type { BuildTarget } from "@repo/config";
 import type { Plugin } from "vite-plus";
@@ -35,19 +35,12 @@ const moveMap = (source: string, destination: string): Effect.Effect<void> =>
     yield* filesystem.chmod(destination, PRIVATE_FILE_MODE);
   }).pipe(Effect.orDie);
 
-const recordEmitted = (
-  destination: string,
-  sourceMapFiles: readonly string[],
-): Effect.Effect<void> =>
+const recordEmitted = (manifest: string, sourceMapFiles: readonly string[]): Effect.Effect<void> =>
   Effect.gen(function* recordEmittedProgram() {
     const encoded = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(
       sourceMapFiles.toSorted(),
     );
-    yield* filesystem.writeFileString(
-      paths.join(destination, SOURCE_MAP_MANIFEST),
-      `${encoded}\n`,
-      { mode: PRIVATE_FILE_MODE },
-    );
+    yield* filesystem.writeFileString(manifest, `${encoded}\n`, { mode: PRIVATE_FILE_MODE });
   }).pipe(Effect.orDie);
 
 const sourceMapFileNames = (bundle: Readonly<Record<string, unknown>>): readonly string[] =>
@@ -87,7 +80,7 @@ const privateSourceMaps = (app: BuildTarget): Plugin => {
         (file) => moveMap(paths.join(placed.outDir, file), paths.join(mapDirectory, file)),
         { concurrency: "unbounded" },
       );
-      yield* recordEmitted(mapDirectory, placed.sourceMapFiles);
+      yield* recordEmitted(sourceMapManifest(repositoryRoot, app), placed.sourceMapFiles);
     }).pipe(Effect.orDie);
   return {
     apply: "build",

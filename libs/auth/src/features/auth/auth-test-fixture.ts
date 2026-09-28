@@ -1,13 +1,11 @@
+import { APPLICATION, type Application, httpStatus } from "@repo/config";
 import {
   ADMIN_PERMISSION,
-  APPLICATION,
   ROLE,
   STAFF_PERMISSION,
   type AccountPermission,
-  type Application,
   type Role,
-  httpStatus,
-} from "@repo/config";
+} from "@repo/config/identity";
 import {
   EmptyTestDatabase,
   TestDatabase,
@@ -98,11 +96,6 @@ const runWith = <Value, Failure>(
   auth: Context.Context<AuthTestServices>,
   program: () => Effect.Effect<Value, Failure, AuthTestServices>,
 ): Promise<Value> => Effect.runPromise(Effect.provideContext(program(), auth));
-
-const withAuth = <Value, Failure>(
-  effect: Effect.Effect<Value, Failure, AuthTestServices>,
-): Effect.Effect<Value, Failure | AuthFailure> =>
-  Effect.scoped(Effect.provide(effect, authTestLayer));
 
 const audienceOnEmptyDatabase = (
   audience: Application,
@@ -372,6 +365,5 @@ export {
   signedSessionCookie,
   spendSignInWindow,
   verifyEmail,
-  withAuth,
 };
 export type { AuthTestServices };

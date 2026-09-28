@@ -54,12 +54,5 @@ const healthTargets = (
     };
   });
 
-export {
-  HealthMonitorFailure,
-  healthEndpointFor,
-  healthMonitorWorker,
-  healthOriginKey,
-  healthTargets,
-  parseHealthMonitorConfig,
-};
+export { HealthMonitorFailure, healthMonitorWorker, healthTargets, parseHealthMonitorConfig };
 export type { HealthMonitorEnv };

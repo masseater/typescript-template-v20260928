@@ -1,4 +1,4 @@
-import { ACCOUNT_STATE, ADMIN_PERMISSION } from "@repo/config";
+import { ACCOUNT_STATE, ADMIN_PERMISSION } from "@repo/config/identity";
 
 import { AccountState, AdminPermission } from "#shared/contracts/index.ts";
 

@@ -1,4 +1,4 @@
-import { STAFF_PERMISSION } from "@repo/config";
+import { STAFF_PERMISSION } from "@repo/config/identity";
 
 import { StaffPermission } from "#shared/contracts/index.ts";
 

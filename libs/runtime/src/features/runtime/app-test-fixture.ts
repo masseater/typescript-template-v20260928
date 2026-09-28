@@ -1,13 +1,7 @@
-import { APPLICATION } from "@repo/config";
 import { env } from "cloudflare:workers";
 import { Layer } from "effect";
-import { TestClock } from "effect/testing";
 
-import { appLayer } from "./bindings.ts";
 import { FileStore } from "./file-store.ts";
-import { workerRuntime, type WorkerRuntime } from "./worker-runtime.ts";
-
-import type { AppServices } from "./index.ts";
 const fixtureOrigin = "http://localhost:3001";
 const fixtureAuthSecret = "worker-test-secret-of-at-least-32-characters-0123456789";
 const appEnvironment = (
@@ -28,13 +22,6 @@ const appEnvironment = (
     ...overrides,
   };
 };
-const testClockRuntime = (
-  routes: Readonly<Record<string, string>>,
-): WorkerRuntime<AppServices | TestClock.TestClock, never> => {
-  const services = Layer.orDie(
-    appLayer({ env: appEnvironment(), audience: APPLICATION.user, routes }),
-  );
-  return workerRuntime(() => Layer.merge(services, TestClock.layer()));
-};
 const testFileStore = Layer.orDie(FileStore.fromEnvironment(env));
-export { appEnvironment, fixtureAuthSecret, fixtureOrigin, testClockRuntime, testFileStore };
+export { consumeJobs } from "./jobs.ts";
+export { appEnvironment, fixtureOrigin, testFileStore };

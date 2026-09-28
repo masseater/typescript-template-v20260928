@@ -39,5 +39,4 @@ const consumeRateLimit = Effect.fn("consumeRateLimit")(function* consumeRateLimi
   );
 });
 
-export { RateLimitExceeded } from "./rate-limit-exceeded.ts";
 export { consumeRateLimit };

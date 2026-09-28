@@ -25,14 +25,13 @@ import { Effect } from "effect";
 import { loadArtifacts, workerModuleGlobs } from "./artifacts.ts";
 import { billingProgram } from "./billing.ts";
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
-import { coreWorkerRef } from "./core-program.ts";
 import { databaseRef } from "./database.ts";
 import { flagshipAppRef } from "./flagship.ts";
 import { memberLeavePurgeCron } from "./member-leave-purge.ts";
 import { authSecret, otlpAuthorization, settings, wikiPublishSettings } from "./settings.ts";
 import { cacheNamespaceRef, fileBucketRef } from "./storage.ts";
 import { accountTokenRef } from "./tokens.ts";
-import { wikiWorkerRef } from "./wiki-program.ts";
+import { coreWorkerRef, wikiWorkerRef } from "./worker-refs.ts";
 
 import type { Application } from "@repo/config";
 import type { Redacted } from "effect";

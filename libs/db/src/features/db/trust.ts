@@ -1,11 +1,5 @@
-import {
-  ACCOUNT_STATE,
-  REPORT_STATUS,
-  REPORT_SUBJECT,
-  ROLE,
-  type ReportReason,
-  type ReportSubject,
-} from "@repo/config";
+import { REPORT_STATUS, REPORT_SUBJECT, type ReportReason, type ReportSubject } from "@repo/config";
+import { ACCOUNT_STATE, ROLE } from "@repo/config/identity";
 import { and, eq, or, sql, type Column, type SQL } from "drizzle-orm";
 import { Effect } from "effect";
 
@@ -250,8 +244,6 @@ const fileReport = Effect.fn("fileReport")(function* fileReport({
 });
 
 export {
-  TrustSubjectNotFound,
-  TrustTargetUnavailable,
   blockBetween,
   blockHides,
   blockMember,
