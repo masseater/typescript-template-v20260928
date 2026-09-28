@@ -1,12 +1,14 @@
+import { and, count, desc, eq, isNull } from "drizzle-orm";
+import type { NotificationKind } from "@repo/config";
+import { NOTIFICATION_KIND } from "@repo/config";
 import { sendNotificationEmail } from "@repo/auth";
-import { NOTIFICATION_KIND, and, count, desc, eq, isNull, query, schema } from "@repo/db";
+import { query, schema } from "@repo/db";
 import { Effect, DateTime } from "effect";
 
 import { NotificationNotFound } from "./notification-not-found.ts";
 import { OpsMail } from "./ops-mail.ts";
 
 import type { NavBadges } from "#shared/contracts/index.ts";
-import type { NotificationKind } from "@repo/db";
 
 const { notification, notificationPreference, user } = schema;
 

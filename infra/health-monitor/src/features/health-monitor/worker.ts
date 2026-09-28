@@ -1,13 +1,9 @@
+import { healthMonitorWorker } from "@repo/monitor/workers";
 import { monitorWorker, type MonitorBindings } from "@repo/monitor";
 import { withSpan } from "@repo/observability";
 import { Effect } from "effect";
 
-import {
-  healthMonitorWorker,
-  healthTargets,
-  parseHealthMonitorConfig,
-  type HealthMonitorEnv,
-} from "./config.ts";
+import { healthTargets, parseHealthMonitorConfig, type HealthMonitorEnv } from "./config.ts";
 import { decideHealthAlerts, formatHealthMessage, type HealthState } from "./decision.ts";
 import { probeService } from "./probe.ts";
 

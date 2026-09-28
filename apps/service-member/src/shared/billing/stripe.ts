@@ -1,14 +1,6 @@
-import {
-  aiMeterEventName,
-  invoiceDueDays,
-  priceIntervals,
-  readStripeConfig,
-  STRIPE_COLLECTION_METHOD,
-  stripeApiVersion,
-  stripeTrialPeriodDays,
-} from "@repo/config";
+import { STRIPE_COLLECTION_METHOD, aiMeterEventName, invoiceDueDays, priceIntervals, readStripeConfig, stripeApiVersion, stripeTrialPeriodDays } from "@repo/config";
 import { withSpan } from "@repo/observability";
-import { Redirect } from "@repo/runtime/contracts";
+import { ResourceUrl } from "@repo/runtime/contracts";
 import { Context, Effect, Layer, Redacted, Schema } from "effect";
 
 import { StripeEventUnreadable } from "./stripe-event-unreadable.ts";
@@ -227,7 +219,7 @@ function stripeService(fetchImpl: typeof fetch, config: StripeConfig): StripeSha
   return {
     createCheckoutSession: (input) =>
       send("/checkout/sessions", checkoutForm(config, input)).pipe(
-        Effect.flatMap((body) => decodeStripe(Redirect, body)),
+        Effect.flatMap((body) => decodeStripe(ResourceUrl, body)),
         Effect.map((session) => session.url),
       ),
     createInvoice: (input) =>
@@ -262,7 +254,7 @@ function stripeService(fetchImpl: typeof fetch, config: StripeConfig): StripeSha
         "/billing_portal/sessions",
         new URLSearchParams({ customer: input.customerId, return_url: input.returnUrl }),
       ).pipe(
-        Effect.flatMap((body) => decodeStripe(Redirect, body)),
+        Effect.flatMap((body) => decodeStripe(ResourceUrl, body)),
         Effect.map((session) => session.url),
       ),
     offer: send(`/prices/${config.priceId}`).pipe(

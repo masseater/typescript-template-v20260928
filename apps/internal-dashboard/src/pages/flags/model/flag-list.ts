@@ -5,7 +5,7 @@ import { localState, requestAtom, type RequestResult } from "@repo/ui";
 import { AsyncResult } from "effect/unstable/reactivity";
 
 import { wikiClient } from "#shared/api/index.ts";
-import { FlagList, FlagToggled } from "#shared/contracts/index.ts";
+import { FlagEntry, FlagList } from "#shared/contracts/index.ts";
 
 import type { FlagEntry } from "#shared/contracts/index.ts";
 
@@ -38,7 +38,7 @@ function useFlagList(): Readonly<{
     Promise.resolve(wikiClient())
       .then(({ api }) => api.flags.patch({ enabled, key }))
       .then((response) => {
-        const updated = apiData(FlagToggled, response);
+        const updated = apiData(FlagEntry, response);
         setOverrides((current) => ({ ...current, [updated.key]: updated }));
         return undefined;
       })

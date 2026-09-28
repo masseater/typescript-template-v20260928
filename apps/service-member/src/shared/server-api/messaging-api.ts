@@ -1,3 +1,4 @@
+import { ResourceId, Tally } from "@repo/runtime/contracts";
 import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import { sessionFailures } from "@repo/runtime/account";
@@ -5,22 +6,7 @@ import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
 import { paidFailures } from "#shared/billing/index.ts";
-import {
-  ConversationList,
-  ConversationListQuery,
-  ConversationLookup,
-  ConversationLookupResult,
-  ConversationOpen,
-  ConversationOpened,
-  ConversationQuery,
-  ConversationRead,
-  ConversationView,
-  MessageSend,
-  MessageSent,
-  UnreadCount,
-  messagingConversationPageSize,
-  messagingMessagePageSize,
-} from "#shared/contracts/index.ts";
+import { ConversationList, ConversationListQuery, ConversationLookup, ConversationLookupResult, ConversationOpen, ConversationOpened, ConversationQuery, ConversationRead, ConversationView, MessageSend, messagingConversationPageSize, messagingMessagePageSize } from "#shared/contracts/index.ts";
 import {
   findConversation,
   listInbox,
@@ -101,7 +87,7 @@ function messagingApi(api: ApiRoutes<AppServices>) {
     .get(
       "/unread",
       ...api.route(
-        { response: UnreadCount },
+        { response: Tally },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -127,7 +113,7 @@ function messagingApi(api: ApiRoutes<AppServices>) {
     .post(
       "/messages",
       ...api.route(
-        { response: MessageSent },
+        { response: ResourceId },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);

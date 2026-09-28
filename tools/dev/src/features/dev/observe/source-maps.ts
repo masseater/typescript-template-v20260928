@@ -1,13 +1,13 @@
+import { isNotFound } from "@repo/cli";
 import { SourceMap } from "node:module";
 
 import { sourceMapDirectories } from "@repo/vite-config/source-maps";
 import { Effect, FileSystem, Path, PlatformError, Schema } from "effect";
 
-import { isNotFound, withFileSystem } from "../platform.ts";
+import { withFileSystem } from "../platform.ts";
 
 import type { Application } from "@repo/config";
 
-type App = Application;
 type Runtime = "client" | "server";
 type DirectoryEntry = Readonly<{
   readonly isDirectory: () => boolean;
@@ -31,7 +31,7 @@ type Frame =
 
 interface Symbolication {
   readonly repositoryRoot: string;
-  readonly app: App;
+  readonly app: Application;
   readonly release: string;
 }
 
@@ -265,4 +265,4 @@ function symbolicate(
 }
 
 export { symbolicate };
-export type { App, Frame, SourceMapFailure, Symbolication };
+export type { Frame, SourceMapFailure, Symbolication };

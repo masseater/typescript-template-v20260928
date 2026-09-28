@@ -1,13 +1,15 @@
 import { uniq } from "es-toolkit";
 import { parseSync } from "oxc-parser";
 
-import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
+import { isAstFields, NODE_TYPE_FIELD } from "../ast-node.ts";
 import {
   canonicalTextOf,
   placeholdersIn,
   referencedTypeNamesIn,
   type TypeParameterPlaceholders,
 } from "./canonical-text.ts";
+
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
 
 const SOURCE_NAME = "source.ts";
 
@@ -50,8 +52,8 @@ export type ScannedTypeDeclaration = {
 };
 
 type ExportedTypeDeclaration = {
-  readonly statement: AstFields;
-  readonly shapeOf: (statement: AstFields) => DeclaredShape;
+  readonly statement: UnknownFields;
+  readonly shapeOf: (statement: UnknownFields) => DeclaredShape;
 };
 
 const declarationFrom = (
@@ -63,7 +65,7 @@ const declarationFrom = (
   const isUnbound = (spelled: string): boolean => !placeholders.has(spelled);
 
   return {
-    name: String((statement.id as AstFields).name),
+    name: String((statement.id as UnknownFields).name),
     line: source.slice(0, Number(statement.start)).split("\n").length,
     kind: String(statement[NODE_TYPE_FIELD]),
     structure: structureOf(shape, placeholders),
@@ -72,17 +74,17 @@ const declarationFrom = (
   };
 };
 
-const shapeOfInterface = (statement: AstFields): DeclaredShape => ({
+const shapeOfInterface = (statement: UnknownFields): DeclaredShape => ({
   parameters: statement.typeParameters,
   heritage: statement.extends as readonly unknown[],
-  memberNodes: (statement.body as AstFields).body as readonly unknown[],
+  memberNodes: (statement.body as UnknownFields).body as readonly unknown[],
   annotationNodes: [],
 });
 
 const TYPE_LITERAL_KIND = "TSTypeLiteral";
 
-const shapeOfTypeAlias = (statement: AstFields): DeclaredShape => {
-  const annotation = statement.typeAnnotation as AstFields;
+const shapeOfTypeAlias = (statement: UnknownFields): DeclaredShape => {
+  const annotation = statement.typeAnnotation as UnknownFields;
   const isObjectShaped = annotation[NODE_TYPE_FIELD] === TYPE_LITERAL_KIND;
   return {
     parameters: statement.typeParameters,
@@ -92,7 +94,7 @@ const shapeOfTypeAlias = (statement: AstFields): DeclaredShape => {
   };
 };
 
-const SHAPE_BY_KIND: ReadonlyMap<string, (statement: AstFields) => DeclaredShape> = new Map([
+const SHAPE_BY_KIND: ReadonlyMap<string, (statement: UnknownFields) => DeclaredShape> = new Map([
   ["TSInterfaceDeclaration", shapeOfInterface],
   ["TSTypeAliasDeclaration", shapeOfTypeAlias],
 ]);

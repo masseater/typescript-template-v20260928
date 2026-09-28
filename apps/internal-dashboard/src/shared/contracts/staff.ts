@@ -1,10 +1,5 @@
+import { Identifier } from "@repo/config/paging";
 import { Email, staffPermissions } from "@repo/config";
-import {
-  CreatedResource,
-  Identifier,
-  IdentifierQuery,
-  InvitationIssued,
-} from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
 const StaffPermission = Schema.Literals(staffPermissions);
@@ -21,7 +16,6 @@ const StaffList = Schema.Array(StaffSummary);
 
 const StaffInvitation = Schema.Struct({ email: Email, permission: StaffPermission });
 
-const StaffInvited = InvitationIssued;
 
 const StaffPermissionChange = Schema.Struct({ id: Identifier, permission: StaffPermission });
 
@@ -30,17 +24,12 @@ const StaffPermissionChanged = Schema.Struct({
   permission: Schema.optional(StaffPermission),
 });
 
-const StaffRemoval = IdentifierQuery;
 
-const StaffRemoved = CreatedResource;
 
 export {
   StaffInvitation,
-  StaffInvited,
   StaffList,
   StaffPermission,
   StaffPermissionChange,
   StaffPermissionChanged,
-  StaffRemoval,
-  StaffRemoved,
 };

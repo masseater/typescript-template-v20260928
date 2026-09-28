@@ -2,7 +2,7 @@ import { groupBy, memoize, partition } from "es-toolkit";
 import { parseSync } from "oxc-parser";
 
 import { path } from "../../../../platform/path.ts";
-import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
+import { isAstFields, NODE_TYPE_FIELD } from "../ast-node.ts";
 import { repositoryModulePath } from "../canonical-values/import-route-resolution.ts";
 import { realPathOf } from "../canonical-values/import-route-source-identity.ts";
 import { isRelativeImportSpecifier } from "../canonical-values/import-specifier.ts";
@@ -10,6 +10,7 @@ import { nearestPackageDirectory, readTextFile } from "../canonical-values/sourc
 import { toPosixPath } from "../posix-path.ts";
 import { IMPORT_META_REFERENCE } from "./free-references.ts";
 
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
 import type { IndexedFile } from "./body-index.ts";
 
 type ImportedBinding = { readonly specifier: string; readonly importedName: string };
@@ -35,13 +36,13 @@ const IMPORTED_NAME_BY_SPECIFIER_KIND: Readonly<Record<string, string>> = {
   ImportNamespaceSpecifier: "*",
 };
 
-const nodesIn = (syntaxField: unknown): readonly AstFields[] =>
+const nodesIn = (syntaxField: unknown): readonly UnknownFields[] =>
   Array.isArray(syntaxField) ? syntaxField.filter(isAstFields) : [];
 
-const specifierOf = (statement: AstFields): string =>
+const specifierOf = (statement: UnknownFields): string =>
   isAstFields(statement.source) ? String(statement.source.value) : "";
 
-const importsIn = (statement: AstFields): readonly (readonly [string, ImportedBinding])[] =>
+const importsIn = (statement: UnknownFields): readonly (readonly [string, ImportedBinding])[] =>
   statement[NODE_TYPE_FIELD] === "ImportDeclaration"
     ? nodesIn(statement.specifiers).map((importSpecifier) => [
         exportNameOf(importSpecifier.local),
@@ -55,7 +56,7 @@ const importsIn = (statement: AstFields): readonly (readonly [string, ImportedBi
     : [];
 
 const reExportsIn = (
-  statement: AstFields,
+  statement: UnknownFields,
   imports: ReadonlyMap<string, ImportedBinding>,
 ): readonly (readonly [string, ImportedBinding])[] => {
   if (statement[NODE_TYPE_FIELD] !== "ExportNamedDeclaration") return [];

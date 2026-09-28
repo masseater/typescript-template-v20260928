@@ -1,4 +1,5 @@
-import { and, blockBetween, count, desc, eq, isNull, not, or, query, schema, sql } from "@repo/db";
+import { and, count, desc, eq, isNull, not, or, sql } from "drizzle-orm";
+import { blockBetween, query, schema } from "@repo/db";
 import { Effect } from "effect";
 
 import { withdrawnAuthorName } from "#shared/contracts/board.ts";

@@ -5,7 +5,6 @@ import {
   grantOAuthAuthorization,
   origins,
   registerVerified,
-  responseStatus,
   signInAs,
   startClientAuthorization,
   type FetchMcp,
@@ -45,5 +44,4 @@ const callTool = Effect.fn("callTool")(function* callTool(
   return yield* callMcpTool({ fetchMcp, origin: memberOrigin, token }, { arguments: args, name });
 });
 
-export type { FetchMcp };
-export { callTool, mcpChallenge, memberOrigin, responseStatus, tokenFor };
+export { callTool, mcpChallenge, memberOrigin, tokenFor };

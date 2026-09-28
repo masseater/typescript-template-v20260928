@@ -1,3 +1,4 @@
+import { Acknowledged, IdentifierQuery, Tally } from "@repo/runtime/contracts";
 import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import { requireSignupAgreements } from "@repo/db";
@@ -5,20 +6,7 @@ import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
-import {
-  FollowList,
-  FollowMember,
-  FollowMemberQuery,
-  FollowState,
-  HomeFeed,
-  NavBadges,
-  NotificationId,
-  NotificationList,
-  NotificationPreferences,
-  NotificationUnread,
-  OnboardingAdvance,
-  OnboardingView,
-} from "#shared/contracts/index.ts";
+import { FollowList, FollowMemberQuery, FollowState, HomeFeed, NavBadges, NotificationList, NotificationPreferences, OnboardingAdvance, OnboardingView } from "#shared/contracts/index.ts";
 import {
   advanceOnboarding,
   followMember,
@@ -127,7 +115,7 @@ function socialApi(api: ApiRoutes<AppServices | OpsMail>) {
     .put(
       "/social/follow",
       ...api.route(
-        { response: FollowMember },
+        { response: Acknowledged },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -141,7 +129,7 @@ function socialApi(api: ApiRoutes<AppServices | OpsMail>) {
     .delete(
       "/social/follow",
       ...api.route(
-        { response: FollowMember },
+        { response: Acknowledged },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -193,7 +181,7 @@ function socialApi(api: ApiRoutes<AppServices | OpsMail>) {
     .get(
       "/notifications/unread",
       ...api.route(
-        { response: NotificationUnread },
+        { response: Tally },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -205,11 +193,11 @@ function socialApi(api: ApiRoutes<AppServices | OpsMail>) {
     .post(
       "/notifications/read",
       ...api.route(
-        { response: FollowMember },
+        { response: Acknowledged },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
-            const { id } = yield* readJsonBody(NotificationId, request);
+            const { id } = yield* readJsonBody(IdentifierQuery, request);
             yield* markNotificationRead(user.id, id);
             return { ok: true as const };
           }),
@@ -219,7 +207,7 @@ function socialApi(api: ApiRoutes<AppServices | OpsMail>) {
     .post(
       "/notifications/read-all",
       ...api.route(
-        { response: FollowMember },
+        { response: Acknowledged },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);

@@ -1,4 +1,4 @@
-import { laterPage } from "@repo/runtime/contracts";
+import { laterPage } from "@repo/config/paging";
 import { searchValidator } from "@repo/ui";
 import { Schema } from "effect";
 

@@ -1,3 +1,4 @@
+import { IdentifierQuery } from "@repo/runtime/contracts";
 import { apiKeyWriteFailure, verifySessionOrApiKey, verifySessionWriter } from "@repo/auth";
 import { APPLICATION } from "@repo/config";
 import { UserNotFound, requirePaid } from "@repo/db";
@@ -6,15 +7,7 @@ import { apiDocs, apiRoot, createApi, readJsonBody, readSearchParams } from "@re
 import { Effect } from "effect";
 
 import { paidFailures } from "#shared/billing/index.ts";
-import {
-  MemberList,
-  MemberListQuery,
-  MemberQuery,
-  MemberView,
-  ProfileUpdate,
-  ProfileView,
-  memberPageSize,
-} from "#shared/contracts/index.ts";
+import { MemberList, MemberListQuery, MemberView, ProfileUpdate, ProfileView, memberPageSize } from "#shared/contracts/index.ts";
 import { getMember, getProfile, listMembers, updateProfile } from "#shared/members/index.ts";
 import { agreementApi, consentGate } from "./agreement-api.ts";
 import { billingApi } from "./billing-api.ts";
@@ -87,7 +80,7 @@ function memberApi(
         (request) =>
           Effect.gen(function* handleRequest() {
             const { user } = yield* verifySessionOrApiKey(request.headers);
-            const { id } = yield* readSearchParams(MemberQuery, request);
+            const { id } = yield* readSearchParams(IdentifierQuery, request);
             return yield* getMember(user.id, id);
           }),
         failures,

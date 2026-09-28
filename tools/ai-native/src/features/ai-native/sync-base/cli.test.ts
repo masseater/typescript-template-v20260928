@@ -1,9 +1,10 @@
+import { optionalSetting } from "@repo/ai-native-telemetry/optional-setting";
 import { runHook } from "cc-hooks-ts";
 import { Effect, Schema } from "effect";
 import { describe, expect, test, vi } from "vite-plus/test";
 
 import { runCaptured } from "../child-process.ts";
-import { filesystem, joinPath, optionalSetting, writeFileString } from "../host.ts";
+import { filesystem, joinPath, writeFileString } from "../host.ts";
 import { hook } from "./hook.ts";
 import { instructionFor } from "./message.ts";
 

@@ -7,7 +7,7 @@ import {
   mailpitPort,
   minimumAuthSecretLength,
 } from "@repo/config";
-import { repositoryRoot as root } from "@repo/config/repository-root";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, Option, Path, Schema } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
@@ -18,7 +18,6 @@ import { assertOwnerOnly, privateDirectoryMode, replacePrivateFile } from "./pri
 import type { Application } from "@repo/config";
 import type { LocalCommandFailure } from "./failure.ts";
 
-type App = Application;
 
 interface RunOptions {
   readonly cwd?: string;
@@ -31,7 +30,7 @@ const ROOT_HASH_LENGTH = 12;
 const local = new URL("../../../../../.local/", import.meta.url);
 const credentialsFile = new URL("runtime.json", local);
 const browserConfig = new URL("browser.json", local);
-const rootDigest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(root));
+const rootDigest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(repositoryRoot));
 const rootHash = Buffer.from(rootDigest).toString("hex").slice(0, ROOT_HASH_LENGTH);
 const socket = `template-${rootHash}`;
 const AppName = Schema.Literals(applications);
@@ -99,12 +98,12 @@ function run(
 function running(
   session: string,
 ): Effect.Effect<boolean, never, ChildProcessSpawner.ChildProcessSpawner> {
-  return run("tmux", ["-L", socket, "has-session", "-t", session], { cwd: root }).pipe(
+  return run("tmux", ["-L", socket, "has-session", "-t", session], { cwd: repositoryRoot }).pipe(
     Effect.match({ onFailure: () => false, onSuccess: () => true }),
   );
 }
 
-function application(value: string | undefined): Effect.Effect<App, LocalCommandFailure> {
+function application(value: string | undefined): Effect.Effect<Application, LocalCommandFailure> {
   return Schema.decodeUnknownEffect(AppName)(value).pipe(
     Effect.mapError(() => failure("app_invalid")),
   );
@@ -152,11 +151,10 @@ export {
   OriginMode,
   readCredentials,
   refreshBrowserConfig,
-  root,
   routeNames,
   routes,
   run,
   running,
   socket,
 };
-export type { App, Credentials, RouteName, RunOptions };
+export type { Credentials, RouteName, RunOptions };

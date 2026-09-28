@@ -1,29 +1,31 @@
-import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
+import { isAstFields, NODE_TYPE_FIELD } from "../ast-node.ts";
 import { CONCATENATION_OPERATOR } from "../written-out-text.ts";
 
-export const astFieldsOf = (held: unknown): AstFields | null => (isAstFields(held) ? held : null);
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
 
-export const listedFieldsOf = (held: unknown): readonly AstFields[] =>
+export const astFieldsOf = (held: unknown): UnknownFields | null => (isAstFields(held) ? held : null);
+
+export const listedFieldsOf = (held: unknown): readonly UnknownFields[] =>
   (Array.isArray(held) ? held : [held]).map(astFieldsOf).filter((candidate) => candidate !== null);
 
-export const statementsOf = (program: AstFields): readonly AstFields[] =>
+export const statementsOf = (program: UnknownFields): readonly UnknownFields[] =>
   listedFieldsOf(program.body);
 
 const TRAVERSED_AWAY_FIELDS: ReadonlySet<string> = new Set(["parent", "loc", "range"]);
 
-const childrenOf = (node: AstFields): readonly AstFields[] =>
+const childrenOf = (node: UnknownFields): readonly UnknownFields[] =>
   Object.entries(node)
     .filter(([field]) => !TRAVERSED_AWAY_FIELDS.has(field))
     .flatMap(([, held]) => listedFieldsOf(held));
 
-const cookedTextOf = (quasi: AstFields): string | null => {
+const cookedTextOf = (quasi: UnknownFields): string | null => {
   const written = astFieldsOf(quasi.value);
   if (written === null) return null;
   return typeof written.cooked === "string" ? written.cooked : null;
 };
 
 const assembledFromParts = (
-  node: AstFields,
+  node: UnknownFields,
   constants: ReadonlyMap<string, string>,
 ): string | null => {
   const writtenTexts = listedFieldsOf(node.quasis).map(cookedTextOf);
@@ -37,7 +39,7 @@ const assembledFromParts = (
 };
 
 const joinedFromSides = (
-  node: AstFields,
+  node: UnknownFields,
   constants: ReadonlyMap<string, string>,
 ): string | null => {
   if (node.operator !== CONCATENATION_OPERATOR) return null;
@@ -49,13 +51,13 @@ const joinedFromSides = (
   return spelled.includes(null) ? null : spelled.join("");
 };
 
-export const nodeTypeOf = (node: AstFields): string => {
+export const nodeTypeOf = (node: UnknownFields): string => {
   const spelled = node[NODE_TYPE_FIELD];
   return typeof spelled === "string" ? spelled : "";
 };
 
 export const staticSpecifierOf = (
-  node: AstFields,
+  node: UnknownFields,
   constants: ReadonlyMap<string, string>,
 ): string | null => {
   const nodeType = nodeTypeOf(node);
@@ -91,7 +93,7 @@ const EXPORT_NAMED_DECLARATION = "ExportNamedDeclaration";
 const EXPORT_ALL_DECLARATION = "ExportAllDeclaration";
 
 const declaredEdgeOf = (
-  node: AstFields,
+  node: UnknownFields,
   constants: ReadonlyMap<string, string>,
 ): CouplingEdge | null => {
   const nodeType = nodeTypeOf(node);
@@ -106,7 +108,7 @@ const declaredEdgeOf = (
 
 const REQUIRE_CALL_NAME = "require";
 
-export const requestedSpecifierOf = (node: unknown): AstFields | null => {
+export const requestedSpecifierOf = (node: unknown): UnknownFields | null => {
   const spelled = astFieldsOf(node);
   if (spelled === null) return null;
 
@@ -133,7 +135,7 @@ export const couplingEdgeOf = (
 };
 
 export const couplingEdgesUnder = (
-  node: AstFields,
+  node: UnknownFields,
   constants: ReadonlyMap<string, string>,
 ): readonly CouplingEdge[] => {
   const own = couplingEdgeOf(node, constants);
@@ -141,14 +143,14 @@ export const couplingEdgesUnder = (
   return own === null ? nested : [own, ...nested];
 };
 
-const declaredStatementOf = (statement: AstFields): AstFields =>
+const declaredStatementOf = (statement: UnknownFields): UnknownFields =>
   nodeTypeOf(statement) === EXPORT_NAMED_DECLARATION
     ? (astFieldsOf(statement.declaration) ?? statement)
     : statement;
 
 export const constBindingsIn = (
-  statement: AstFields,
-): readonly { readonly named: AstFields; readonly bound: AstFields }[] => {
+  statement: UnknownFields,
+): readonly { readonly named: UnknownFields; readonly bound: UnknownFields }[] => {
   const declared = declaredStatementOf(statement);
   if (nodeTypeOf(declared) !== "VariableDeclaration" || declared.kind !== "const") return [];
 
@@ -160,7 +162,7 @@ export const constBindingsIn = (
 };
 
 const boundConstantsIn = (
-  statement: AstFields,
+  statement: UnknownFields,
   known: ReadonlyMap<string, string>,
 ): readonly (readonly [string, string])[] =>
   constBindingsIn(statement).flatMap(({ named, bound }) => {

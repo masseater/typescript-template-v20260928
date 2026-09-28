@@ -32,6 +32,7 @@ import { noReassign } from "./lint/oxlint/rules/mutation-and-failure/no-reassign
 import { noReceiverMutation } from "./lint/oxlint/rules/mutation-and-failure/no-receiver-mutation--derive-new-value.ts";
 import { noSilentCatch } from "./lint/oxlint/rules/mutation-and-failure/no-silent-catch--rethrow-or-handle.ts";
 import { requireQueryOptionsInApiSegment } from "./lint/oxlint/rules/mutation-and-failure/require-query-options-in-api-segment--move-query-options-to-api.ts";
+import { forbidPackageSymbolRelay } from "./lint/oxlint/rules/single-ownership/forbid-package-symbol-relay--import-from-the-owner.ts";
 import { createNoDuplicateValueDeclaration } from "./lint/oxlint/rules/single-ownership/no-duplicate-value-declaration--reuse-authoritative-value.ts";
 import { createNoDuplicatedBody } from "./lint/oxlint/rules/single-ownership/no-duplicated-body--import-the-existing-declaration.ts";
 import { createNoLocalFiniteValueSet } from "./lint/oxlint/rules/single-ownership/no-local-finite-value-set--use-or-register-canonical-values.ts";
@@ -118,6 +119,7 @@ import { noMultiBindingDeclaration } from "./lint/oxlint/rules/writing/no-multi-
 import { noPlainSecretEnvironmentKey } from "./lint/oxlint/rules/writing/no-plain-secret-environment-key--wrap-it-in-redacted.ts";
 import { noSingleUseLocalType } from "./lint/oxlint/rules/writing/no-single-use-local-type--inline-at-the-use-site.ts";
 import { noTestOnlyEnvironmentKey } from "./lint/oxlint/rules/writing/no-test-only-environment-key--use-real-dependencies-and-http-doubles.ts";
+import { noTopLevelAlias } from "./lint/oxlint/rules/writing/no-top-level-alias--use-the-referenced-declaration.ts";
 import { noUncheckedCast } from "./lint/oxlint/rules/writing/no-unchecked-cast--parse-at-boundary.ts";
 import { noUnorderedImport } from "./lint/oxlint/rules/writing/no-unordered-import--group-by-origin-then-sort-by-specifier.ts";
 import { createNoUnusedStyleClass } from "./lint/oxlint/rules/writing/no-unused-style-class--delete-or-reference-it.ts";
@@ -173,6 +175,7 @@ const plugin: Plugin = {
     [forbidOversizedFile.name]: forbidOversizedFile,
     [forbidTestAdjacentFile.name]: forbidTestAdjacentFile,
     [forbidRestrictedTargetRelay.name]: forbidRestrictedTargetRelay,
+    [forbidPackageSymbolRelay.name]: forbidPackageSymbolRelay,
     [forbidTestHook.name]: forbidTestHook,
     [forbidTrackedPath.name]: forbidTrackedPath,
     [forbidUnresolvableModuleSpecifier.name]: forbidUnresolvableModuleSpecifier,
@@ -219,6 +222,7 @@ const plugin: Plugin = {
     [noHardcodedProviderId.name]: noHardcodedProviderId,
     [noIdentityWrapper.name]: noIdentityWrapper,
     [noInterfaceDeclaration.name]: noInterfaceDeclaration,
+    [noTopLevelAlias.name]: noTopLevelAlias,
     [noWeakenedProtectedRule.name]: noWeakenedProtectedRule,
     [noLenientCoverageThreshold.name]: noLenientCoverageThreshold,
     [noLocalFileSystemMock.name]: noLocalFileSystemMock,

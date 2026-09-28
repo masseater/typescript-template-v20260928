@@ -1,21 +1,11 @@
+import { ResourceId } from "@repo/runtime/contracts";
 import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
-import {
-  BoardPostCreate,
-  BoardPostCreated,
-  BoardThreadCreate,
-  BoardThreadCreated,
-  BoardThreadList,
-  BoardThreadListQuery,
-  BoardThreadQuery,
-  BoardThreadView,
-  boardPostPageSize,
-  boardThreadPageSize,
-} from "#shared/contracts/index.ts";
+import { BoardPostCreate, BoardThreadCreate, BoardThreadList, BoardThreadListQuery, BoardThreadQuery, BoardThreadView, boardPostPageSize, boardThreadPageSize } from "#shared/contracts/index.ts";
 import { createBoardPost, createBoardThread, findBoardThread, listBoardThreads } from "./board.ts";
 
 import type { AppServices } from "@repo/runtime";
@@ -49,7 +39,7 @@ function boardApi(api: ApiRoutes<AppServices>) {
     .post(
       "/threads",
       ...api.route(
-        { response: BoardThreadCreated },
+        { response: ResourceId },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -79,7 +69,7 @@ function boardApi(api: ApiRoutes<AppServices>) {
     .post(
       "/posts",
       ...api.route(
-        { response: BoardPostCreated },
+        { response: ResourceId },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);

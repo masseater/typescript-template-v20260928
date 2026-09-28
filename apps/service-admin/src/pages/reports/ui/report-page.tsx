@@ -1,9 +1,9 @@
+import { Acknowledged } from "@repo/runtime/contracts";
 import { apiData } from "@repo/runtime/client";
 import { useAction } from "@repo/ui";
 import { useRouter } from "@tanstack/react-router";
 
 import { adminClient } from "#shared/api/index.ts";
-import { ReportActionResult } from "#shared/contracts/index.ts";
 import { ReportView, type ReportDecision } from "./report-view.tsx";
 
 import type { ReportItem } from "#pages/reports/api/load-reports.ts";
@@ -17,7 +17,7 @@ function ReportPage({ report }: Readonly<{ report: ReportItem }>): ReactElement 
       adminClient()
         .reports[decision].post({ id: report.id })
         .then((response) => {
-          apiData(ReportActionResult, response);
+          apiData(Acknowledged, response);
         })
         .then(() => router.invalidate()),
     );

@@ -1,30 +1,13 @@
+import { ResourceUrl } from "@repo/runtime/contracts";
 import { verifySession } from "@repo/auth";
-import { PLAN, WEBHOOK_DISPOSITION, httpStatus } from "@repo/config";
-import {
-  PaidPlanRequired,
-  aiUsageSince,
-  findInvoiceOfOrigin,
-  findSubscription,
-  listMemberInvoices,
-  listMemberQuotes,
-  planOf,
-  recordIssuedInvoice,
-} from "@repo/db";
+import { PLAN, WEBHOOK_DISPOSITION, httpStatus, PaidPlanRequired } from "@repo/config";
+import { aiUsageSince, findInvoiceOfOrigin, findSubscription, listMemberInvoices, listMemberQuotes, planOf, recordIssuedInvoice } from "@repo/db";
 import { sessionFailures } from "@repo/runtime/account";
 import { AppOrigin, createApi, readJsonBody } from "@repo/runtime/http";
 import { DateTime, Effect, Schema } from "effect";
 
 import { PaidAlready, Stripe, handleStripeEvent, paidFailures } from "#shared/billing/index.ts";
-import {
-  CHECKOUT_RETURN,
-  HostedPage,
-  InvoiceList,
-  OfferView,
-  PlanView,
-  QuoteList,
-  UsageView,
-  WebhookReceipt,
-} from "#shared/contracts/index.ts";
+import { CHECKOUT_RETURN, InvoiceList, OfferView, PlanView, QuoteList, UsageView, WebhookReceipt } from "#shared/contracts/index.ts";
 
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
@@ -195,8 +178,8 @@ function billingApi(api: ApiRoutes<AppServices | Stripe>) {
   return createApi("")
     .get("/billing/plan", ...api.route({ response: PlanView }, plan, failures))
     .get("/billing/offer", ...api.route({ response: OfferView }, offer, failures))
-    .post("/billing/checkout", ...api.route({ response: HostedPage }, checkout, failures))
-    .post("/billing/portal", ...api.route({ response: HostedPage }, portal, failures))
+    .post("/billing/checkout", ...api.route({ response: ResourceUrl }, checkout, failures))
+    .post("/billing/portal", ...api.route({ response: ResourceUrl }, portal, failures))
     .get("/billing/invoices", ...api.route({ response: InvoiceList }, invoices, failures))
     .get("/billing/quotes", ...api.route({ response: QuoteList }, quotes, failures))
     .get("/billing/usage", ...api.route({ response: UsageView }, usage, failures))

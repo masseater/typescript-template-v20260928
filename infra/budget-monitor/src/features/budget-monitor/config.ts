@@ -1,5 +1,5 @@
 import { CloudflareApiToken, CloudflareId } from "@repo/config";
-import { budgetMonitorEnv, budgetMonitorWorker } from "@repo/monitor/workers";
+import { budgetMonitorEnv } from "@repo/monitor/workers";
 import { Effect, Schema, SchemaTransformation } from "effect";
 
 class BudgetFailure extends Schema.TaggedError<BudgetFailure>()("BudgetFailure", {
@@ -48,5 +48,5 @@ const parseBudgetConfig = Effect.fn("parseBudgetConfig")(function* parseBudgetCo
   );
 });
 
-export { BudgetFailure, budgetMonitorWorker, fail, parseBudgetConfig };
+export { BudgetFailure, fail, parseBudgetConfig };
 export type { BudgetConfig, BudgetMonitorEnv };

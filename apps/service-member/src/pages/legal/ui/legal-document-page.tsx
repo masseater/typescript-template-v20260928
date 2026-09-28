@@ -1,7 +1,7 @@
+import { agreementKindLabels } from "@repo/config";
 import { Page, STATUS_VARIANT, StatusMessage, formatWarekiDate } from "@repo/ui";
 import { DateTime } from "effect";
 
-import { agreementKindLabels } from "#entities/agreement/index.ts";
 
 import type { PublishedAgreementView } from "#shared/contracts/index.ts";
 import type { AgreementKind } from "@repo/config";

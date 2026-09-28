@@ -5,7 +5,7 @@ import {
   HttpsOrigin,
   type Application,
 } from "@repo/config";
-import { healthMonitorWorker, healthOriginKey } from "@repo/monitor/workers";
+import { healthOriginKey } from "@repo/monitor/workers";
 import { Effect, Schema } from "effect";
 
 class HealthMonitorFailure extends Schema.TaggedError<HealthMonitorFailure>()(
@@ -57,8 +57,6 @@ const healthTargets = (
 export {
   HealthMonitorFailure,
   healthEndpointFor,
-  healthMonitorWorker,
-  healthOriginKey,
   healthTargets,
   parseHealthMonitorConfig,
 };

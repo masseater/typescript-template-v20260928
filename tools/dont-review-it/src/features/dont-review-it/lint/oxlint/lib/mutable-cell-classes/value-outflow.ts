@@ -1,6 +1,7 @@
 import { nodeTypeOf } from "../setup-modules/coupling-edges.ts";
 
-import type { AstFields } from "../ast-node.ts";
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
+
 
 const CARRIER_KINDS: ReadonlySet<string> = new Set([
   "ArrayExpression",
@@ -41,7 +42,7 @@ const HELD_AT_FIELD: ReadonlyMap<string, string> = new Map([
   ["TaggedTemplateExpression", "tag"],
 ]);
 
-const isHandedBy = (parent: AstFields, child: AstFields): boolean => {
+const isHandedBy = (parent: UnknownFields, child: UnknownFields): boolean => {
   const nodeKind = nodeTypeOf(parent);
   if (HANDING_KINDS.has(nodeKind)) return true;
 
@@ -52,7 +53,7 @@ const isHandedBy = (parent: AstFields, child: AstFields): boolean => {
   return heldAt !== undefined && parent[heldAt] !== child;
 };
 
-const climbing = (child: AstFields, chain: readonly AstFields[]): boolean =>
+const climbing = (child: UnknownFields, chain: readonly UnknownFields[]): boolean =>
   chain
     .slice(-1)
     .some(
@@ -61,5 +62,5 @@ const climbing = (child: AstFields, chain: readonly AstFields[]): boolean =>
         (CARRIER_KINDS.has(nodeTypeOf(parent)) && climbing(parent, chain.slice(0, -1))),
     );
 
-export const flowsOutOf = (node: AstFields, chain: readonly AstFields[]): boolean =>
+export const flowsOutOf = (node: UnknownFields, chain: readonly UnknownFields[]): boolean =>
   climbing(node, chain);

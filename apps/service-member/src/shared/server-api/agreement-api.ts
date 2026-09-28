@@ -14,13 +14,7 @@ import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect, DateTime } from "effect";
 
-import {
-  AgreementAcceptance,
-  AgreementWithdrawal,
-  AgreementsView,
-  PublishedAgreementQuery,
-  PublishedAgreementView,
-} from "#shared/contracts/index.ts";
+import { AgreementAcceptance, AgreementKindQuery, AgreementsView, PublishedAgreementView } from "#shared/contracts/index.ts";
 import { withdrawInterviewHistoryConsent } from "#shared/interview/server.ts";
 
 import type { AgreementRequired } from "@repo/db";
@@ -84,7 +78,7 @@ const accept = Effect.fn("agreements.accept")(function* accept(request: Request)
 });
 
 const published = Effect.fn("agreements.published")(function* published(request: Request) {
-  const { kind } = yield* readSearchParams(PublishedAgreementQuery, request);
+  const { kind } = yield* readSearchParams(AgreementKindQuery, request);
   const found = yield* publishedAgreement(kind);
   if (found === null) {
     return yield* new AgreementVersionUnavailable();
@@ -94,7 +88,7 @@ const published = Effect.fn("agreements.published")(function* published(request:
 
 const withdraw = Effect.fn("agreements.withdraw")(function* withdraw(request: Request) {
   const { user } = yield* verifySession(request.headers);
-  const { kind } = yield* readJsonBody(AgreementWithdrawal, request);
+  const { kind } = yield* readJsonBody(AgreementKindQuery, request);
   if (!agreementPolicies[kind].withdrawable) {
     return yield* new AgreementWithdrawalUnavailable();
   }

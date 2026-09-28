@@ -3,7 +3,7 @@ import { confirmedChange, type ConfirmedChange } from "@repo/ui";
 import { Effect } from "effect";
 
 import { adminClient } from "#shared/api/index.ts";
-import { MemberStateChanged, UserDeleted, nextAccountStates } from "#shared/contracts/index.ts";
+import { AccountStateChanged, UserDeleted, nextAccountStates } from "#shared/contracts/index.ts";
 import { accountStateLabels } from "./user-labels.ts";
 
 import type { ListedUser } from "./user-list.ts";
@@ -24,7 +24,7 @@ function perform(user: ListedUser, operation: RowOperation): Effect.Effect<strin
     }
     const accountState = nextAccountStates[user.accountState];
     const changed = apiData(
-      MemberStateChanged,
+      AccountStateChanged,
       yield* Effect.promise(() => users.patch({ accountState, id: user.id })),
     );
     return `${user.email} を${accountStateLabels[changed.accountState]}にしました。`;

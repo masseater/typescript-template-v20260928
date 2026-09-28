@@ -53,12 +53,6 @@ const absent = {
   notFound: httpStatus.notFound,
   unauthorized: httpStatus.unauthorized,
 } as const;
-const apiDataOrNone = <Contract extends Decodable>(
-  contract: Contract,
-  answered: ApiReply,
-): Contract["Type"] | undefined => {
-  return answered.error?.status === absent.unauthorized ? undefined : apiData(contract, answered);
-};
 const apiDataOrNoneFor = (absentStatus: (typeof absent)[keyof typeof absent]) => {
   return <Contract extends Decodable>(
     contract: Contract,
@@ -83,7 +77,6 @@ export {
   absent,
   apiClient,
   apiData,
-  apiDataOrNone,
   apiDataOrNoneFor,
   apiServerClient,
   decodeJson,

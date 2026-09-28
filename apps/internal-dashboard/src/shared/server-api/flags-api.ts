@@ -6,7 +6,7 @@ import { createApi, readJsonBody, type ApiRoutes } from "@repo/runtime/http";
 import { env } from "cloudflare:workers";
 import { Effect } from "effect";
 
-import { FlagList, FlagToggle, FlagToggled } from "#shared/contracts/index.ts";
+import { FlagEntry, FlagList, FlagToggle } from "#shared/contracts/index.ts";
 
 import type { WikiServices } from "#shared/wiki/index.ts";
 
@@ -54,7 +54,7 @@ const patchFlag = Effect.fn("patchFlag")(function* patchFlag(request: Request) {
 function flagsApi<Requirements>(api: ApiRoutes<WikiServices | Requirements>) {
   return createApi("")
     .get("/flags", ...api.route({ response: FlagList }, listFlags, failures))
-    .patch("/flags", ...api.route({ response: FlagToggled }, patchFlag, failures));
+    .patch("/flags", ...api.route({ response: FlagEntry }, patchFlag, failures));
 }
 
 export { flagsApi };

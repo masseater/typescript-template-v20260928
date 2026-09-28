@@ -1,4 +1,3 @@
-import { Acknowledged } from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
 import { MemberReference } from "./member.ts";
@@ -11,12 +10,10 @@ const FollowState = Schema.Struct({
   following: Schema.Boolean,
 });
 
-const FollowMember = Acknowledged;
 
-const FollowRelation = MemberReference;
 
 const FollowList = Schema.Struct({
-  members: Schema.Array(FollowRelation),
+  members: Schema.Array(MemberReference),
 });
 
-export { FollowList, FollowMember, FollowMemberQuery, FollowState };
+export { FollowList, FollowMemberQuery, FollowState };

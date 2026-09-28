@@ -1,8 +1,9 @@
+import { ResourceId } from "@repo/runtime/contracts";
 import { apiData } from "@repo/runtime/client";
 import { confirmedChange, type ConfirmedChange } from "@repo/ui";
 
 import { wikiClient } from "#shared/api/index.ts";
-import { StaffPermission, StaffPermissionChanged, StaffRemoved } from "#shared/contracts/index.ts";
+import { StaffPermission, StaffPermissionChanged } from "#shared/contracts/index.ts";
 import { isStaffPermission, staffPermissionLabels } from "./staff-labels.ts";
 
 import type { ListedStaff } from "./staff-list.ts";
@@ -27,7 +28,7 @@ function perform(member: ListedStaff, operation: RowOperation): Promise<string> 
       });
     }
     return staff.delete({ id: member.id }).then((response) => {
-      apiData(StaffRemoved, response);
+      apiData(ResourceId, response);
       return `${member.email} を削除しました。`;
     });
   });

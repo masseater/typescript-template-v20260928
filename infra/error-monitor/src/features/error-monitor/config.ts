@@ -1,5 +1,5 @@
 import { CloudflareApiToken, CloudflareId } from "@repo/config";
-import { errorMonitorEnv, errorMonitorWorker } from "@repo/monitor/workers";
+import { errorMonitorEnv } from "@repo/monitor/workers";
 import { Effect, Schema } from "effect";
 
 class ErrorMonitorFailure extends Schema.TaggedError<ErrorMonitorFailure>()("ErrorMonitorFailure", {
@@ -34,8 +34,6 @@ const observabilityQueryEndpoint = (accountId: string): string =>
 
 export {
   ErrorMonitorFailure,
-  errorMonitorEnv,
-  errorMonitorWorker,
   observabilityQueryEndpoint,
   parseErrorMonitorConfig,
 };

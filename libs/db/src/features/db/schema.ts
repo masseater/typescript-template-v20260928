@@ -302,8 +302,6 @@ export {
   inquiryMessage,
 } from "./inquiry-schema.ts";
 export type { InquiryAuthorKind } from "./inquiry-schema.ts";
-export { INQUIRY_STATUS, inquiryStatuses } from "@repo/config";
-export type { InquiryStatus } from "@repo/config";
 export { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
 export { memberMcpGrant } from "./member-mcp-schema.ts";
 export { memberBlock, memberReport, moderationAction } from "./trust-schema.ts";
@@ -316,10 +314,6 @@ export {
 } from "./billing-schema.ts";
 export { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";
 export { notification, notificationPreference } from "./notification-schema.ts";
-export { NOTIFICATION_KIND, notificationKinds } from "@repo/config";
-export type { NotificationKind } from "@repo/config";
-export { GROUP_JOIN_POLICY, groupJoinPolicies } from "@repo/config";
-export type { GroupJoinPolicy } from "@repo/config";
 export {
   CONVERSATION_KIND,
   GROUP_MEMBERSHIP_ROLE,

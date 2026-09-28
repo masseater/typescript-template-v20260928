@@ -1,14 +1,6 @@
-import {
-  CONVERSATION_KIND,
-  GROUP_JOIN_POLICY,
-  GROUP_MEMBERSHIP_ROLE,
-  and,
-  count,
-  desc,
-  eq,
-  query,
-  schema,
-} from "@repo/db";
+import { and, count, desc, eq } from "drizzle-orm";
+import { GROUP_JOIN_POLICY } from "@repo/config";
+import { CONVERSATION_KIND, GROUP_MEMBERSHIP_ROLE, query, schema } from "@repo/db";
 import { DateTime, Effect } from "effect";
 
 import { mayCreateGroup } from "#shared/messaging/index.ts";

@@ -1,6 +1,7 @@
 import { astFieldsOf, nodeTypeOf } from "../setup-modules/coupling-edges.ts";
 
-import type { AstFields } from "../ast-node.ts";
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
+
 
 export type PassThroughExport<Statement> = {
   readonly statement: Statement;
@@ -9,7 +10,7 @@ export type PassThroughExport<Statement> = {
   readonly exposed: string;
 };
 
-const fieldListOf = (held: unknown): readonly AstFields[] =>
+const fieldListOf = (held: unknown): readonly UnknownFields[] =>
   Array.isArray(held) ? held.map(astFieldsOf).filter((candidate) => candidate !== null) : [];
 
 const nameOf = (held: unknown): string | null => {
@@ -27,7 +28,7 @@ type ImportedBinding = {
 const DEFAULT_EXPORT_NAME = "default";
 
 const importedBindingOf = (
-  imported: AstFields,
+  imported: UnknownFields,
   specifier: string,
 ): readonly (readonly [string, ImportedBinding])[] => {
   const local = nameOf(imported.local);
@@ -48,7 +49,7 @@ const specifierTextOf = (held: unknown): string | null => {
 };
 
 const requiredBindingOf = (
-  statement: AstFields,
+  statement: UnknownFields,
 ): readonly (readonly [string, ImportedBinding])[] => {
   const reference = astFieldsOf(statement.moduleReference);
   if (reference === null || nodeTypeOf(reference) !== "TSExternalModuleReference") return [];
@@ -60,7 +61,7 @@ const requiredBindingOf = (
 };
 
 const importedBindingsIn = (
-  statement: AstFields,
+  statement: UnknownFields,
 ): readonly (readonly [string, ImportedBinding])[] => {
   const nodeType = nodeTypeOf(statement);
   if (nodeType === "TSImportEqualsDeclaration") return requiredBindingOf(statement);
@@ -81,7 +82,7 @@ type ForwardedName = {
 
 const WHOLE_SURFACE = "*";
 
-const forwardedFromSource = (statement: AstFields): readonly ForwardedName[] => {
+const forwardedFromSource = (statement: UnknownFields): readonly ForwardedName[] => {
   const specifier = specifierTextOf(statement.source);
   if (specifier === null) return [];
 
@@ -95,7 +96,7 @@ const forwardedFromSource = (statement: AstFields): readonly ForwardedName[] => 
 };
 
 const forwardedFromBindings = (
-  statement: AstFields,
+  statement: UnknownFields,
   bindings: ReadonlyMap<string, ImportedBinding>,
 ): readonly ForwardedName[] =>
   fieldListOf(statement.specifiers).flatMap((exported) => {
@@ -106,7 +107,7 @@ const forwardedFromBindings = (
   });
 
 const forwardedDefault = (
-  statement: AstFields,
+  statement: UnknownFields,
   bindings: ReadonlyMap<string, ImportedBinding>,
 ): readonly ForwardedName[] => {
   const declared = astFieldsOf(statement.declaration);
@@ -118,7 +119,7 @@ const forwardedDefault = (
 };
 
 const forwardedIn = (
-  statement: AstFields,
+  statement: UnknownFields,
   bindings: ReadonlyMap<string, ImportedBinding>,
 ): readonly ForwardedName[] => {
   const nodeType = nodeTypeOf(statement);

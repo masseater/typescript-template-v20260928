@@ -1,19 +1,9 @@
-import { GoogleAnalyticsMeasurementId, readWikiPublishConfig, wikiPublishKey } from "@repo/config";
+import { Recipients } from "@repo/monitor";
+import { GoogleAnalyticsMeasurementId, readWikiPublishConfig, wikiPublishKey, CloudflareId, Email } from "@repo/config";
 import { deploymentKey } from "@repo/observability/deployment-keys";
 import { Config, Effect, Option, Redacted, Schema } from "effect";
 
-import {
-  AuthSecret,
-  CloudflareId,
-  Domain,
-  Email,
-  HttpsUrl,
-  Positive,
-  Prefix,
-  Recipients,
-  checkSharedConfig,
-  deriveOrigins,
-} from "./config.ts";
+import { AuthSecret, Domain, HttpsUrl, Positive, Prefix, checkSharedConfig, deriveOrigins } from "./config.ts";
 
 function optional<Value>(config: Config.Config<Value>): Config.Config<Value | undefined> {
   return Config.option(config).pipe(Config.map(Option.getOrUndefined));

@@ -5,10 +5,11 @@ import {
   staticSpecifierOf,
 } from "../setup-modules/coupling-edges.ts";
 
-import type { AstFields } from "../ast-node.ts";
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
+
 
 const requiredSpecifierOf = (
-  statement: AstFields,
+  statement: UnknownFields,
   constants: ReadonlyMap<string, string>,
 ): string | null => {
   const reference = astFieldsOf(statement.moduleReference);
@@ -19,7 +20,7 @@ const requiredSpecifierOf = (
 };
 
 const typePositionSpecifierOf = (
-  node: AstFields,
+  node: UnknownFields,
   constants: ReadonlyMap<string, string>,
 ): string | null => {
   const nodeType = nodeTypeOf(node);

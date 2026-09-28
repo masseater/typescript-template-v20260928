@@ -1,13 +1,9 @@
+import { ResourceId } from "@repo/runtime/contracts";
 import { absent, apiData, apiDataOrNoneFor } from "@repo/runtime/client";
 import { notFound } from "@tanstack/react-router";
 
 import { userClient } from "#shared/api/index.ts";
-import {
-  BoardPostCreated,
-  BoardThreadCreated,
-  BoardThreadList,
-  BoardThreadView,
-} from "#shared/contracts/index.ts";
+import { BoardThreadList, BoardThreadView } from "#shared/contracts/index.ts";
 
 type ThreadList = typeof BoardThreadList.Type;
 type Thread = typeof BoardThreadView.Type;
@@ -36,7 +32,7 @@ function openThread(title: string, body: string): Promise<string> {
   return Promise.resolve(userClient()).then(({ api }) =>
     api.board.threads
       .post({ body, title })
-      .then((response) => apiData(BoardThreadCreated, response).id),
+      .then((response) => apiData(ResourceId, response).id),
   );
 }
 
@@ -44,7 +40,7 @@ function replyToThread(threadId: string, body: string): Promise<string> {
   return Promise.resolve(userClient()).then(({ api }) =>
     api.board.posts
       .post({ body, threadId })
-      .then((response) => apiData(BoardPostCreated, response).id),
+      .then((response) => apiData(ResourceId, response).id),
   );
 }
 

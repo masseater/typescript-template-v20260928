@@ -1,8 +1,9 @@
 import { memoize } from "es-toolkit";
 
-import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
+import { isAstFields, NODE_TYPE_FIELD } from "../ast-node.ts";
 import { boundNamesIn } from "./bound-names.ts";
 
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
 import type { ImportRoutes } from "./import-routes.ts";
 
 const PLACEHOLDER_PREFIX = "$";
@@ -16,7 +17,7 @@ const jsonTextOf = (held: unknown): string =>
 
 const MEMBER_NAME_FIELDS: ReadonlySet<string> = new Set(["key", "property"]);
 
-const namesAMember = (node: AstFields, field: string): boolean =>
+const namesAMember = (node: UnknownFields, field: string): boolean =>
   MEMBER_NAME_FIELDS.has(field) && node.computed === false;
 
 const UNCOMPARED_FIELDS: ReadonlySet<string> = new Set([

@@ -69,5 +69,5 @@ const awaitingEffectDiagnostics = (packageRoot: string): EffectDiagnosticsTask =
   },
 });
 
-export { awaitingEffectDiagnostics, effectDiagnostics, effectTsgoNoEmit };
+export { awaitingEffectDiagnostics, effectDiagnostics };
 export type { EffectDiagnosticsTask, TaskInputEntry };

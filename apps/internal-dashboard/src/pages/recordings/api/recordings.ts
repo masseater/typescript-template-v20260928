@@ -1,23 +1,15 @@
+import { RecordingView } from "@repo/config";
 import { browserHttp } from "@repo/auth-ui";
-import {
-  absent,
-  apiData,
-  apiDataOrNoneFor,
-  decodeJson,
-  failureMessage,
-} from "@repo/runtime/client";
-import { CreatedResource } from "@repo/runtime/contracts";
+import { absent, apiData, apiDataOrNoneFor, decodeJson, failureMessage } from "@repo/runtime/client";
+import { ResourceId } from "@repo/runtime/contracts";
 import { notFound } from "@tanstack/react-router";
 import { Effect } from "effect";
 import { FetchHttpClient, HttpBody, HttpClient } from "effect/unstable/http";
 
 import { wikiClient } from "#shared/api/index.ts";
-import { PeopleList, RecordingList, RecordingView } from "#shared/contracts/index.ts";
+import { PeopleList, RecordingList } from "#shared/contracts/index.ts";
 
-import type {
-  RecordingDetail,
-  RecordingsOverview,
-} from "#pages/recordings/model/recording-state.ts";
+import type { RecordingDetail, RecordingsOverview } from "#pages/recordings/model/recording-state.ts";
 
 function loadRecordings(): Promise<RecordingsOverview> {
   return Promise.resolve(wikiClient()).then(({ api }) =>
@@ -66,20 +58,20 @@ function uploadRecording(title: string, audio: Readonly<File>): Promise<string> 
           ),
         );
       }
-      return decodeJson(CreatedResource, answered).id;
+      return decodeJson(ResourceId, answered).id;
     }).pipe(Effect.orDie),
   );
 }
 
 function retryRecording(id: string): Promise<string> {
   return Promise.resolve(wikiClient()).then(({ api }) =>
-    api.recording.retry.post({ id }).then((response) => apiData(CreatedResource, response).id),
+    api.recording.retry.post({ id }).then((response) => apiData(ResourceId, response).id),
   );
 }
 
 function deleteRecording(id: string): Promise<string> {
   return Promise.resolve(wikiClient()).then(({ api }) =>
-    api.recording.delete({ id }).then((response) => apiData(CreatedResource, response).id),
+    api.recording.delete({ id }).then((response) => apiData(ResourceId, response).id),
   );
 }
 
@@ -91,7 +83,7 @@ function assignSpeaker(
   return Promise.resolve(wikiClient()).then(({ api }) =>
     api.recording.speaker
       .patch({ label, personId, recordingId })
-      .then((response) => apiData(CreatedResource, response).id),
+      .then((response) => apiData(ResourceId, response).id),
   );
 }
 
@@ -99,13 +91,13 @@ function registerPerson(name: string): Promise<string> {
   return Promise.resolve(wikiClient()).then(({ api }) =>
     api.people
       .post({ consent: true, name })
-      .then((response) => apiData(CreatedResource, response).id),
+      .then((response) => apiData(ResourceId, response).id),
   );
 }
 
 function removePerson(id: string): Promise<string> {
   return Promise.resolve(wikiClient()).then(({ api }) =>
-    api.people.delete({ id }).then((response) => apiData(CreatedResource, response).id),
+    api.people.delete({ id }).then((response) => apiData(ResourceId, response).id),
   );
 }
 

@@ -1,6 +1,7 @@
+import { eq } from "drizzle-orm";
 import { assert, describe, it } from "@effect/vitest";
 import { ACCOUNT_STATE, ROLE } from "@repo/config";
-import { eq, query, schema } from "@repo/db";
+import { query, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
 import { Effect, DateTime } from "effect";
 

@@ -1,13 +1,9 @@
+import { errorMonitorWorker } from "@repo/monitor/workers";
 import { monitorWorker, type MonitorBindings } from "@repo/monitor";
 import { withSpan } from "@repo/observability";
 import { Clock, Effect } from "effect";
 
-import {
-  errorMonitorWorker,
-  observabilityQueryEndpoint,
-  parseErrorMonitorConfig,
-  type ErrorMonitorEnv,
-} from "./config.ts";
+import { observabilityQueryEndpoint, parseErrorMonitorConfig, type ErrorMonitorEnv } from "./config.ts";
 import { decideNotifications, formatMessage, type SeenFingerprints } from "./decision.ts";
 import { fetchErrorGroups } from "./telemetry.ts";
 

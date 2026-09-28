@@ -1,14 +1,6 @@
 import { applications } from "@repo/config";
 import { accountPermissions, roles } from "@repo/config/identity";
-import {
-  Identifier,
-  SearchKeyword,
-  UserKeyword,
-  laterPage,
-  maximumIdentifierLength,
-  maximumKeywordLength,
-  pageNumber,
-} from "@repo/config/paging";
+import { Identifier } from "@repo/config/paging";
 import { Schema } from "effect";
 
 const maximumTokenLength = 4096;
@@ -63,10 +55,10 @@ const HealthView = Schema.Struct({
 });
 
 const IdentifierQuery = Schema.Struct({ id: Identifier });
-const CreatedResource = Schema.Struct({ id: Schema.String });
+const ResourceId = Schema.Struct({ id: Schema.String });
 const Acknowledged = Schema.Struct({ ok: Schema.Literal(true) });
 const Tally = Schema.Struct({ count: Schema.Finite });
-const Redirect = Schema.Struct({ url: Schema.String });
+const ResourceUrl = Schema.Struct({ url: Schema.String });
 const InvitationIssued = Schema.Struct({ email: Schema.String, expiresAt: Schema.DateFromString });
 const InquiryMessage = Schema.Struct({
   authorId: Schema.String,
@@ -81,12 +73,11 @@ type Decodable = Schema.Top & { readonly DecodingServices: never };
 export {
   AccountPermission,
   Acknowledged,
-  CreatedResource,
+  ResourceId,
   EmailVerificationRequest,
   EmailVerified,
   ErrorBody,
   HealthView,
-  Identifier,
   IdentifierQuery,
   InquiryMessage,
   InvitationIssued,
@@ -94,18 +85,12 @@ export {
   InviteAccepted,
   InvitePreview,
   InvitePreviewQuery,
-  Redirect,
+  ResourceUrl,
   Role,
-  SearchKeyword,
   SessionView,
   Tally,
-  UserKeyword,
-  laterPage,
-  maximumIdentifierLength,
-  maximumKeywordLength,
   maximumNameLength,
   maximumPasswordLength,
   minimumPasswordLength,
-  pageNumber,
 };
 export type { Decodable };

@@ -11,4 +11,4 @@ const applicationRoot = (application: Application): string =>
 
 const vitePlus = paths.join(repositoryRoot, "node_modules/.bin/vp");
 
-export { applicationRoot, repositoryRoot, vitePlus };
+export { applicationRoot, vitePlus };

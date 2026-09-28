@@ -3,11 +3,12 @@ import { nodeTypeOf } from "../setup-modules/coupling-edges.ts";
 import { chainFrom, fieldOf, innermostOf, kindAt, visitAt, type NodeVisit } from "./node-visits.ts";
 import { flowsOutOf } from "./value-outflow.ts";
 
-import type { AstFields } from "../ast-node.ts";
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
+
 
 export type Surroundings = {
   readonly visits: readonly NodeVisit[];
-  readonly scope: AstFields;
+  readonly scope: UnknownFields;
 };
 
 type Trace = {
@@ -28,7 +29,7 @@ export const heldNamesOf = (visit: NodeVisit): readonly string[] => {
   return named.flatMap((spelled) => (spelled === null ? [] : [spelled]));
 };
 
-const nestedScopeOf = ({ scope }: Surroundings, visit: NodeVisit): AstFields | null =>
+const nestedScopeOf = ({ scope }: Surroundings, visit: NodeVisit): UnknownFields | null =>
   innermostOf(chainFrom(visit, scope).slice(1), FUNCTION_NODE_TYPES);
 
 const isReadReference = (visit: NodeVisit): boolean =>

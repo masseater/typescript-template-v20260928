@@ -1,6 +1,6 @@
 import { parseSync } from "oxc-parser";
 
-import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
+import { isAstFields, NODE_TYPE_FIELD } from "../ast-node.ts";
 import {
   DEFAULT_SOURCE_NAME,
   nodeCountOf,
@@ -13,7 +13,9 @@ import {
   INJECTED_TEST_BLOCK_SPELLINGS,
 } from "../spec-syntax/test-block-declarations.ts";
 
-const receiverOf = (callee: AstFields): unknown => {
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
+
+const receiverOf = (callee: UnknownFields): unknown => {
   if (callee[NODE_TYPE_FIELD] === "CallExpression") return callee.callee;
   if (callee[NODE_TYPE_FIELD] !== "MemberExpression") return null;
   const member = callee.property;
@@ -41,7 +43,7 @@ const runnerBodyOf = (handedArgument: unknown): unknown =>
     ? handedArgument.body
     : null;
 
-const testCaseOf = (call: AstFields, source: string): BodyDeclaration | null => {
+const testCaseOf = (call: UnknownFields, source: string): BodyDeclaration | null => {
   const rootName = calleeRootName(call.callee);
   if (rootName === null || !INJECTED_TEST_BLOCK_SPELLINGS.has(rootName)) return null;
 
@@ -58,11 +60,11 @@ const testCaseOf = (call: AstFields, source: string): BodyDeclaration | null => 
   };
 };
 
-const testCaseIn = (syntaxField: AstFields, source: string): BodyDeclaration | null =>
+const testCaseIn = (syntaxField: UnknownFields, source: string): BodyDeclaration | null =>
   syntaxField[NODE_TYPE_FIELD] === "CallExpression" ? testCaseOf(syntaxField, source) : null;
 
 const situationBelow = (
-  syntaxField: AstFields,
+  syntaxField: UnknownFields,
   situation: readonly string[],
 ): readonly string[] => {
   if (syntaxField[NODE_TYPE_FIELD] !== "CallExpression") return situation;

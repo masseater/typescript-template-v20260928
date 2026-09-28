@@ -15,7 +15,6 @@ import {
 import {
   NO_DEPENDENCY_CATALOG_FINDINGS,
   type DependencyCatalogFindings,
-  type DependencyCatalogProblem,
   type DependencyCatalogReport,
 } from "./problem.ts";
 import { recordOf } from "./record-fields.ts";
@@ -26,11 +25,12 @@ import {
   type WorkspaceDefinition,
 } from "./workspace-definition.ts";
 
+import type { RepositoryProblem } from "../repository-checks/index.ts";
 import type { DependencyCatalogChecksConfig } from "./config.ts";
 
 const byFileThenMessage = (
-  left: DependencyCatalogProblem,
-  right: DependencyCatalogProblem,
+  left: RepositoryProblem,
+  right: RepositoryProblem,
 ): number =>
   left.file === right.file
     ? left.message.localeCompare(right.message)

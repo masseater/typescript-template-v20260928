@@ -19,6 +19,5 @@ const FlagToggle = Schema.Struct({
   key: FlagKey,
 });
 
-const FlagToggled = FlagEntry;
 
-export { FlagEntry, FlagList, FlagToggle, FlagToggled };
+export { FlagEntry, FlagList, FlagToggle, FlagEntry };

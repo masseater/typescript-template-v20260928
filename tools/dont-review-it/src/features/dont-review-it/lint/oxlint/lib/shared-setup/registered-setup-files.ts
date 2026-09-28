@@ -21,14 +21,15 @@ import { isInsideDirectory } from "../setup-modules/package-entries.ts";
 import { repositoryFilesFor } from "../setup-modules/specifier-resolution.ts";
 import { DEFAULT_SPEC_FILE_SUFFIXES, isSpecFile } from "../spec-syntax/spec-files.ts";
 
-import type { AstFields } from "../ast-node.ts";
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
+
 
 export const isRunnerConfigurationFile = (filename: string): boolean =>
   LINT_CONFIGURATION_FILE.test(toPosixPath(filename));
 
 const NO_CONSTANTS: ReadonlyMap<string, string> = new Map();
 
-const propertyNameOf = (property: AstFields): string | null => {
+const propertyNameOf = (property: UnknownFields): string | null => {
   if (property.computed === true) return null;
   const keyNode = astFieldsOf(property.key);
   if (keyNode === null) return null;
@@ -36,14 +37,14 @@ const propertyNameOf = (property: AstFields): string | null => {
   return staticSpecifierOf(keyNode, NO_CONSTANTS);
 };
 
-const valueAt = (holder: AstFields, named: string): AstFields | null => {
+const valueAt = (holder: UnknownFields, named: string): UnknownFields | null => {
   const found = listedFieldsOf(holder.properties).findLast(
     (property) => propertyNameOf(property) === named,
   );
   return found === undefined ? null : astFieldsOf(found.value);
 };
 
-const objectFrom = (written: AstFields | null): AstFields | null => {
+const objectFrom = (written: UnknownFields | null): UnknownFields | null => {
   if (written === null) return null;
   const nodeType = nodeTypeOf(written);
   if (nodeType === "ObjectExpression") return written;
@@ -54,7 +55,7 @@ const objectFrom = (written: AstFields | null): AstFields | null => {
 
 export const RUNNER_BLOCK_KEY = "test";
 
-const runnerBlockIn = (program: AstFields): AstFields | null => {
+const runnerBlockIn = (program: UnknownFields): UnknownFields | null => {
   const exported = statementsOf(program).findLast(
     (statement) => nodeTypeOf(statement) === "ExportDefaultDeclaration",
   );
@@ -64,7 +65,7 @@ const runnerBlockIn = (program: AstFields): AstFields | null => {
 };
 
 const spelledEntriesOf = (
-  written: AstFields | null,
+  written: UnknownFields | null,
   constants: ReadonlyMap<string, string>,
 ): readonly string[] => {
   if (written === null) return [];
@@ -82,7 +83,7 @@ const REGISTERED_SETUP_KEYS: readonly string[] = ["setupFiles", "globalSetup"];
 const PROJECT_LIST_KEY = "projects";
 
 const registeredEntriesIn = (
-  runnerBlock: AstFields,
+  runnerBlock: UnknownFields,
   constants: ReadonlyMap<string, string>,
 ): readonly string[] => {
   const own = REGISTERED_SETUP_KEYS.flatMap((registeredKey) =>

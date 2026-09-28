@@ -1,7 +1,8 @@
+import { and, eq } from "drizzle-orm";
 import { assert, it } from "@effect/vitest";
 import { notificationMailSubjects, type MailSettings } from "@repo/auth";
-import { ROLE } from "@repo/config";
-import { NOTIFICATION_KIND, and, eq, query, schema } from "@repo/db";
+import { ROLE, NOTIFICATION_KIND } from "@repo/config";
+import { query, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
 import { fixtureOrigin } from "@repo/runtime/testing";
 import { env } from "cloudflare:workers";

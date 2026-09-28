@@ -1,8 +1,9 @@
+import { isNotFound } from "@repo/cli";
 import { sourceMapDirectories, sourceMapManifest } from "@repo/vite-config/source-maps";
 import { Effect, FileSystem, Path, Schema } from "effect";
 
 import { ArtifactFailure, fail, ioFailed } from "./artifact-io.ts";
-import { isNotFound, layer, path } from "./platform.ts";
+import { layer, path } from "./platform.ts";
 import { retainGenerations } from "./retention.ts";
 
 import type { BuildTarget } from "@repo/config";

@@ -1,7 +1,6 @@
-import { agreementKinds } from "@repo/config";
+import { agreementKinds, agreementKindLabels } from "@repo/config";
 import { Button, Field, FormColumn, Heading, SelectField } from "@repo/ui";
 
-import { agreementKindLabels } from "#pages/terms/model/agreement-labels.ts";
 import { useNewDraftForm } from "#pages/terms/model/new-draft-form.ts";
 import {
   maximumBodyLength,

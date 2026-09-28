@@ -1,5 +1,6 @@
+import { and, eq } from "drizzle-orm";
 import { ROLE } from "@repo/config";
-import { and, eq, query, schema } from "@repo/db";
+import { query, schema } from "@repo/db";
 import { DateTime, Effect } from "effect";
 
 import { MessagingMemberRequired } from "./messaging-member-required.ts";

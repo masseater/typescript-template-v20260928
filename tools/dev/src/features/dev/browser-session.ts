@@ -5,18 +5,19 @@ import { browserLaunchArguments } from "./lan-gateway.ts";
 import { browserConfig, lanOrigin } from "./local-environment.ts";
 import { urlPath } from "./platform.ts";
 
-import type { App, Credentials } from "./local-environment.ts";
+import type { Application } from "@repo/config";
+import type { Credentials } from "./local-environment.ts";
 
-function sessionName(app: App): string {
+function sessionName(app: Application): string {
   return `template-local-${app}`;
 }
 
-function configuredOrigin(app: App, credentials: Credentials): string {
+function configuredOrigin(app: Application, credentials: Credentials): string {
   return credentials.origins === "loopback" ? applicationOrigins[app] : lanOrigin(app);
 }
 
 const sessionArguments = Effect.fn("sessionArguments")(function* sessionArguments(
-  app: App,
+  app: Application,
   credentials: Credentials,
 ) {
   const launch =

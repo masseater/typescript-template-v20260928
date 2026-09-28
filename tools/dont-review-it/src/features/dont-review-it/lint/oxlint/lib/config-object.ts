@@ -1,6 +1,8 @@
-import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "./ast-node.ts";
+import { isAstFields, NODE_TYPE_FIELD } from "./ast-node.ts";
 
-export const fieldsIn = (held: unknown): readonly AstFields[] =>
+import type { UnknownFields } from "../../../lint-rule-authoring/index.ts";
+
+export const fieldsIn = (held: unknown): readonly UnknownFields[] =>
   Array.isArray(held) ? held.filter(isAstFields) : [];
 
 export const nodeOfType = ({ held, type }: { readonly held: unknown; readonly type: string }) =>
@@ -8,17 +10,17 @@ export const nodeOfType = ({ held, type }: { readonly held: unknown; readonly ty
 
 const OBJECT_EXPRESSION = "ObjectExpression";
 
-export const propertiesOf = (held: unknown): readonly AstFields[] =>
+export const propertiesOf = (held: unknown): readonly UnknownFields[] =>
   fieldsIn(nodeOfType({ held, type: OBJECT_EXPRESSION })?.properties);
 
 export const LITERAL = "Literal";
 
 export const IDENTIFIER = "Identifier";
 
-export const keyNameOf = (property: AstFields): string | null => {
+export const keyNameOf = (property: UnknownFields): string | null => {
   const named = property.key;
   if (nodeOfType({ held: named, type: LITERAL }) !== null)
-    return String((named as AstFields).value);
+    return String((named as UnknownFields).value);
   const identifier = nodeOfType({ held: named, type: IDENTIFIER });
   return identifier === null || property.computed === true ? null : String(identifier.name);
 };

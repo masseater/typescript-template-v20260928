@@ -1,7 +1,6 @@
-import { CreatedResource, Tally } from "@repo/runtime/contracts";
+import { Identifier, pageNumber } from "@repo/config/paging";
 import { Schema } from "effect";
 
-import { Identifier, pageNumber } from "./member.ts";
 
 const maximumMessageBodyLength = 5000;
 const maximumMessagingPage = 1_000_000;
@@ -87,7 +86,6 @@ const MessageBody = Schema.Trim.check(Schema.isLengthBetween(1, maximumMessageBo
 
 const MessageSend = Schema.Struct({ body: MessageBody, conversationId: Identifier });
 
-const MessageSent = CreatedResource;
 
 const ConversationOpen = Schema.Struct({ body: MessageBody, recipientId: Identifier });
 
@@ -104,7 +102,6 @@ const ConversationLookupResult = Schema.Struct({
 
 const ConversationRead = Schema.Struct({ conversationId: Identifier });
 
-const UnreadCount = Tally;
 
 export {
   ConversationList,
@@ -117,8 +114,6 @@ export {
   ConversationRead,
   ConversationView,
   MessageSend,
-  MessageSent,
-  UnreadCount,
   maximumMessageBodyLength,
   messagingConversationPageSize,
   messagingMessagePageSize,

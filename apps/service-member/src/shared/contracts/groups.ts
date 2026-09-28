@@ -1,14 +1,13 @@
+import { Identifier } from "@repo/config/paging";
 import { groupJoinPolicies } from "@repo/config";
-import { CreatedResource, IdentifierQuery } from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
-import { Identifier, MemberReference } from "./member.ts";
+import { MemberReference } from "./member.ts";
 
 const maximumGroupNameLength = 100;
 
 const GroupJoinPolicy = Schema.Literals(groupJoinPolicies);
 
-const GroupOwner = MemberReference;
 
 const GroupMemberView = Schema.Struct({
   id: Schema.String,
@@ -26,7 +25,7 @@ const GroupView = Schema.Struct({
   memberCount: Schema.Finite,
   members: Schema.Array(GroupMemberView),
   name: Schema.String,
-  owner: GroupOwner,
+  owner: MemberReference,
 });
 
 const GroupQuery = Schema.Struct({
@@ -52,32 +51,24 @@ const GroupJoin = Schema.Struct({
 
 const GroupJoined = Schema.Struct({ conversationId: Schema.String });
 
-const GroupLeave = IdentifierQuery;
 
-const GroupLeft = CreatedResource;
 
 const GroupRename = Schema.Struct({
   id: Identifier,
   name: Schema.Trim.check(Schema.isLengthBetween(1, maximumGroupNameLength)),
 });
 
-const GroupRenamed = CreatedResource;
 
-const GroupInviteRefresh = IdentifierQuery;
 
 const GroupInviteRefreshed = Schema.Struct({ inviteToken: Schema.String });
 
 export {
   GroupCreate,
   GroupCreated,
-  GroupInviteRefresh,
   GroupInviteRefreshed,
   GroupJoin,
   GroupJoined,
-  GroupLeave,
-  GroupLeft,
   GroupQuery,
   GroupRename,
-  GroupRenamed,
   GroupView,
 };

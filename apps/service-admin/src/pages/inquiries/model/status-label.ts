@@ -8,5 +8,4 @@ function isInquiryClosed(status: InquiryStatus): boolean {
   return status === INQUIRY_STATUS.closed;
 }
 
-export { INQUIRY_STATUS, inquiryStatusLabel, isInquiryClosed };
-export type { InquiryStatus };
+export { inquiryStatusLabel, isInquiryClosed };

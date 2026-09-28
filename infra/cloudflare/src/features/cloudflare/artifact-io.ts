@@ -1,6 +1,7 @@
+import { isNotFound } from "@repo/cli";
 import { Effect, FileSystem, Option, Path, PlatformError, Schema } from "effect";
 
-import { isNotFound, layer } from "./platform.ts";
+import { layer } from "./platform.ts";
 
 class ArtifactFailure extends Schema.TaggedError<ArtifactFailure>()("ArtifactFailure", {
   code: Schema.Literals([

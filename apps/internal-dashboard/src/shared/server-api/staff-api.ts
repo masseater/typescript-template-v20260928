@@ -1,3 +1,4 @@
+import { IdentifierQuery, InvitationIssued, ResourceId } from "@repo/runtime/contracts";
 import { mailInvite, verifiedSessionId } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import { inviteStaff, listStaff, removeStaff, setStaffPermission } from "@repo/db/staff";
@@ -5,15 +6,7 @@ import { inviteApi, privileged } from "@repo/runtime/account";
 import { createApi, readJsonBody } from "@repo/runtime/http";
 import { Effect } from "effect";
 
-import {
-  StaffInvitation,
-  StaffInvited,
-  StaffList,
-  StaffPermissionChange,
-  StaffPermissionChanged,
-  StaffRemoval,
-  StaffRemoved,
-} from "#shared/contracts/index.ts";
+import { StaffInvitation, StaffList, StaffPermissionChange, StaffPermissionChanged } from "#shared/contracts/index.ts";
 
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
@@ -52,7 +45,7 @@ const changeMemberPermission = Effect.fn("changeMemberPermission")(function* cha
 
 const removeMember = Effect.fn("removeMember")(function* removeMember(request: Request) {
   const sessionId = yield* verifiedSessionId(request);
-  const removal = yield* readJsonBody(StaffRemoval, request);
+  const removal = yield* readJsonBody(IdentifierQuery, request);
   return yield* removeStaff(sessionId, removal.id);
 });
 
@@ -60,12 +53,12 @@ function staffApi<Requirements = never>(api: ApiRoutes<AppServices | Requirement
   return createApi("")
     .use(inviteApi(api))
     .get("/staff", ...api.route({ response: StaffList }, listMembers, failures))
-    .post("/staff/invites", ...api.route({ response: StaffInvited }, inviteMember, failures))
+    .post("/staff/invites", ...api.route({ response: InvitationIssued }, inviteMember, failures))
     .patch(
       "/staff",
       ...api.route({ response: StaffPermissionChanged }, changeMemberPermission, failures),
     )
-    .delete("/staff", ...api.route({ response: StaffRemoved }, removeMember, failures));
+    .delete("/staff", ...api.route({ response: ResourceId }, removeMember, failures));
 }
 
 export { staffApi };

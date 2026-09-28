@@ -1,7 +1,8 @@
+import { agreementKindLabels } from "@repo/config";
 import { ButtonLink, Page, RequestContent, formatWarekiDate } from "@repo/ui";
 import { DateTime } from "effect";
 
-import { agreementKindLabels, stateLabel } from "#pages/terms/model/agreement-labels.ts";
+import { stateLabel } from "#pages/terms/model/agreement-labels.ts";
 import { useAgreementVersion } from "#pages/terms/model/agreement-versions.ts";
 import { DraftEditor } from "./draft-editor.tsx";
 

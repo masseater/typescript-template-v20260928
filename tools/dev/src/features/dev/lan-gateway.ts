@@ -1,9 +1,10 @@
+import { repositoryRoot } from "@repo/config/repository-root";
 import { loopbackAddress } from "@repo/config";
 import { Crypto, Effect, FileSystem, Path, Schema } from "effect";
 
 import { spkiFromCertificatePem } from "./certificate-pin.ts";
 import { failure } from "./failure.ts";
-import { local, root, routeNames, routes, run, running, socket } from "./local-environment.ts";
+import { local, routeNames, routes, run, running, socket } from "./local-environment.ts";
 import { urlPath, withFileSystem } from "./platform.ts";
 import { privateDirectoryMode } from "./private-files.ts";
 
@@ -49,8 +50,8 @@ function launchGateway() {
     const command = `exec node ${gateway} ${proxyPort} >> ${log} 2>&1`;
     return yield* run(
       "tmux",
-      ["-L", socket, "new-session", "-d", "-s", gatewaySession, "-c", root, "fish", "-c", command],
-      { cwd: root },
+      ["-L", socket, "new-session", "-d", "-s", gatewaySession, "-c", repositoryRoot, "fish", "-c", command],
+      { cwd: repositoryRoot },
     );
   });
 }
@@ -67,13 +68,13 @@ const ensureGateway = Effect.fn("ensureGateway")(function* ensureGateway() {
   );
   const portless = yield* urlPath(new URL("../../../node_modules/.bin/portless", import.meta.url));
   yield* run(portless, ["proxy", "start", "--lan", "--port", String(proxyPort)], {
-    cwd: root,
+    cwd: repositoryRoot,
     env: portlessEnvironment,
     timeout: proxyStartTimeoutMilliseconds,
   });
   yield* Effect.forEach(routeNames, (name) =>
     run(portless, ["alias", `template-${name}`, String(routes[name]), "--force"], {
-      cwd: root,
+      cwd: repositoryRoot,
       env: portlessEnvironment,
       timeout: aliasTimeoutMilliseconds,
     }),

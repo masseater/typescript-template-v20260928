@@ -1,10 +1,11 @@
 import { astFieldsOf, listedFieldsOf, nodeTypeOf } from "../setup-modules/coupling-edges.ts";
 
-import type { AstFields } from "../ast-node.ts";
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
+
 
 export type NodeVisit = {
-  readonly node: AstFields;
-  readonly ancestors: readonly AstFields[];
+  readonly node: UnknownFields;
+  readonly ancestors: readonly UnknownFields[];
 };
 
 const POSITION_FIELDS: ReadonlySet<string> = new Set([
@@ -30,7 +31,7 @@ const TYPE_BEARING_FIELDS: ReadonlySet<string> = new Set([
 const isWalkedField = (field: string): boolean =>
   !POSITION_FIELDS.has(field) && !TYPE_BEARING_FIELDS.has(field);
 
-const visitsUnder = (held: unknown, ancestors: readonly AstFields[]): readonly NodeVisit[] =>
+const visitsUnder = (held: unknown, ancestors: readonly UnknownFields[]): readonly NodeVisit[] =>
   listedFieldsOf(held)
     .filter((node) => nodeTypeOf(node) !== "")
     .flatMap((node) => [
@@ -50,17 +51,17 @@ export const kindAt = (held: unknown): string => {
   return node === null ? "" : nodeTypeOf(node);
 };
 
-export const chainFrom = (visit: NodeVisit, boundary: AstFields): readonly AstFields[] => {
+export const chainFrom = (visit: NodeVisit, boundary: UnknownFields): readonly UnknownFields[] => {
   const at = visit.ancestors.indexOf(boundary);
   return at === -1 ? visit.ancestors : visit.ancestors.slice(at);
 };
 
-export const visitAt = (visit: NodeVisit, ancestor: AstFields): NodeVisit => ({
+export const visitAt = (visit: NodeVisit, ancestor: UnknownFields): NodeVisit => ({
   node: ancestor,
   ancestors: visit.ancestors.slice(0, visit.ancestors.indexOf(ancestor)),
 });
 
 export const innermostOf = (
-  ancestors: readonly AstFields[],
+  ancestors: readonly UnknownFields[],
   wanted: ReadonlySet<string>,
-): AstFields | null => ancestors.findLast((held) => wanted.has(nodeTypeOf(held))) ?? null;
+): UnknownFields | null => ancestors.findLast((held) => wanted.has(nodeTypeOf(held))) ?? null;

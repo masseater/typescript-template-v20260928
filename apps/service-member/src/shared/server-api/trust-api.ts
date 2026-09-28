@@ -1,3 +1,4 @@
+import { Acknowledged, ResourceId } from "@repo/runtime/contracts";
 import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import { blockMember, fileReport, unblockMember } from "@repo/db";
@@ -5,7 +6,7 @@ import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody } from "@repo/runtime/http";
 import { Effect } from "effect";
 
-import { Blocked, BlockMember, ReportCreate, ReportFiled } from "#shared/contracts/index.ts";
+import { BlockMember, ReportCreate } from "#shared/contracts/index.ts";
 
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
@@ -27,7 +28,7 @@ function trustApi(api: ApiRoutes<AppServices>) {
     .put(
       "/block",
       ...api.route(
-        { response: Blocked },
+        { response: Acknowledged },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -41,7 +42,7 @@ function trustApi(api: ApiRoutes<AppServices>) {
     .delete(
       "/block",
       ...api.route(
-        { response: Blocked },
+        { response: Acknowledged },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -55,7 +56,7 @@ function trustApi(api: ApiRoutes<AppServices>) {
     .post(
       "/report",
       ...api.route(
-        { response: ReportFiled },
+        { response: ResourceId },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);

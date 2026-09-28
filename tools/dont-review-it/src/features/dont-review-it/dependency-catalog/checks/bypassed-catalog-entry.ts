@@ -2,7 +2,8 @@ import { DEFAULT_CATALOG_NAME, type CatalogEntry } from "../workspace-definition
 
 import type { DependencyCatalogChecksConfig } from "../config.ts";
 import type { DependencyUsage } from "../dependency-usage.ts";
-import type { DependencyCatalogFindings, DependencyCatalogProblem } from "../problem.ts";
+import type { RepositoryProblem } from "../../repository-checks/index.ts";
+import type { DependencyCatalogFindings } from "../problem.ts";
 
 const catalogReferenceSpecifier = ({
   catalogName,
@@ -76,7 +77,7 @@ export const bypassedCatalogFindings = ({
   });
 
   return {
-    problems: findings.flatMap((finding): readonly DependencyCatalogProblem[] => finding.problems),
-    warnings: findings.flatMap((finding): readonly DependencyCatalogProblem[] => finding.warnings),
+    problems: findings.flatMap((finding): readonly RepositoryProblem[] => finding.problems),
+    warnings: findings.flatMap((finding): readonly RepositoryProblem[] => finding.warnings),
   };
 };

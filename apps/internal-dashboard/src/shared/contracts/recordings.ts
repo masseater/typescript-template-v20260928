@@ -1,5 +1,5 @@
-import { RecordingSummary, RecordingView, RegisteredPerson, SpeakerLabel } from "@repo/config";
-import { Identifier } from "@repo/runtime/contracts";
+import { Identifier } from "@repo/config/paging";
+import { RecordingSummary, RegisteredPerson, SpeakerLabel } from "@repo/config";
 import { Schema } from "effect";
 
 const maximumRecordingTitleLength = 100;
@@ -11,8 +11,6 @@ const RecordingList = Schema.Struct({ recordings: Schema.Array(RecordingSummary)
 const RecordingUpload = Schema.Struct({
   title: Schema.Trim.check(Schema.isLengthBetween(1, maximumRecordingTitleLength)),
 });
-
-type RecordingView = typeof RecordingView.Type;
 
 const SpeakerAssignment = Schema.Struct({
   label: SpeakerLabel,
@@ -32,7 +30,6 @@ export {
   PersonRegistration,
   RecordingList,
   RecordingUpload,
-  RecordingView,
   SpeakerAssignment,
   maximumPersonNameLength,
   maximumRecordingBytes,

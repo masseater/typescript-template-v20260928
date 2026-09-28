@@ -13,7 +13,8 @@ import {
   type RestrictedTargetEntry,
 } from "./restricted-entries.ts";
 
-import type { AstFields } from "../ast-node.ts";
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
+
 
 export type RestrictedReach = {
   readonly entry: RestrictedTargetEntry;
@@ -21,7 +22,7 @@ export type RestrictedReach = {
   readonly relays: readonly string[];
 };
 
-const passThroughExportsAt = memoize((file: string): readonly PassThroughExport<AstFields>[] => {
+const passThroughExportsAt = memoize((file: string): readonly PassThroughExport<UnknownFields>[] => {
   const source = readTextFile(file);
   const program = source === null ? null : astFieldsOf(parseSync(file, source).program);
   return program === null ? [] : passThroughExportsIn(statementsOf(program));
@@ -58,7 +59,7 @@ const reachedFilesFor = (walk: Walk): readonly string[] => {
 };
 
 const matchedForward = (
-  forwards: readonly PassThroughExport<AstFields>[],
+  forwards: readonly PassThroughExport<UnknownFields>[],
   listedEntries: readonly RestrictedTargetEntry[],
 ): { readonly entry: RestrictedTargetEntry; readonly target: string } | null =>
   forwards

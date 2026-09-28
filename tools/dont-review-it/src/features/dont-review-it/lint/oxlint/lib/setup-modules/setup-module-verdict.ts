@@ -11,7 +11,8 @@ import { isInsideDirectory, owningPackageDirectoryOf } from "./package-entries.t
 import { isReachedOnlyFromSpecs } from "./spec-only-packages.ts";
 import { resolveCoupling } from "./specifier-resolution.ts";
 
-import type { AstFields } from "../ast-node.ts";
+import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
+
 
 const RELAY_HOP_LIMIT = 4;
 
@@ -24,7 +25,7 @@ const TYPE_DECLARATION_TYPES: ReadonlySet<string> = new Set([
   "TSTypeAliasDeclaration",
 ]);
 
-const isTypeStatement = (statement: AstFields): boolean => {
+const isTypeStatement = (statement: UnknownFields): boolean => {
   const nodeType = nodeTypeOf(statement);
   if (TYPE_DECLARATION_TYPES.has(nodeType) || statement.declare === true) return true;
   if (nodeType === "ImportDeclaration") return statement.importKind === TYPE_ONLY_KIND;

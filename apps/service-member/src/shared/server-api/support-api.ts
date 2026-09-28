@@ -1,3 +1,4 @@
+import { IdentifierQuery } from "@repo/runtime/contracts";
 import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import {
@@ -10,13 +11,7 @@ import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
-import {
-  InquiryCreate,
-  InquiryList,
-  InquiryQuery,
-  InquiryReply,
-  InquiryThread,
-} from "#shared/contracts/support.ts";
+import { InquiryCreate, InquiryList, InquiryReply, InquiryThread } from "#shared/contracts/support.ts";
 import { presentSummary, presentThread } from "./support-present.ts";
 
 import type { AppServices } from "@repo/runtime";
@@ -50,7 +45,7 @@ function supportApi(api: ApiRoutes<AppServices>) {
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
-            const { id } = yield* readSearchParams(InquiryQuery, request);
+            const { id } = yield* readSearchParams(IdentifierQuery, request);
             return presentThread(yield* getMemberInquiry(user.id, id));
           }),
         failures,

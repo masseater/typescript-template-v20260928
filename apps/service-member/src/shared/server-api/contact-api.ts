@@ -1,3 +1,4 @@
+import { Acknowledged } from "@repo/runtime/contracts";
 import { sendContactEmail } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import { consumeRateLimit } from "@repo/db";
@@ -5,7 +6,7 @@ import { authUnavailable, databaseUnavailable } from "@repo/runtime/account";
 import { createApi } from "@repo/runtime/http";
 import { Effect } from "effect";
 
-import { ContactAccepted, ContactSubmission } from "#shared/contracts/index.ts";
+import { ContactSubmission } from "#shared/contracts/index.ts";
 import { OpsMail } from "./ops-mail.ts";
 
 import type { AppServices } from "@repo/runtime";
@@ -46,7 +47,7 @@ const submitContact = Effect.fn("contact.submit")(function* submitContact(
 function contactApi(api: ApiRoutes<AppServices | OpsMail>) {
   return createApi("").post(
     "/contact",
-    ...api.route({ body: ContactSubmission, response: ContactAccepted }, submitContact, failures),
+    ...api.route({ body: ContactSubmission, response: Acknowledged }, submitContact, failures),
   );
 }
 

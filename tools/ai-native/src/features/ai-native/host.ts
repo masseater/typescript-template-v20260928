@@ -1,5 +1,4 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import { optionalSetting } from "@repo/ai-native-telemetry/optional-setting";
 import { Crypto, DateTime, Effect, FileSystem, Path, type PlatformError } from "effect";
 import { ChildProcessSpawner } from "effect/unstable/process";
 
@@ -75,7 +74,6 @@ export {
   makeDirectory,
   nativeFailure,
   onDisk,
-  optionalSetting,
   parentPath,
   randomHex,
   readDirectory,

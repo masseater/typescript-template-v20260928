@@ -1,15 +1,9 @@
+import { PaidPlanRequired } from "@repo/config";
 import { InvalidSearch } from "@repo/config/paging";
 import { createFileRoute, defaultStringifySearch, redirect } from "@tanstack/react-router";
 import { Schema } from "effect";
 
-import {
-  PaidPlanRequired,
-  SearchRoute,
-  UsersFailed,
-  UsersPending,
-  membersOptions,
-  normalizeUsersSearch,
-} from "#pages/users/index.ts";
+import { SearchRoute, UsersFailed, UsersPending, membersOptions, normalizeUsersSearch } from "#pages/users/index.ts";
 
 import type { UsersSearch } from "#pages/users/index.ts";
 import type { QueryClient } from "@tanstack/react-query";

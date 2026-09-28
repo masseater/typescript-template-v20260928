@@ -1,6 +1,7 @@
 import { Auth, type AuthFailure } from "@repo/auth";
 import { Database } from "@repo/db";
-import { Telemetry, type TelemetryFlusher, type TelemetryInvalid } from "@repo/observability";
+import { Telemetry, type TelemetryInvalid } from "@repo/observability";
+import type { OtlpExporter } from "effect/unstable/observability";
 import { Layer, Redacted } from "effect";
 
 import { AppOrigin } from "./app-origin.ts";
@@ -20,7 +21,7 @@ type AppServices =
   | FileStore
   | ReadCache
   | Telemetry
-  | TelemetryFlusher;
+  | OtlpExporter.Flusher;
 
 const configuredAppLayer = (
   asked: Readonly<{
