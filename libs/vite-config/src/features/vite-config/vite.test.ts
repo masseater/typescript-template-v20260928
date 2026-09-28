@@ -135,6 +135,11 @@ describe("appRun", () => {
           ],
           output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
         },
+        "check:route-tree": {
+          cache: false,
+          command: "dont-review-it-route-tree",
+          dependsOn: ["build"],
+        },
         "check:dev": {
           cache: false,
           command: "../../tools/dev/src/features/dev/dev-start.ts",
@@ -152,7 +157,7 @@ describe("appRun", () => {
             "check:client",
             "check:react",
           ],
-          prepr: ["build"],
+          prepr: ["build", "check:route-tree"],
           premerge: ["build", "check:dev"],
         }),
       },

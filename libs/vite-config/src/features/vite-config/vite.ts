@@ -223,6 +223,11 @@ const appTasks = measured({
     ],
     output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
   },
+  "check:route-tree": {
+    cache: false,
+    command: "dont-review-it-route-tree",
+    dependsOn: ["build"],
+  },
   "check:dev": {
     cache: false,
     command: "../../tools/dev/src/features/dev/dev-start.ts",
@@ -233,7 +238,7 @@ const appTasks = measured({
   ...lifecycle({
     precommit: ["check:code"],
     prepush: appPrepush,
-    prepr: ["build"],
+    prepr: ["build", "check:route-tree"],
     premerge: ["build", "check:dev"],
   }),
 } satisfies Tasks);
@@ -382,12 +387,13 @@ const wikiTasks = measured({
     ...appTasks.build,
     input: [...appTasks.build.input, wikiContentInput],
   },
+  "check:route-tree": appTasks["check:route-tree"],
   dev: appTasks.dev,
   preview: appTasks.preview,
   ...lifecycle({
     precommit: ["check:code"],
     prepush: appPrepush,
-    prepr: ["build"],
+    prepr: ["build", "check:route-tree"],
     premerge: ["build"],
   }),
 } satisfies Tasks);

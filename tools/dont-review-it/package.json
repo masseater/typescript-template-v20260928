@@ -26,6 +26,7 @@
     "dont-review-it-modular": "./src/features/dont-review-it/repository/modular-budgets-check.ts",
     "dont-review-it-pr-affected": "./src/features/dont-review-it/repository/pr-affected.ts",
     "dont-review-it-react": "./src/features/dont-review-it/repository/react-doctor.ts",
+    "dont-review-it-route-tree": "./src/features/dont-review-it/repository/route-tree.ts",
     "dont-review-it-text": "./src/features/dont-review-it/repository/text-lint.ts",
     "dont-review-it-thin-app-routes": "./src/features/dont-review-it/repository/thin-app-routes-check.ts",
     "dont-review-it-typecheck": "./src/features/dont-review-it/repository/typecheck-workspaces.ts"
